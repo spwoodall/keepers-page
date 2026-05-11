@@ -35,7 +35,7 @@
     }
     #label.active { opacity: 0.85; }
     #node-name {
-      position: fixed; top: 12px; right: 12px; color: #ccc;
+      position: fixed; top: 18px; right: 56px; color: #ccc;
       font: 11px monospace; opacity: 0.5; user-select: none;
     }
     #overlay {
@@ -237,8 +237,8 @@
       0%, 100% { opacity: 0.45; }
       50%      { opacity: 0.95; }
     }
-    #audio-btn, #help-btn {
-      position: fixed; bottom: 12px;
+    #audio-btn, #help-btn, #fullscreen-btn {
+      position: fixed;
       width: 32px; height: 32px; border-radius: 50%;
       background: rgba(0,0,0,0.55); border: 1px solid #ffd27a55;
       color: #ffd27a; font: 14px monospace;
@@ -246,10 +246,13 @@
       display: flex; align-items: center; justify-content: center;
       z-index: 31; padding: 0;
     }
-    #audio-btn { right: 12px; }
-    #help-btn  { left: 12px; font-size: 16px; }
+    #audio-btn { right: 12px; bottom: 12px; }
+    #help-btn  { left: 12px; bottom: 12px; font-size: 16px; }
+    #fullscreen-btn { right: 12px; top: 12px; font-size: 14px; }
     #audio-btn:hover, #audio-btn.active,
-    #help-btn:hover, #help-btn.active { opacity: 1; }
+    #help-btn:hover, #help-btn.active,
+    #fullscreen-btn:hover { opacity: 1; }
+    body.title-active #fullscreen-btn { display: none; }
     #help-menu {
       position: fixed; left: 12px; bottom: 54px;
       background: rgba(0,0,0,0.85); padding: 18px 22px; border-radius: 4px;
@@ -394,6 +397,8 @@
     </p>
     <button type="button" class="reread-btn" id="reread-log">Re-read the Captain's Log</button>
   </div>
+
+  <button id="fullscreen-btn" aria-label="Toggle fullscreen" title="Toggle fullscreen (F)">&#9974;</button>
 
   <button id="audio-btn" aria-label="Audio settings" title="Audio settings">&#9835;</button>
   <div id="audio-menu">
@@ -1136,10 +1141,24 @@
       console.log('[hotspot]', snippet);
     }
 
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen()
+          .catch(err => console.warn('[fullscreen]', err));
+      } else {
+        document.exitFullscreen();
+      }
+    }
+    document.getElementById('fullscreen-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleFullscreen();
+    });
+
     addEventListener('keydown', (e) => {
       if (e.key === 'd' || e.key === 'D') setDevMode(!devMode);
       else if (devMode && (e.key === 'h' || e.key === 'H')) captureHotspotHere();
       else if (devMode && (e.key === 'x' || e.key === 'X')) previewRingGroup.clear();
+      else if (e.key === 'f' || e.key === 'F') toggleFullscreen();
     });
 
     // ---- Audio preferences ----------------------------------------------
