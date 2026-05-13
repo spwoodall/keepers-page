@@ -15,7 +15,8 @@
   <meta name="twitter:image" content="https://spwoodall.github.io/keepers-page/title.jpg">
   <link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="%231a0e08"/><path d="M 32 32 m -3 0 a 3 3 0 0 1 6 0 a 5 5 0 0 1 -10 0 a 7 7 0 0 1 14 0 a 9 9 0 0 1 -18 0 a 11 11 0 0 1 22 0 a 13 13 0 0 1 -26 0" stroke="%23ffd27a" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="32" cy="32" r="1.8" fill="%23ffe8b8"/></svg>'>
   <style>
-    body { margin: 0; overflow: hidden; background: #000; cursor: crosshair; font-family: -apple-system, system-ui, sans-serif; }
+    body { margin: 0; overflow: hidden; background: #000; cursor: crosshair; font: 16px/1.5 -apple-system, system-ui, sans-serif; }
+    body > canvas { filter: brightness(var(--brightness, 1)); }
     #fade {
       position: fixed; inset: 0; background: #000; opacity: 0;
       pointer-events: none; transition: opacity 600ms;
@@ -23,7 +24,7 @@
     #fade.active { opacity: 1; }
     #hud {
       position: fixed; bottom: 12px; left: 12px; color: #ccc;
-      font: 12px monospace; opacity: 0.7; user-select: none;
+      font: 14px monospace; opacity: 0.7; user-select: none;
       text-shadow: 0 1px 2px rgba(0,0,0,0.8);
     }
     #label {
@@ -56,7 +57,10 @@
     #overlay .close {
       margin-top: 20px; font: 11px monospace; color: #888;
       letter-spacing: 1px; text-transform: uppercase;
+      cursor: pointer;
+      transition: color 200ms;
     }
+    #overlay .close:hover { color: #ffd27a; }
     #endscreen {
       position: fixed; inset: 0; background: #000;
       display: none; opacity: 0;
@@ -81,7 +85,7 @@
     }
     #endscreen .credits {
       margin-top: 50px; color: #555;
-      font: 11px/2 monospace; letter-spacing: 1px;
+      font: 13px/2 monospace; letter-spacing: 1px;
       text-align: center;
     }
     #endscreen .credits .role {
@@ -94,11 +98,11 @@
     }
     #endscreen .replay-btn {
       margin-top: 40px;
-      padding: 10px 32px;
+      padding: 12px 34px;
       background: rgba(255,210,122,0.06);
       border: 1px solid rgba(255,210,122,0.3);
       color: #888;
-      font: 11px monospace;
+      font: 13px monospace;
       letter-spacing: 3px;
       text-transform: uppercase;
       cursor: pointer;
@@ -109,8 +113,9 @@
       border-color: rgba(255,210,122,0.7);
       color: #ffd9a0;
     }
-    body.title-active #help-btn,
-    body.title-active #help-menu {
+    body.title-active #menu-btn,
+    body.title-active #settings-panel .tabs,
+    body.title-active #settings-panel .reread-link {
       display: none;
     }
 
@@ -125,7 +130,7 @@
     #preload-card.fading { opacity: 0; pointer-events: none; }
     #preload-card.gone { display: none; }
     #preload-card .prompt {
-      color: #bda077; font: 11px monospace;
+      color: #bda077; font: 13px monospace;
       letter-spacing: 6px; text-transform: uppercase;
       animation: pulsehint 2.8s ease-in-out infinite;
       text-shadow: 0 2px 6px rgba(0,0,0,0.9);
@@ -188,7 +193,7 @@
       text-shadow: 0 2px 6px rgba(0,0,0,0.95);
     }
     #titlecard .hint {
-      color: #bda077; font: 11px monospace;
+      color: #bda077; font: 13px monospace;
       margin-top: 90px; letter-spacing: 6px;
       text-transform: uppercase;
       text-shadow: 0 2px 6px rgba(0,0,0,0.95);
@@ -196,11 +201,12 @@
     }
     #titlecard .begin-btn {
       margin-top: 70px;
-      padding: 14px 42px;
+      width: 320px; box-sizing: border-box;
+      padding: 16px 42px;
       background: rgba(255,210,122,0.08);
       border: 1px solid rgba(255,210,122,0.5);
       color: #ffd9a0;
-      font: 12px monospace;
+      font: 14px monospace;
       letter-spacing: 6px;
       text-transform: uppercase;
       cursor: pointer;
@@ -224,6 +230,25 @@
       border-color: rgba(255,210,122,0.5);
       transform: none; box-shadow: none;
     }
+    #titlecard .howto-btn {
+      margin-top: 18px;
+      width: 320px; box-sizing: border-box;
+      padding: 16px 42px;
+      background: none;
+      border: 1px solid rgba(255,210,122,0.25);
+      color: #bda077;
+      font: 14px monospace;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 200ms, border-color 200ms, color 200ms;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+    }
+    #titlecard .howto-btn:hover {
+      background: rgba(255,210,122,0.08);
+      border-color: rgba(255,210,122,0.5);
+      color: #ffd9a0;
+    }
     @keyframes beginglow {
       0%, 100% { box-shadow: 0 0 80px  rgba(255,210,122,0.45), 0 0 30px rgba(255,210,122,0.3); }
       50%      { box-shadow: 0 0 160px rgba(255,210,122,0.8),  0 0 50px rgba(255,210,122,0.55); }
@@ -237,86 +262,214 @@
       0%, 100% { opacity: 0.45; }
       50%      { opacity: 0.95; }
     }
-    #audio-btn, #help-btn, #fullscreen-btn {
+    #menu-btn {
       position: fixed;
-      width: 32px; height: 32px; border-radius: 50%;
-      background: rgba(0,0,0,0.55); border: 1px solid #ffd27a55;
-      color: #ffd27a; font: 14px monospace;
-      cursor: pointer; opacity: 0.45; transition: opacity 200ms;
+      right: 14px; top: 14px;
+      width: 38px; height: 38px; border-radius: 50%;
+      background: linear-gradient(135deg, #2a1a0e, #1a0e08);
+      border: 1px solid #ffd27a55;
+      color: #ffd27a; font: 20px monospace;
+      cursor: pointer; opacity: 0.75;
+      transition: opacity 200ms, box-shadow 200ms;
       display: flex; align-items: center; justify-content: center;
       z-index: 31; padding: 0;
     }
-    #audio-btn { right: 12px; bottom: 12px; }
-    #help-btn  { left: 12px; bottom: 12px; font-size: 16px; }
-    #fullscreen-btn { right: 12px; top: 12px; font-size: 14px; }
-    #audio-btn:hover, #audio-btn.active,
-    #help-btn:hover, #help-btn.active,
-    #fullscreen-btn:hover { opacity: 1; }
-    body.title-active #fullscreen-btn { display: none; }
-    #help-menu {
-      position: fixed; left: 12px; bottom: 54px;
-      background: rgba(0,0,0,0.85); padding: 18px 22px; border-radius: 4px;
-      border: 1px solid #ffd27a55; z-index: 31;
-      display: none; max-width: 320px;
-      color: #ccc; font: 12px/1.6 monospace;
-      letter-spacing: 0.5px;
+    #menu-btn:hover, #menu-btn.active {
+      opacity: 1;
+      box-shadow: 0 0 20px rgba(255,210,122,0.3);
     }
-    #help-menu.active { display: block; }
-    #help-menu h3 {
-      margin: 0 0 8px; font: bold 11px monospace; color: #ffd27a;
+    #panel-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 31;
+      display: none;
+    }
+    #panel-backdrop.active { display: block; }
+
+    /* ---- Unified tabbed settings panel ---- */
+    #settings-panel {
+      position: fixed; left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, #2a1a0e, #1a0e08);
+      border-radius: 6px;
+      border: 1px solid #ffd27a55; z-index: 32;
+      max-width: 640px; width: calc(100vw - 48px);
+      max-height: calc(100vh - 80px);
+      color: #ccc;
+      letter-spacing: 0.5px;
+      box-shadow: 0 0 60px rgba(255,210,122,0.15);
+      overflow: hidden;
+      display: none; flex-direction: column;
+    }
+    #settings-panel.active { display: flex; }
+    #settings-panel .tabs {
+      display: flex;
+      border-bottom: 1px solid #ffd27a33;
+      background: rgba(0,0,0,0.25);
+    }
+    #settings-panel .tab {
+      flex: 1; padding: 16px 14px;
+      background: none; border: none;
+      color: #888; font: 12px monospace;
+      letter-spacing: 2px; text-transform: uppercase;
+      cursor: pointer;
+      transition: background 200ms, color 200ms;
+      border-bottom: 2px solid transparent;
+    }
+    #settings-panel .tab:hover { color: #bda077; }
+    #settings-panel .tab.active {
+      color: #ffd27a;
+      border-bottom-color: #ffd27a;
+      background: rgba(255,210,122,0.05);
+    }
+    #settings-panel .tab-content {
+      display: none;
+      padding: 28px 36px;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 380px;
+      font: 16px/1.7 monospace;
+    }
+    #settings-panel .tab-content.active { display: block; }
+    #settings-panel h3 {
+      margin: 0 0 10px; font: bold 13px monospace; color: #ffd27a;
       letter-spacing: 2px; text-transform: uppercase;
     }
-    #help-menu p { margin: 0 0 14px; }
-    #help-menu p:last-child { margin-bottom: 0; }
-    #help-menu .key {
+    #settings-panel p { margin: 0 0 14px; }
+    #settings-panel p:last-child { margin-bottom: 0; }
+    #settings-panel .rule {
+      height: 1px; margin: 28px auto;
+      width: 80%;
+      background: linear-gradient(90deg,
+        transparent,
+        rgba(255,210,122,0.55),
+        transparent);
+      box-shadow: 0 0 8px rgba(255,210,122,0.2);
+      border: 0;
+    }
+    #settings-panel .key {
       display: inline-block; padding: 1px 6px;
       background: rgba(255,210,122,0.12); border: 1px solid #ffd27a55;
       border-radius: 3px; color: #ffd27a; font-size: 11px;
     }
-    #help-menu .reread-btn {
-      display: block; width: 100%; margin-top: 6px;
-      padding: 8px 12px; background: rgba(255,210,122,0.08);
-      border: 1px solid rgba(255,210,122,0.4); border-radius: 3px;
-      color: #ffd9a0; font: italic 12px Georgia, serif;
-      cursor: pointer; transition: background 200ms;
+    #settings-panel .howto-diagram {
+      display: block;
+      width: 100%;
+      height: auto;
+      margin: 18px auto 32px;
     }
-    #help-menu .reread-btn:hover { background: rgba(255,210,122,0.18); }
-    #audio-menu .ch-mute {
+    #settings-panel .panel-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: stretch;
+    }
+    #settings-panel .reread-link {
+      padding: 14px 32px;
+      background: none; border: none;
+      color: #888;
+      font: 11px monospace;
+      letter-spacing: 1px; text-transform: uppercase;
+      cursor: pointer;
+      transition: color 200ms, background 200ms;
+    }
+    #settings-panel .reread-link:hover {
+      color: #ffd27a;
+      background: rgba(255,210,122,0.05);
+    }
+
+    /* Audio tab rows */
+    #settings-panel .audio-row {
+      display: flex; align-items: center; gap: 12px;
+      color: #ccc; font: 13px monospace;
+      padding: 14px 0;
+      border-bottom: 1px solid #ffd27a22;
+      letter-spacing: 1px; text-transform: uppercase;
+    }
+    #settings-panel .audio-row:last-child { border-bottom: none; }
+    #settings-panel .audio-row > span { width: 70px; }
+    #settings-panel #row-track { gap: 8px; }
+    #settings-panel .audio-row.muted input[type=range] { opacity: 0.35; }
+    #settings-panel input[type=range] { flex: 1; accent-color: #ffd27a; }
+    #settings-panel .ch-mute {
       background: none; border: none; color: #ffd27a;
-      cursor: pointer; font-size: 14px; padding: 0 4px;
+      cursor: pointer; padding: 0 4px;
       opacity: 0.75; line-height: 1;
+      display: flex; align-items: center;
     }
-    #audio-menu .ch-mute:hover { opacity: 1; }
-    #audio-menu .ch-mute.muted { color: #ff6a4a; }
-    #audio-menu .audio-row.muted input[type=range] { opacity: 0.35; }
-    #audio-menu #row-track { gap: 8px; }
-    #audio-menu .track-btn {
+    #settings-panel .ch-mute:hover { opacity: 1; }
+    #settings-panel .ch-mute.muted { color: #ff6a4a; }
+    #settings-panel .ch-mute svg { display: block; }
+    #settings-panel .track-btn {
       background: none; border: 1px solid #ffd27a55;
       color: #ffd27a; cursor: pointer; font-size: 13px;
       padding: 2px 8px; border-radius: 3px;
       line-height: 1;
     }
-    #audio-menu .track-btn:hover { background: rgba(255,210,122,0.12); }
-    #audio-menu .track-name {
+    #settings-panel .track-btn:hover { background: rgba(255,210,122,0.12); }
+    #settings-panel .track-name {
       flex: 1; text-align: center; color: #c0a878;
-      font-size: 10px; letter-spacing: 1px;
+      font-size: 11px; letter-spacing: 1px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       min-width: 0;
     }
-    #audio-menu {
-      position: fixed; right: 12px; bottom: 54px;
-      background: rgba(0,0,0,0.82); padding: 12px 16px; border-radius: 4px;
-      border: 1px solid #ffd27a55; z-index: 31;
-      display: none; min-width: 200px;
+
+    /* Settings tab rows */
+    #settings-panel .setting-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px;
+      padding: 14px 0;
+      border-bottom: 1px solid #ffd27a22;
     }
-    #audio-menu.active { display: block; }
-    #audio-menu .audio-row {
-      display: flex; align-items: center; gap: 10px;
-      color: #ccc; font: 11px monospace; margin: 6px 0;
+    #settings-panel .setting-row:last-child { border-bottom: none; }
+    #settings-panel .setting-label {
+      color: #ccc; font: 13px monospace;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      min-width: 150px;
+      flex-shrink: 0;
+    }
+    #settings-panel .setting-btn {
+      background: rgba(255,210,122,0.08);
+      border: 1px solid rgba(255,210,122,0.4);
+      color: #ffd9a0; padding: 8px 20px;
+      font: 11px monospace; letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer; border-radius: 3px;
+      transition: background 200ms, border-color 200ms;
+    }
+    #settings-panel .setting-btn:hover {
+      background: rgba(255,210,122,0.18);
+      border-color: rgba(255,210,122,0.7);
+    }
+    #settings-panel .setting-btn.on {
+      background: rgba(255,210,122,0.18);
+      border-color: rgba(255,210,122,0.7);
+      color: #ffd9a0;
+    }
+    #settings-panel .setting-btn.danger {
+      background: rgba(255,90,60,0.15);
+      border-color: rgba(255,106,74,0.7);
+      color: #ff8a6c;
+    }
+    #settings-panel .setting-btn.danger:hover {
+      background: rgba(255,90,60,0.28);
+      border-color: #ff8a6c;
+    }
+    #settings-panel .setting-row input[type=range] {
+      flex: 1; min-width: 120px;
+    }
+
+    #settings-panel .close {
+      padding: 14px 32px;
+      font: 11px monospace; color: #888;
       letter-spacing: 1px; text-transform: uppercase;
+      cursor: pointer;
+      transition: color 200ms, background 200ms;
+      display: flex; align-items: center;
     }
-    #audio-menu .audio-row > span { width: 50px; }
-    #audio-menu input[type=range] { flex: 1; accent-color: #ffd27a; }
+    #settings-panel .close:hover {
+      color: #ffd27a;
+      background: rgba(255,210,122,0.05);
+    }
     #devhud {
       position: fixed; bottom: 50px; left: 12px; right: 12px;
       color: #ffd27a; font: 12px monospace;
@@ -370,53 +523,138 @@
     <div class="byline">by Stephen Woodall</div>
     <div class="inspired-by">a tribute to Myst</div>
     <button type="button" class="begin-btn" id="begin-btn">Begin</button>
+    <button type="button" class="howto-btn" id="howto-btn">How to play</button>
   </div>
 
-  <button id="help-btn" aria-label="Help" title="How to play">?</button>
-  <div id="help-menu">
-    <h3>How to play</h3>
-    <p>
-      <b>Drag</b> with your mouse to look around.<br>
-      <b>Click</b> the glowing rings to travel or interact.
-    </p>
-    <h3>Listen</h3>
-    <p>
-      The world responds to your actions. Books, mechanisms,
-      and unseen passages all have a voice. Pay attention to
-      what you hear.
-    </p>
-    <h3>Audio</h3>
-    <p>
-      Adjust music and sound levels with the <span class="key">&#9835;</span>
-      button. Each can be muted independently.
-    </p>
-    <h3>Hint</h3>
-    <p>
-      The Keepers' library has more than one way out.
-      Some are obvious. Others reward observation.
-    </p>
-    <button type="button" class="reread-btn" id="reread-log">Re-read the Captain's Log</button>
-  </div>
+  <div id="panel-backdrop"></div>
 
-  <button id="fullscreen-btn" aria-label="Toggle fullscreen" title="Toggle fullscreen (F)">&#9974;</button>
+  <button id="menu-btn" aria-label="Menu" title="Menu">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none"
+      stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <line x1="5" y1="7" x2="19" y2="7"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+      <line x1="5" y1="17" x2="19" y2="17"/>
+    </svg>
+  </button>
 
-  <button id="audio-btn" aria-label="Audio settings" title="Audio settings">&#9835;</button>
-  <div id="audio-menu">
-    <div id="row-music" class="audio-row">
-      <span>Music</span>
-      <button type="button" class="ch-mute" id="mute-music" aria-label="Mute music">&#128266;</button>
-      <input type="range" id="vol-music" min="0" max="1" step="0.01">
+  <div id="settings-panel">
+    <nav class="tabs">
+      <button type="button" class="tab" data-tab="howto">How to Play</button>
+      <button type="button" class="tab" data-tab="audio">Audio</button>
+      <button type="button" class="tab" data-tab="settings">Settings</button>
+    </nav>
+
+    <div class="tab-content" data-tab-content="audio">
+      <div id="row-music" class="audio-row">
+        <span>Music</span>
+        <button type="button" class="ch-mute" id="mute-music" aria-label="Mute music">&#128266;</button>
+        <input type="range" id="vol-music" min="0" max="1" step="0.01">
+      </div>
+      <div id="row-sfx" class="audio-row">
+        <span>Sounds</span>
+        <button type="button" class="ch-mute" id="mute-sfx" aria-label="Mute sounds">&#128266;</button>
+        <input type="range" id="vol-sfx" min="0" max="1" step="0.01">
+      </div>
+      <div id="row-track" class="audio-row">
+        <span>Track</span>
+        <button type="button" class="track-btn" id="track-prev" aria-label="Previous track">&#9198;</button>
+        <span class="track-name" id="track-name">&mdash;</span>
+        <button type="button" class="track-btn" id="track-next" aria-label="Next track">&#9197;</button>
+      </div>
     </div>
-    <div id="row-sfx" class="audio-row">
-      <span>Sounds</span>
-      <button type="button" class="ch-mute" id="mute-sfx" aria-label="Mute sounds">&#128266;</button>
-      <input type="range" id="vol-sfx" min="0" max="1" step="0.01">
+
+    <div class="tab-content" data-tab-content="settings">
+      <div class="setting-row">
+        <span class="setting-label">Fullscreen</span>
+        <button type="button" class="setting-btn" id="settings-fullscreen">Toggle (F)</button>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Brightness</span>
+        <input type="range" id="brightness-slider" min="0.5" max="1.5" step="0.05">
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Sensitivity</span>
+        <input type="range" id="sensitivity-slider" min="0.5" max="1.5" step="0.05">
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Invert Drag</span>
+        <button type="button" class="setting-btn" id="invert-toggle">Off</button>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Reset Progress</span>
+        <button type="button" class="setting-btn" id="reset-progress">Clear</button>
+      </div>
     </div>
-    <div id="row-track" class="audio-row">
-      <span>Track</span>
-      <button type="button" class="track-btn" id="track-prev" aria-label="Previous track">&#9198;</button>
-      <span class="track-name" id="track-name">&mdash;</span>
-      <button type="button" class="track-btn" id="track-next" aria-label="Next track">&#9197;</button>
+
+    <div class="tab-content" data-tab-content="howto">
+      <h3>Hark</h3>
+      <p>
+        The world responds to your actions. Books, mechanisms,
+        and unseen passages all have a voice. Pay attention to
+        what you hear.
+      </p>
+      <hr class="rule">
+      <h3>Controls</h3>
+      <p>
+        Three gestures move you through the Age &mdash; your hand on the
+        world, your eye on the glow, your patience with what answers back.
+      </p>
+      <svg class="howto-diagram" viewBox="0 0 420 100" xmlns="http://www.w3.org/2000/svg"
+        role="img" aria-label="Click and drag to look around. Click rectangles to interact with objects. Click glowing rings to travel.">
+        <g transform="translate(70, 0)">
+          <rect x="-26" y="28" width="52" height="22" rx="1.5"
+            fill="none" stroke="#ffd27a" stroke-width="1.2" opacity="0.75" />
+          <line x1="-22" y1="39" x2="22" y2="39"
+            stroke="#ffd27a" stroke-width="0.5" opacity="0.4" />
+          <path d="M -22,43 L -14,37 L -7,41 L 1,35 L 9,39 L 16,36 L 22,40"
+            fill="none" stroke="#ffd27a" stroke-width="0.6" opacity="0.5" />
+          <line x1="-44" y1="39" x2="-32" y2="39"
+            stroke="#ffd27a" stroke-width="1.4" />
+          <polygon points="-44,39 -38,36.5 -38,41.5" fill="#ffd27a" />
+          <line x1="32" y1="39" x2="44" y2="39"
+            stroke="#ffd27a" stroke-width="1.4" />
+          <polygon points="44,39 38,36.5 38,41.5" fill="#ffd27a" />
+          <text x="0" y="78" text-anchor="middle"
+            font-family="monospace" font-size="9" letter-spacing="1"
+            fill="#bda077">CLICK AND DRAG</text>
+        </g>
+        <line x1="140" y1="22" x2="140" y2="60"
+          stroke="#ffd27a" stroke-width="0.5" opacity="0.25" />
+        <g transform="translate(210, 0)">
+          <rect x="-11" y="22" width="22" height="34" rx="2"
+            fill="none" stroke="#ffd27a" stroke-width="5" opacity="0.1" />
+          <rect x="-9" y="24" width="18" height="30" rx="2"
+            fill="none" stroke="#ffd27a" stroke-width="1.8" opacity="0.85" />
+          <path d="M 14,28 L 26,38 L 20,40 L 23,46 L 21,47 L 18,41 L 14,44 Z"
+            fill="#ffd27a" stroke="#1a0e08" stroke-width="0.5" />
+          <text x="0" y="78" text-anchor="middle"
+            font-family="monospace" font-size="9" letter-spacing="1"
+            fill="#bda077">CLICK TO INTERACT</text>
+        </g>
+        <line x1="280" y1="22" x2="280" y2="60"
+          stroke="#ffd27a" stroke-width="0.5" opacity="0.25" />
+        <g transform="translate(350, 0)">
+          <circle cx="-5" cy="39" r="18"
+            fill="none" stroke="#7affd2" stroke-width="6" opacity="0.12" />
+          <circle cx="-5" cy="39" r="14"
+            fill="none" stroke="#7affd2" stroke-width="1.8"
+            stroke-dasharray="2.5 2" opacity="0.9" />
+          <path d="M 10,29 L 22,39 L 16,41 L 19,47 L 17,48 L 14,42 L 10,45 Z"
+            fill="#ffd27a" stroke="#1a0e08" stroke-width="0.5" />
+          <text x="0" y="78" text-anchor="middle"
+            font-family="monospace" font-size="9" letter-spacing="1"
+            fill="#bda077">CLICK TO TRAVEL</text>
+        </g>
+      </svg>
+      <p>
+        Glowing shapes mark where the world responds. The world between
+        them is yours to look at, listen to, and turn over in your hand.
+      </p>
+    </div>
+
+    <div class="panel-footer">
+      <div class="close" id="settings-close">click to close</div>
+      <button type="button" class="reread-link" id="reread-log">Re-read Captain's Log</button>
     </div>
   </div>
 
@@ -512,10 +750,14 @@
     const PANO_CACHE_BUST = '?v=1.0';
     const textureLoader = new THREE.TextureLoader();
     const panoCache = new Map();
+    // Patched to renderer.capabilities.getMaxAnisotropy() after the renderer
+    // is created. Sharpens panos at grazing viewing angles on the sphere.
+    let maxAnisotropy = 1;
     function loadPano(url) {
       if (!panoCache.has(url)) {
         const tex = textureLoader.load(url + PANO_CACHE_BUST);
         tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = maxAnisotropy;
         panoCache.set(url, tex);
       }
       return panoCache.get(url);
@@ -923,6 +1165,13 @@
     renderer.setSize(innerWidth, innerHeight);
     document.body.appendChild(renderer.domElement);
 
+    maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
+    panoCache.forEach((tex) => { tex.anisotropy = maxAnisotropy; });
+
+    // Apply persisted brightness to the canvas via CSS variable.
+    const initialBrightness = parseFloat(localStorage.getItem('mystBrightness') ?? '1');
+    document.documentElement.style.setProperty('--brightness', initialBrightness);
+
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1100);
     camera.position.set(0, 0, 0.01);
@@ -930,7 +1179,18 @@
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableZoom = false;
     controls.enablePan = false;
-    controls.rotateSpeed = -0.3;
+    // Persisted look prefs. Base rotateSpeed is negative so the world drags
+    // "with" the cursor; sensitivity scales magnitude, invert flips sign.
+    const BASE_ROTATE_SPEED = -0.3;
+    const lookPrefs = {
+      sensitivity: parseFloat(localStorage.getItem('mystSensitivity') ?? '1'),
+      invert:      localStorage.getItem('mystInvertDrag') === '1',
+    };
+    function applyRotateSpeed() {
+      controls.rotateSpeed = BASE_ROTATE_SPEED * lookPrefs.sensitivity *
+                             (lookPrefs.invert ? -1 : 1);
+    }
+    applyRotateSpeed();
     // Hide the worst of the equirectangular nadir/zenith distortion.
     // 0 = straight up, PI = straight down. Allow ~40° from horizon up
     // and ~40° below — tight enough to keep both poles out of view.
@@ -1149,11 +1409,6 @@
         document.exitFullscreen();
       }
     }
-    document.getElementById('fullscreen-btn').addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleFullscreen();
-    });
-
     addEventListener('keydown', (e) => {
       if (e.key === 'd' || e.key === 'D') setDevMode(!devMode);
       else if (devMode && (e.key === 'h' || e.key === 'H')) captureHotspotHere();
@@ -1372,15 +1627,28 @@
     }
 
     // ---- Volume menu UI -------------------------------------------------
-    const audioBtn = document.getElementById('audio-btn');
-    const audioMenu = document.getElementById('audio-menu');
     const volMusic = document.getElementById('vol-music');
     const volSfx = document.getElementById('vol-sfx');
     const muteMusicBtn = document.getElementById('mute-music');
     const muteSfxBtn = document.getElementById('mute-sfx');
     const rowMusic = document.getElementById('row-music');
     const rowSfx = document.getElementById('row-sfx');
-    const SPEAKER = '\u{1F50A}', MUTED = '\u{1F507}';
+    const SPEAKER_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path d="M6 9 H9 L13 6 V18 L9 15 H6 Z" fill="currentColor"
+        stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+      <path d="M15.5 10 Q17.5 12 15.5 14"
+        stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+      <path d="M18.5 8 Q22 12 18.5 16"
+        stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+    </svg>`;
+    const MUTED_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path d="M6 9 H9 L13 6 V18 L9 15 H6 Z" fill="currentColor"
+        stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+      <line x1="16" y1="10" x2="21" y2="15"
+        stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      <line x1="21" y1="10" x2="16" y2="15"
+        stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+    </svg>`;
 
     volMusic.value = audioPrefs.music;
     volSfx.value = audioPrefs.sfx;
@@ -1390,8 +1658,8 @@
       titleMusicAudio.muted = audioPrefs.musicMuted;
       // Node ambient is treated as SFX, not music.
       if (nodeAmbientAudio) nodeAmbientAudio.muted = audioPrefs.sfxMuted;
-      muteMusicBtn.textContent = audioPrefs.musicMuted ? MUTED : SPEAKER;
-      muteSfxBtn.textContent   = audioPrefs.sfxMuted   ? MUTED : SPEAKER;
+      muteMusicBtn.innerHTML = audioPrefs.musicMuted ? MUTED_SVG : SPEAKER_SVG;
+      muteSfxBtn.innerHTML   = audioPrefs.sfxMuted   ? MUTED_SVG : SPEAKER_SVG;
       muteMusicBtn.classList.toggle('muted', audioPrefs.musicMuted);
       muteSfxBtn.classList.toggle('muted', audioPrefs.sfxMuted);
       rowMusic.classList.toggle('muted', audioPrefs.musicMuted);
@@ -1399,31 +1667,123 @@
     }
     applyMuteUI();
 
-    const helpBtn = document.getElementById('help-btn');
-    const helpMenu = document.getElementById('help-menu');
+    // ---- Settings panel (tabbed: Audio / Settings / How to Play) -------
+    const menuBtn = document.getElementById('menu-btn');
+    const settingsPanel = document.getElementById('settings-panel');
+    const panelBackdrop = document.getElementById('panel-backdrop');
+    const LAST_TAB_KEY = 'mystLastTab';
+    const DEFAULT_TAB = 'howto';
 
-    audioBtn.addEventListener('click', (e) => {
+    function switchTab(tab) {
+      settingsPanel.querySelectorAll('.tab').forEach((b) => {
+        b.classList.toggle('active', b.dataset.tab === tab);
+      });
+      settingsPanel.querySelectorAll('.tab-content').forEach((c) => {
+        c.classList.toggle('active', c.dataset.tabContent === tab);
+      });
+      localStorage.setItem(LAST_TAB_KEY, tab);
+    }
+
+    function closeAllPanels() {
+      settingsPanel.classList.remove('active');
+      menuBtn.classList.remove('active');
+      panelBackdrop.classList.remove('active');
+      overlayEl.classList.remove('active');
+      if (typeof disarmReset === 'function') disarmReset();
+    }
+
+    function openSettings(tab) {
+      // Close any open captain's log overlay so it doesn't lurk behind the panel.
+      overlayEl.classList.remove('active');
+      // On title screen, only the How-to-Play tab is meaningful.
+      if (document.body.classList.contains('title-active')) tab = 'howto';
+      const initialTab = tab || localStorage.getItem(LAST_TAB_KEY) || DEFAULT_TAB;
+      switchTab(initialTab);
+      settingsPanel.classList.add('active');
+      menuBtn.classList.add('active');
+      panelBackdrop.classList.add('active');
+    }
+
+    menuBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      audioMenu.classList.toggle('active');
-      audioBtn.classList.toggle('active');
-      helpMenu.classList.remove('active');
-      helpBtn.classList.remove('active');
+      if (settingsPanel.classList.contains('active')) closeAllPanels();
+      else openSettings();
     });
-    helpBtn.addEventListener('click', (e) => {
+    settingsPanel.querySelectorAll('.tab').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        switchTab(btn.dataset.tab);
+      });
+    });
+    document.getElementById('settings-fullscreen').addEventListener('click', (e) => {
       e.stopPropagation();
-      helpMenu.classList.toggle('active');
-      helpBtn.classList.toggle('active');
-      audioMenu.classList.remove('active');
-      audioBtn.classList.remove('active');
+      toggleFullscreen();
     });
-    audioMenu.addEventListener('click', (e) => e.stopPropagation());
-    helpMenu.addEventListener('click', (e) => e.stopPropagation());
-    addEventListener('click', () => {
-      audioMenu.classList.remove('active');
-      audioBtn.classList.remove('active');
-      helpMenu.classList.remove('active');
-      helpBtn.classList.remove('active');
+
+    // Brightness slider — CSS filter on the canvas via --brightness var.
+    const brightnessSlider = document.getElementById('brightness-slider');
+    brightnessSlider.value = initialBrightness;
+    brightnessSlider.addEventListener('input', () => {
+      const v = parseFloat(brightnessSlider.value);
+      document.documentElement.style.setProperty('--brightness', v);
+      localStorage.setItem('mystBrightness', v);
     });
+
+    // Sensitivity slider — multiplies OrbitControls rotateSpeed.
+    const sensitivitySlider = document.getElementById('sensitivity-slider');
+    sensitivitySlider.value = lookPrefs.sensitivity;
+    sensitivitySlider.addEventListener('input', () => {
+      lookPrefs.sensitivity = parseFloat(sensitivitySlider.value);
+      localStorage.setItem('mystSensitivity', lookPrefs.sensitivity);
+      applyRotateSpeed();
+    });
+
+    // Invert toggle — flips the sign on rotateSpeed.
+    const invertToggle = document.getElementById('invert-toggle');
+    function applyInvertUI() {
+      invertToggle.textContent = lookPrefs.invert ? 'On' : 'Off';
+      invertToggle.classList.toggle('on', lookPrefs.invert);
+    }
+    applyInvertUI();
+    invertToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      lookPrefs.invert = !lookPrefs.invert;
+      localStorage.setItem('mystInvertDrag', lookPrefs.invert ? '1' : '0');
+      applyInvertUI();
+      applyRotateSpeed();
+    });
+
+    // Reset progress — two-step inline confirm (click arms; second click clears).
+    const resetBtn = document.getElementById('reset-progress');
+    let resetArmed = false;
+    let resetTimer = null;
+    function disarmReset() {
+      resetArmed = false;
+      resetBtn.textContent = 'Clear';
+      resetBtn.classList.remove('danger');
+      if (resetTimer) { clearTimeout(resetTimer); resetTimer = null; }
+    }
+    resetBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (resetArmed) {
+        localStorage.clear();
+        location.reload();
+        return;
+      }
+      resetArmed = true;
+      resetBtn.textContent = 'Confirm?';
+      resetBtn.classList.add('danger');
+      resetTimer = setTimeout(disarmReset, 4000);
+    });
+
+    document.getElementById('howto-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openSettings('howto');
+    });
+    settingsPanel.addEventListener('click', (e) => e.stopPropagation());
+    document.getElementById('settings-close').addEventListener('click', closeAllPanels);
+    panelBackdrop.addEventListener('click', closeAllPanels);
+    addEventListener('click', closeAllPanels);
 
     volMusic.addEventListener('input', () => {
       audioPrefs.music = parseFloat(volMusic.value);
@@ -1456,8 +1816,7 @@
 
     document.getElementById('reread-log').addEventListener('click', (e) => {
       e.stopPropagation();
-      helpMenu.classList.remove('active');
-      helpBtn.classList.remove('active');
+      closeAllPanels();
       showOverlay(CAPTAINS_LOG_HTML);
     });
     document.getElementById('replay-btn').addEventListener('click', () => {
