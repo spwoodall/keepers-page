@@ -1,6 +1,17 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+// ---- Version label (bottom-right on title screen) -------------------
+// Reads the VERSION file at repo root. Bump that file each release —
+// no rebuild needed, the title picks it up on next visit.
+fetch('VERSION')
+  .then((r) => (r.ok ? r.text() : ''))
+  .then((v) => {
+    const tag = document.getElementById('version-tag');
+    if (tag && v) tag.textContent = v.trim();
+  })
+  .catch(() => { /* version label is decorative; ignore */ });
+
 // ---- Procedural panorama generator ----------------------------------
 // Generates a 2048x1024 equirectangular image so we don't need real assets.
 // Each node has its own palette + signature shapes so you can tell them apart.
@@ -358,13 +369,13 @@ const WORLD = {
     hotspots: () => [
       // Three door panels — only the spiral is the Keepers' mark.
       // Book-frame outlines match the tall narrow panel shapes.
-      { action: 'inspectDoorTree', dir: [-0.83, 0.5, -0.29],
+      { action: 'inspectDoorTree', dir: [-0.83, 0.5, -0.29], w: 1.1, h: 2.1, roll: -0.08,
         label: 'a carved panel', color: 0xa078ff, shape: 'panel',
         hidden: () => state.dockDoorUnlocked },
-      { action: 'unlockDoor', dir: [-0.61, 0.49, -0.62],
+      { action: 'unlockDoor', dir: [-0.61, 0.49, -0.63], roll: 0.05,
         label: 'a carved panel', color: 0xa078ff, shape: 'panel',
         hidden: () => state.dockDoorUnlocked },
-      { action: 'inspectDoorWave', dir: [-0.66, 0.25, -0.71],
+      { action: 'inspectDoorWave', dir: [-0.66, 0.245, -0.7], w: 1.35, h: 2.25,
         label: 'a carved panel', color: 0xa078ff, shape: 'panel',
         hidden: () => state.dockDoorUnlocked },
       // The door itself — locked = flavor inspect, unlocked = travel.
@@ -562,29 +573,73 @@ function buildHotspots(node) {
     const isHidden = typeof hs.hidden === 'function' ? hs.hidden() : !!hs.hidden;
     if (isHidden) continue;
     const dir = new THREE.Vector3(...hs.dir).normalize().multiplyScalar(20);
-    let geom;
-    if (hs.shape === 'book')        geom = makeBookFrame(0.5, 1.8, 0.08);
-    else if (hs.shape === 'open-book') geom = makeBookFrame(1.8, 0.5, 0.08);
-    else if (hs.shape === 'panel')  geom = makeBookFrame(0.95, 1.9, 0.1);
-    else if (hs.shape === 'button') geom = new THREE.CircleGeometry(0.5, 32);
-    else if (hs.shape === 'circle') geom = new THREE.RingGeometry(0.7, 0.8, 32);
-    else                             geom = new THREE.RingGeometry(1.2, 1.6, 32);
+    // Frame thickness bumped 0.08→0.12 / 0.1→0.14 so borders read clearly
+    // at typical viewing distance. Visible footprint also defines the
+    // hit-pad size below.
+    let geom, hitW = 0, hitH = 0;
+    if (hs.shape === 'book')           { geom = makeBookFrame(0.5, 1.8, 0.12); hitW = 0.7;  hitH = 2.0; }
+    else if (hs.shape === 'open-book') { geom = makeBookFrame(1.8, 0.5, 0.12); hitW = 2.0;  hitH = 0.7; }
+    else if (hs.shape === 'panel')     {
+      // Panel frames can override w/h per-hotspot for irregular carvings.
+      const pw = hs.w ?? 0.95;
+      const ph = hs.h ?? 1.9;
+      geom = makeBookFrame(pw, ph, 0.14);
+      hitW = pw + 0.2; hitH = ph + 0.2;
+    }
+    else if (hs.shape === 'button')    { geom = new THREE.CircleGeometry(0.5, 32); hitW = hitH = 1.2; }
+    else if (hs.shape === 'circle')    { geom = new THREE.RingGeometry(0.7, 0.85, 32); hitW = hitH = 1.9; }
+    else                                { geom = new THREE.RingGeometry(1.2, 1.6, 32); hitW = hitH = 3.4; }
+    const userData = {
+      target: hs.to,         // travel target (may be undefined)
+      action: hs.action,     // action key (may be undefined)
+      label: hs.label,
+      sfx: hs.sfx,           // optional one-shot SFX on click
+      sfxDelay: hs.sfxDelay, // optional ms delay before SFX fires
+      fadeMs: hs.fadeMs,     // optional fade-out duration override
+    };
     const mesh = new THREE.Mesh(
       geom,
       new THREE.MeshBasicMaterial({
-        color: hs.color ?? 0xffd27a, transparent: true, opacity: 0.55,
+        color: hs.color ?? 0xffd27a, transparent: true, opacity: 0.30,
         side: THREE.DoubleSide, depthWrite: false,
       })
     );
     mesh.position.copy(dir);
     mesh.lookAt(0, 0, 0);
-    mesh.userData.target = hs.to;       // travel target (may be undefined)
-    mesh.userData.action = hs.action;   // action key (may be undefined)
-    mesh.userData.label = hs.label;
-    mesh.userData.sfx = hs.sfx;         // optional one-shot SFX on click
-    mesh.userData.sfxDelay = hs.sfxDelay; // optional ms delay before SFX fires
-    mesh.userData.fadeMs = hs.fadeMs;   // optional fade-out duration override
+    // Optional roll: tilt the frame in its own plane to match perspective
+    // (e.g. panels on a curved/angled wall). Radians; positive = CCW.
+    if (hs.roll) mesh.rotateZ(hs.roll);
+    Object.assign(mesh.userData, userData);
     hotspotGroup.add(mesh);
+
+    // Hit pad — slightly larger transparent shape behind the visible
+    // mesh. Lets the player click anywhere within the symbol's footprint
+    // (including the hole of rings/frames). Rectangular shapes get a
+    // plane; round shapes get a disc so the affordance matches.
+    if (hitW > 0 && hitH > 0) {
+      const isRect = hs.shape === 'book' || hs.shape === 'open-book' || hs.shape === 'panel';
+      const hitGeom = isRect
+        ? new THREE.PlaneGeometry(hitW, hitH)
+        : new THREE.CircleGeometry(Math.max(hitW, hitH) / 2, 48);
+      const hitPad = new THREE.Mesh(
+        hitGeom,
+        new THREE.MeshBasicMaterial({
+          // Neutral tint in normal play so bright hotspot colors don't
+          // bleed into the hit pad. Dev mode uses the hotspot's color
+          // for an obvious placement audit.
+          color: devMode ? (hs.color ?? 0xffd27a) : 0xffffff,
+          transparent: true,
+          opacity: devMode ? 0.14 : 0.025,
+          depthWrite: false, side: THREE.DoubleSide,
+        })
+      );
+      hitPad.position.copy(dir);
+      hitPad.lookAt(0, 0, 0);
+      if (hs.roll) hitPad.rotateZ(hs.roll);
+      Object.assign(hitPad.userData, userData);
+      hitPad.userData.isHitPad = true;
+      hotspotGroup.add(hitPad);
+    }
   }
 }
 
@@ -688,6 +743,7 @@ const PLAYER_POLAR_MAX = controls.maxPolarAngle;
 function setDevMode(on) {
   devMode = on;
   devHud.classList.toggle('active', on);
+  document.body.classList.toggle('dev-mode', on);
   if (on) {
     // Unlock full pitch range so the designer can aim straight up/down.
     controls.minPolarAngle = Math.PI * 0.01;
@@ -701,6 +757,8 @@ function setDevMode(on) {
     controls.maxPolarAngle = PLAYER_POLAR_MAX;
     previewRingGroup.clear();
   }
+  // Rebuild hotspots so dev hit-pad visualizations appear/disappear.
+  if (currentNode && WORLD[currentNode]) buildHotspots(WORLD[currentNode]);
 }
 
 function captureHotspotHere() {
@@ -1271,6 +1329,9 @@ addEventListener('resize', () => {
   requestAnimationFrame(loop);
   const t = performance.now() * 0.002;
   hotspotGroup.children.forEach(r => {
+    // Hit pads keep the constant opacity assigned when they were built.
+    // Only the visible frame/ring meshes participate in the pulse.
+    if (r.userData.isHitPad) return;
     r.material.opacity = 0.4 + 0.2 * Math.sin(t + r.position.x);
   });
   controls.update();

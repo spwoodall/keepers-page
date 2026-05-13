@@ -10,7 +10,10 @@ body > canvas { filter: brightness(var(--brightness, 1)); }
   position: fixed; bottom: 12px; left: 12px; color: #ccc;
   font: 14px monospace; opacity: 0.7; user-select: none;
   text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+  display: none;
+  z-index: 5;
 }
+body.dev-mode #hud { display: block; }
 #label {
   position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
   color: #fff; font: 14px monospace; opacity: 0;
@@ -460,6 +463,7 @@ body.title-active #settings-panel .reread-link {
   background: rgba(0,0,0,0.7); padding: 10px 14px; border-radius: 4px;
   max-width: 720px; display: none; user-select: text;
   border: 1px solid #ffd27a55;
+  z-index: 5;
 }
 #devhud.active { display: block; }
 #devhud .hint { color: #888; font-size: 11px; margin-bottom: 4px; }
