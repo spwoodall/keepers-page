@@ -135,11 +135,15 @@ const state = {
   librarySlotInspected: false,
   libraryBookRead: false,
   observatoryMechanismActive: false,
-  gameCompleted: false,
+  shoreCompleted: false,
+  greenCompleted: false,
   dockDoorUnlocked: false,
   shoreLighthouseInspected: false,
   shoreMoonInspected: false,
   shoreShellInspected: false,
+  greenTreeInspected: false,
+  greenBasinInspected: false,
+  greenShellInspected: false,
 };
 
 // ---- Action handlers (run on click for non-travel hotspots) ---------
@@ -165,14 +169,17 @@ const ACTIONS = {
       spread, a single sentence:</p>
       <p><em>"The bookshelves yield their secrets only to those who read.
       A passage awaits the patient reader."</em></p>
-      <p>As you finish the line, you hear a faint click somewhere
+      <p>Beneath it, in different ink, a second hand has added:</p>
+      <p><em>"And beyond the passage — three pages, three Ages, and a
+      way that is not a page at all."</em></p>
+      <p>As you finish the lines, you hear a faint click somewhere
       in the room — the sound of wood shifting against wood.</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
   },
   touchLinkingBook: () => {
-    state.gameCompleted = true;
+    state.shoreCompleted = true;
     playSfx('linking-warp');
     // Transform the chamber — the linking-book reveal moment.
     refreshCurrentNode();
@@ -190,14 +197,117 @@ const ACTIONS = {
       travelTo('reversedShore', { fadeMs: 3000 });
     });
   },
+  touchGreenBook: () => {
+    state.greenCompleted = true;
+    playSfx('linking-warp');
+    refreshCurrentNode();
+    showOverlay(`
+      <h2>The Linking Book</h2>
+      <p>The page is alive. Within its borders, an image moves —
+      a clearing in a vast canopy forest, golden light through the
+      leaves, and the slow weight of trees older than memory.</p>
+      <p>You press your palm flat against the page. The chamber
+      dissolves around you.</p>
+      <p><em>You feel yourself fall toward the green country.</em></p>
+      <div class="close">click anywhere to depart</div>
+    `, () => {
+      travelTo('greenCountry', { fadeMs: 3000 });
+    });
+  },
+  inspectGreenTree: () => {
+    state.greenTreeInspected = true;
+    playSfx('interact-tap');
+    showOverlay(`
+      <h2>The Ancient Trees</h2>
+      <p>Their trunks rise like the columns of a hall without ceiling —
+      taller than any mountain you have known, their roots curling above
+      the earth like the fingers of sleepers. The bark is patient and warm.</p>
+      <p>Standing before them, you understand that these trees were here
+      before the Keepers, and will be here when whoever follows you has gone.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectGreenBasin: () => {
+    state.greenBasinInspected = true;
+    playSfx('water-drop');
+    showOverlay(`
+      <h2>The Root-Basin</h2>
+      <p>The roots have woven themselves into a great circular cradle,
+      and the cradle holds a pool of still water. The water reflects
+      nothing above you — no leaves, no gold sky, only an overcast
+      twilight you cannot see.</p>
+      <p>You look up. Then back down. The reflection does not change.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectGreenShell: () => {
+    state.greenShellInspected = true;
+    playSfx('shell-fade');
+    showOverlay(`
+      <h2>A Small Shell</h2>
+      <p>Resting on the curl of a root, deep purple and warm to the
+      touch — a shell that should not be here. You have held one like
+      it before, on a shore beneath twin moons.</p>
+      <p>Someone has carried it across the worlds. You wonder which
+      way they were going.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectSealedBook: () => {
+    playSfx('key-lock-insert');
+    showOverlay(`
+      <h2>The Sealed Book</h2>
+      <p>A book bound in deep red leather, its cover pressed with a
+      coiling spiral in tarnished brass, winding inward to a single
+      pearl — the Keepers' own mark. The clasp is shut and warm, and
+      will not yield to your touch.</p>
+      <p><em>Not yet, perhaps. Not yet.</em></p>
+      <div class="close">click to close</div>
+    `);
+  },
+  inspectOpenBook: () => {
+    playSfx('book-open');
+    showOverlay(`
+      <h2>The Open Book</h2>
+      <p>A working notebook, dense with diagrams of constellations and
+      brass mechanisms — the careful hand of someone trying to understand
+      a thing too large for paper.</p>
+      <p>Scrawled in the margin, in a different ink and a hurried hand:</p>
+      <p><em>"Rachel — feed the animals. Tell Silas the constellations
+      move differently here. I will not be long."</em></p>
+      <div class="close">click to close</div>
+    `);
+  },
+  stepIntoRoots: () => {
+    playSfx('footsteps-in-grass');
+    showOverlay(`
+      <h2>Between the Roots</h2>
+      <p>You step into the gap. The bark you touched before is now
+      around you on every side — older than the Keepers, older,
+      perhaps, than whatever followed them.</p>
+      <p>The moss closes behind you. The forest does not protest.</p>
+      <p>The green country holds you the way a cup holds rain — gently,
+      briefly, without weight.</p>
+      <p><em>The Age accepts you.</em></p>
+      <div class="close">click to depart</div>
+    `, () => {
+      triggerEndscreen(
+        'The forest closes around you in green that does not end.<br>' +
+        'Wherever the next Age lies, you carry with you the warmth of this one.'
+      );
+    });
+  },
   inspectShoreLighthouse: () => {
     state.shoreLighthouseInspected = true;
     playSfx('lighthouse');
     showOverlay(`
       <h2>The Lighthouse</h2>
-      <p>It leans away from the sea, not toward it. Its beam
-      burns steady, but it points <em>down</em> — into the dark
-      water — not outward, not warning anyone away.</p>
+      <p>The tower is pitch-black, blacker than the water it watches.
+      Its beam burns steady, but it points <em>down</em> — into the
+      dark — not outward, not warning anyone away.</p>
       <p>You wonder what it expects to find in the depths.</p>
       <div class="close">click to close</div>
     `);
@@ -238,14 +348,18 @@ const ACTIONS = {
       <p>You step into the water. It does not retreat from you;
       it does not push you back. It pulls you in — gently,
       steadily — as if you were always meant to belong to it.</p>
-      <p>The shore recedes. The moons recede. Somewhere, a third
-      page is turning.</p>
+      <p>Ahead, the monolith waits beneath the sister moon — black
+      against her pale light. The water carries you toward it,
+      though your feet do not move.</p>
+      <p>The shore recedes. The smaller moon recedes. Somewhere,
+      a third page is turning.</p>
       <p><em>The Age accepts you.</em></p>
       <div class="close">click to depart</div>
     `, () => {
-      endscreenEl.classList.add('active');
-      fadeAudio(0, 4000);
-      if (nodeAmbientAudio) fadeAudioElement(nodeAmbientAudio, 0, 4000);
+      triggerEndscreen(
+        'The shore dissolves around you into water that does not end.<br>' +
+        'Wherever the next Age lies, you carry with you the silence of this one.'
+      );
     });
   },
   // ---- Dock door symbol puzzle ----
@@ -276,7 +390,7 @@ const ACTIONS = {
     showOverlay(`
       <h2>The Keepers' Spiral</h2>
       <p>A single coiling line, spiraling inward to a small
-      inset gem. The mark of the Keepers.</p>
+      inset pearl. The mark of the Keepers.</p>
       <p>You press your palm flat against it. The brass is
       warm. Something deep inside the door turns over with
       a quiet, weighty click.</p>
@@ -420,6 +534,7 @@ const WORLD = {
       // Hidden until the book is read.
       { to: 'ascension', dir: [-1, -0.04, 0.06], label: 'a hidden passage in the bookshelves',
         color: 0xa078ff,
+        sfx: 'leaving-walk', fadeMs: 4000,
         hidden: () => !state.libraryBookRead },
     ],
   },
@@ -429,18 +544,36 @@ const WORLD = {
     // Per-node ambient — high-altitude wind, the chamber sits in the sky.
     ambient: 'audio/sfx/ascension-ambient.mp3',
     hotspots: () => [
-      // The linking book — the climactic ending interaction.
-      // Photoshop a glowing red leather book onto the panorama, then
-      // dev-capture its position. Placeholder dir for now.
+      // The shore's linking book — blue leather, wave sigil.
       { action: 'touchLinkingBook',
-        dir: [0.11, -0.6, -0.79],
+        dir: [0.07, -0.32, -0.94],
         label: 'a glowing book — touch the page',
+        color: 0x5a9aff,
+        hidden: () => state.shoreCompleted || state.greenCompleted },
+      // The green country's linking book — green leather, tree sigil.
+      { action: 'touchGreenBook',
+        dir: [-0.14, -0.32, -0.94],
+        label: 'a glowing book — touch the page',
+        color: 0x9aff7a,
+        hidden: () => state.shoreCompleted || state.greenCompleted },
+      // The Keepers' sealed book — red leather, spiral sigil.
+      // Inspect-only in v0.4.0; becomes the cottage Age portal in v0.5.0+.
+      { action: 'inspectSealedBook',
+        dir: [0.26, -0.34, -0.9],
+        label: 'a sealed book — clasped shut',
         color: 0xff5a4a,
-        hidden: () => state.gameCompleted },
+        hidden: () => state.shoreCompleted || state.greenCompleted },
+      // The Keepers' open notebook — lore + dedication easter egg.
+      { action: 'inspectOpenBook',
+        dir: [0.1, -0.63, -0.77],
+        label: 'an open notebook, mid-thought',
+        color: 0xffaa44,
+        hidden: () => state.shoreCompleted || state.greenCompleted },
       // Return to the library — escape valve so the player can leave
-      // without committing to the ending.
-      { to: 'library', dir: [-0.44, -0.36, 0.82], label: 'return to the library',
-        hidden: () => state.gameCompleted },
+      // without committing to an ending.
+      { to: 'library', dir: [-0.85, -0.45, 0.25], label: 'return to the library',
+        sfx: 'leaving-walk', fadeMs: 4000,
+        hidden: () => state.shoreCompleted || state.greenCompleted },
     ],
   },
   reversedShore: {
@@ -452,11 +585,11 @@ const WORLD = {
     // lighthouse on arrival, whichever feels right.
     startDir: [0.35, 0.06, -0.94],
     hotspots: () => [
-      { action: 'inspectShoreLighthouse', dir: [0.96, 0.08, -0.28],
-        label: 'the leaning lighthouse',
+      { action: 'inspectShoreLighthouse', dir: [0.99, 0.04, -0.15],
+        label: 'the black lighthouse',
         color: 0xffc26a, shape: 'book',
         hidden: () => state.shoreLighthouseInspected },
-      { action: 'inspectShoreMoon', dir: [-0.86, 0.25, 0.45],
+      { action: 'inspectShoreMoon', dir: [-0.6, 0.26, -0.76],
         label: 'the smaller moon',
         color: 0xc0d0ff, shape: 'circle',
         hidden: () => state.shoreMoonInspected },
@@ -465,12 +598,46 @@ const WORLD = {
         color: 0xc8a0ff, shape: 'circle',
         hidden: () => state.shoreShellInspected },
       // Final exit — only appears once all three have been seen.
-      { action: 'finalDeparture', dir: [-0.86, -0.46, 0.21],
+      { action: 'finalDeparture', dir: [-0.94, -0.16, 0.28],
         label: 'walk into the tide',
         color: 0x7affd2,
         hidden: () => !(state.shoreLighthouseInspected
                         && state.shoreMoonInspected
                         && state.shoreShellInspected) },
+    ],
+  },
+  greenCountry: {
+    name: 'The Green Country',
+    pano: () => loadPano('panos/green-country.jpg'),
+    // Per-node ambient — woodland: distant birds, leaf-rustle, deep stillness.
+    ambient: 'audio/sfx/green-ambient.mp3',
+    // Placeholder startDir — re-capture in dev mode for the ideal arrival framing.
+    startDir: [0.5, -0.05, 0.86],
+    hotspots: () => [
+      // The ancient trees — dev-captured aimed at the trunks
+      // (distinct from the gap between roots, which is the terminal target).
+      // Panel shape with custom w/h to fit the trees' massive scale.
+      { action: 'inspectGreenTree', dir: [-0.85, 0.26, -0.46], w: 2.5, h: 5.5,
+        label: 'ancient trees, taller than mountains',
+        color: 0x9aff7a, shape: 'panel',
+        hidden: () => state.greenTreeInspected },
+      // The root-woven basin holding a pool that reflects a wrong sky.
+      { action: 'inspectGreenBasin', dir: [0.43, -0.64, 0.64],
+        label: 'a basin of roots holding still water',
+        color: 0xc0d0ff, shape: 'circle',
+        hidden: () => state.greenBasinInspected },
+      // A small purple shell resting on a root — cross-Age callback.
+      { action: 'inspectGreenShell', dir: [0.62, -0.76, -0.18],
+        label: 'a small purple shell on the root',
+        color: 0xc8a0ff, shape: 'circle',
+        hidden: () => state.greenShellInspected },
+      // Terminal exit — only appears once all three have been seen.
+      { action: 'stepIntoRoots', dir: [0.31, 0.08, -0.95],
+        label: 'step between the great roots',
+        color: 0x7affd2,
+        hidden: () => !(state.greenTreeInspected
+                        && state.greenBasinInspected
+                        && state.greenShellInspected) },
     ],
   },
   observatory: {
@@ -688,6 +855,15 @@ const overlayPanel = document.getElementById('overlay-panel');
 const endscreenEl = document.getElementById('endscreen');
 let overlayCloseCallback = null;
 
+// Set the per-Age epilogue line and fire the endscreen + audio fade.
+function triggerEndscreen(epilogueHtml) {
+  const ep = endscreenEl.querySelector('.epilogue');
+  if (ep) ep.innerHTML = epilogueHtml;
+  endscreenEl.classList.add('active');
+  fadeAudio(0, 4000);
+  if (nodeAmbientAudio) fadeAudioElement(nodeAmbientAudio, 0, 4000);
+}
+
 function showOverlay(html, onClose) {
   overlayPanel.innerHTML = html;
   overlayEl.classList.add('active');
@@ -813,11 +989,11 @@ const audioPrefs = {
   sfxMuted:   localStorage.getItem('mystMuteSfx')   === '1',
 };
 
-// ---- Music: title track + shuffled gameplay playlist ----------------
+// ---- Music: title track + gameplay playlist ------------------------
 // Browsers block autoplay until a user gesture. The first click on the
 // title card authorizes audio: title music plays through the captain's
-// log, then crossfades into a shuffled gameplay playlist that rotates
-// when each track ends.
+// log, then crossfades into the gameplay playlist which advances in
+// the listed order, wrapping at the end.
 const ambientAudio = document.getElementById('ambient');
 const titleMusicAudio = document.getElementById('title-music');
 ambientAudio.volume = 0;
@@ -836,17 +1012,10 @@ const GAMEPLAY_PLAYLIST = [
     label: 'Flowing River' },
 ];
 let currentTrackIndex = -1;
-const trackHistory = [];
 
 function pickNextGameplayTrack() {
-  if (GAMEPLAY_PLAYLIST.length === 1) {
-    currentTrackIndex = 0;
-    return GAMEPLAY_PLAYLIST[0];
-  }
-  let next;
-  do {
-    next = Math.floor(Math.random() * GAMEPLAY_PLAYLIST.length);
-  } while (next === currentTrackIndex);
+  const len = GAMEPLAY_PLAYLIST.length;
+  const next = currentTrackIndex < 0 ? 0 : (currentTrackIndex + 1) % len;
   currentTrackIndex = next;
   return GAMEPLAY_PLAYLIST[next];
 }
@@ -888,8 +1057,8 @@ const DEFAULT_GAMEPLAY_TRACK = 'Landscapes';
 function startGameplayMusic() {
   if (gameplayMusicStarted) return;
   gameplayMusicStarted = true;
-  // Fade title music out, then default the gameplay playlist to the
-  // chosen opener (random shuffle takes over once the player skips).
+  // Fade title music out, then start the gameplay playlist on its
+  // chosen opener. From there, tracks advance in listed order.
   fadeAudioElement(titleMusicAudio, 0, 2000);
   setTimeout(() => titleMusicAudio.pause(), 2100);
   let idx = GAMEPLAY_PLAYLIST.findIndex(t => t.label === DEFAULT_GAMEPLAY_TRACK);
@@ -903,9 +1072,8 @@ function startGameplayMusic() {
     .catch(err => console.warn('[ambient] play failed', err));
   updateTrackLabel();
 }
-// When a gameplay track ends, immediately start the next random one.
+// When a gameplay track ends, advance to the next one in order.
 ambientAudio.addEventListener('ended', () => {
-  if (currentTrackIndex >= 0) trackHistory.push(currentTrackIndex);
   const track = pickNextGameplayTrack();
   ambientAudio.src = track.url;
   ambientAudio.play().catch(err => console.warn('[ambient] next', err));
@@ -928,9 +1096,8 @@ function skipNext() {
     startGameplayMusic();
     return;
   }
-  trackHistory.push(currentTrackIndex);
-  const track = pickNextGameplayTrack();
-  playSpecificTrack(GAMEPLAY_PLAYLIST.indexOf(track));
+  const len = GAMEPLAY_PLAYLIST.length;
+  playSpecificTrack((currentTrackIndex + 1) % len);
 }
 function skipPrev() {
   if (titleScreenActive) return;
@@ -938,9 +1105,8 @@ function skipPrev() {
     startGameplayMusic();
     return;
   }
-  if (trackHistory.length === 0) return;
-  const idx = trackHistory.pop();
-  playSpecificTrack(idx);
+  const len = GAMEPLAY_PLAYLIST.length;
+  playSpecificTrack((currentTrackIndex - 1 + len) % len);
 }
 
 // ---- Per-node ambient layer -----------------------------------------
@@ -1188,6 +1354,49 @@ resetBtn.addEventListener('click', (e) => {
   resetTimer = setTimeout(disarmReset, 4000);
 });
 
+// ---- Changelog (Settings button + title-screen version tag) ---------
+const CHANGELOG_HTML = `
+  <h2>Changelog</h2>
+  <h3>v0.4.0 &mdash; 2026-05-14</h3>
+  <p class="change-label">New</p>
+  <ul class="changelog">
+    <li>The Green Country &mdash; a second Age opens beneath the canopy</li>
+    <li>Two more linking books at the ascension pedestal</li>
+    <li>An open notebook rests where the Keepers left it</li>
+  </ul>
+  <p class="change-label">Enhanced</p>
+  <ul class="changelog">
+    <li>The reversed shore &mdash; clearer skies, a sister moon</li>
+    <li>The ascension chamber &mdash; three pages, three paths</li>
+    <li>The dock door &mdash; the tree panel in greater detail</li>
+    <li>Music now cycles in order rather than at random</li>
+  </ul>
+  <p class="change-label">Fixed</p>
+  <ul class="changelog">
+    <li>Hover labels and location names no longer hide behind the sky</li>
+  </ul>
+  <hr class="rule">
+  <h3>v0.3.0 &mdash; 2026-05-11</h3>
+  <p class="change-label">New</p>
+  <ul class="changelog">
+    <li>A settings panel with brightness and sensitivity</li>
+    <li>Larger, clearer interaction zones</li>
+  </ul>
+  <div class="close">click to close</div>
+`;
+function showChangelog() {
+  showOverlay(CHANGELOG_HTML);
+}
+document.getElementById('show-changelog').addEventListener('click', (e) => {
+  e.stopPropagation();
+  closeAllPanels();
+  showChangelog();
+});
+document.getElementById('version-tag').addEventListener('click', (e) => {
+  e.stopPropagation();
+  showChangelog();
+});
+
 document.getElementById('howto-btn').addEventListener('click', (e) => {
   e.stopPropagation();
   openSettings('howto');
@@ -1201,7 +1410,7 @@ volMusic.addEventListener('input', () => {
   audioPrefs.music = parseFloat(volMusic.value);
   localStorage.setItem('mystVolMusic', audioPrefs.music);
   if (audioStarted) {
-    if (!state.gameCompleted) ambientAudio.volume = audioPrefs.music;
+    if (!(state.shoreCompleted || state.greenCompleted)) ambientAudio.volume = audioPrefs.music;
     titleMusicAudio.volume = audioPrefs.music;
   }
 });

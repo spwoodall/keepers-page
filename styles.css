@@ -20,24 +20,41 @@ body.dev-mode #hud { display: block; }
   transition: opacity 200ms; pointer-events: none;
   text-shadow: 0 1px 4px rgba(0,0,0,0.9);
   letter-spacing: 2px; text-transform: uppercase;
+  z-index: 5;
 }
 #label.active { opacity: 0.85; }
 #node-name {
-  position: fixed; top: 18px; right: 56px; color: #ccc;
-  font: 11px monospace; opacity: 0.5; user-select: none;
+  position: fixed; top: 14px; right: 64px; height: 38px;
+  display: flex; align-items: center;
+  padding: 0 14px;
+  background: rgba(26,14,8,0.55);
+  border: 1px solid rgba(255,210,122,0.18);
+  border-radius: 4px;
+  color: #ffe8b8; opacity: 0.9; user-select: none;
+  font: italic 15px Georgia, serif; letter-spacing: 2px;
+  text-shadow:
+    0 1px 2px rgba(0,0,0,0.95),
+    0 0 10px rgba(0,0,0,0.75);
+  z-index: 5;
 }
 #overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.85);
   display: none; align-items: center; justify-content: center;
-  z-index: 10; opacity: 0; transition: opacity 300ms;
+  z-index: 33; opacity: 0; transition: opacity 300ms;
 }
 #overlay.active { display: flex; opacity: 1; }
 #overlay .panel {
-  max-width: 540px; padding: 32px 40px;
+  max-width: 540px; max-height: 80vh;
+  padding: 32px 40px;
+  overflow-y: auto;
   background: linear-gradient(135deg, #2a1a0e, #1a0e08);
   border: 1px solid #ffd27a55; border-radius: 6px;
   color: #ffd27a; font: 16px/1.6 Georgia, serif;
   box-shadow: 0 0 60px rgba(255,210,122,0.15);
+}
+#overlay h3 {
+  margin: 0 0 10px; font: bold 13px monospace; color: #ffd27a;
+  letter-spacing: 2px; text-transform: uppercase;
 }
 #overlay h2 { margin: 0 0 12px; font: italic 22px Georgia, serif; color: #ffe8b8; }
 #overlay em { color: #ffe8b8; }
@@ -339,6 +356,24 @@ body.title-active #settings-panel .reread-link {
   background: rgba(255,210,122,0.12); border: 1px solid #ffd27a55;
   border-radius: 3px; color: #ffd27a; font-size: 11px;
 }
+.change-label {
+  margin: 14px 0 6px; font: bold 11px monospace; color: #bda077;
+  letter-spacing: 2px; text-transform: uppercase;
+}
+ul.changelog {
+  margin: 0 0 14px; padding-left: 0;
+  list-style: none;
+}
+ul.changelog li {
+  position: relative; padding-left: 16px;
+  margin-bottom: 6px;
+  font-size: 14px; line-height: 1.5;
+}
+ul.changelog li::before {
+  content: '·';
+  position: absolute; left: 0; top: 0;
+  color: #ffd27a; font-weight: bold;
+}
 #settings-panel .howto-diagram {
   display: block;
   width: 100%;
@@ -475,7 +510,11 @@ body.title-active #settings-panel .reread-link {
   letter-spacing: 2px; text-transform: uppercase;
   z-index: 31;
   display: none;
-  pointer-events: none;
+  cursor: pointer;
   user-select: none;
+  transition: color 200ms;
 }
+#version-tag:hover { color: #bda077; }
 body.title-active #version-tag { display: block; }
+/* Hide the version tag while the preload card is still capturing clicks. */
+body.title-active #preload-card:not(.gone) ~ #version-tag { display: none; }
