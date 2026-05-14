@@ -320,7 +320,7 @@ const ACTIONS = {
       <h2>The Smaller Moon</h2>
       <p>It hangs low above the horizon, paler than its larger
       twin. Its craters are arranged in a pattern you almost
-      recognise — like a face turned just slightly away.</p>
+      recognize — like a face turned just slightly away.</p>
       <p>When you look at it directly, it seems to wane.
       When you look away, it seems to grow.</p>
       <div class="close">click to close</div>
@@ -417,7 +417,7 @@ const ACTIONS = {
     // + slab grind follow once the mechanism has built momentum.
     playSfx('mechanism-whir');
     setTimeout(() => {
-      playSfx('brass-click');
+      playSfx('mechanical-gadget');
       playSfx('heavy-door-open');
     }, 800);
     showOverlay(`
@@ -430,6 +430,12 @@ const ACTIONS = {
       <p><em>A way down has revealed itself.</em></p>
       <div class="close">click to close</div>
     `);
+    // Hum layers in now that the mechanism is alive — keep it loop'd while
+    // the player lingers, and re-trigger automatically on return visits.
+    {
+      const { path, mix } = resolveAmbient(WORLD.observatory);
+      setNodeAmbient(path, mix);
+    }
     refreshCurrentNode();
   },
   interactSlot: () => {
@@ -581,9 +587,7 @@ const WORLD = {
     pano: () => loadPano('panos/reversed-shore.jpg'),
     // Per-node ambient — the Reversed Shore's signature soundscape.
     ambient: 'audio/sfx/shore-ambient.mp3',
-    // Placeholder framing — dev-capture to land on the big moon or the
-    // lighthouse on arrival, whichever feels right.
-    startDir: [0.35, 0.06, -0.94],
+    startDir: [0.39, 0.15, -0.91],
     hotspots: () => [
       { action: 'inspectShoreLighthouse', dir: [0.99, 0.04, -0.15],
         label: 'the black lighthouse',
@@ -611,13 +615,12 @@ const WORLD = {
     pano: () => loadPano('panos/green-country.jpg'),
     // Per-node ambient — woodland: distant birds, leaf-rustle, deep stillness.
     ambient: 'audio/sfx/green-ambient.mp3',
-    // Placeholder startDir — re-capture in dev mode for the ideal arrival framing.
-    startDir: [0.5, -0.05, 0.86],
+    startDir: [-0.58, 0.37, 0.72],
     hotspots: () => [
-      // The ancient trees — dev-captured aimed at the trunks
-      // (distinct from the gap between roots, which is the terminal target).
-      // Panel shape with custom w/h to fit the trees' massive scale.
-      { action: 'inspectGreenTree', dir: [-0.85, 0.26, -0.46], w: 2.5, h: 5.5,
+      // The ancient trees — aimed up the trunks (distinct from the gap
+      // between roots, which is the terminal target). Panel shape with
+      // custom w/h to fit the trees' massive scale.
+      { action: 'inspectGreenTree', dir: [-0.51, 0.82, -0.27], w: 2.5, h: 5.5,
         label: 'ancient trees, taller than mountains',
         color: 0x9aff7a, shape: 'panel',
         hidden: () => state.greenTreeInspected },
@@ -646,6 +649,13 @@ const WORLD = {
     pano: () => loadPano(state.observatoryMechanismActive
       ? 'panos/observatory-activated.jpg'
       : 'panos/observatory-updated.jpg'),
+    // Mechanism's gears loop once activated, including on return visits.
+    ambient: () => state.observatoryMechanismActive
+      ? 'audio/sfx/gears.mp3'
+      : null,
+    // gears.mp3 is mastered quietly — push it well above the default 0.6
+    // environmental mix so the mechanism feels present in the room.
+    ambientMix: 1.5,
     // Open framing — sea of clouds and constellations. Mechanism is
     // discovered by turning, not handed to the player on arrival.
     startDir: [0.88, 0.17, 0.44],
@@ -653,7 +663,6 @@ const WORLD = {
       { to: 'dock', dir: [0.41, -0.91, -0.07], label: 'back to the dock',
         sfx: 'door-open', fadeMs: 3600 },
       // Brass mechanism — clue + puzzle gate. Hidden once activated.
-      // Placeholder direction; dev-capture and update.
       { action: 'activateMechanism', dir: [-1, 0.03, -0.04],
         label: 'the brass mechanism',
         color: 0xffaa44, shape: 'button',
@@ -891,7 +900,10 @@ async function travelTo(key, opts = {}) {
   nodeNameEl.textContent = node.name;
   currentNode = key;
   // Crossfade the per-node ambient layer (if any).
-  if (audioStarted) setNodeAmbient(node.ambient);
+  if (audioStarted) {
+    const { path, mix } = resolveAmbient(node);
+    setNodeAmbient(path, mix);
+  }
   // Optional: orient the camera to a node-defined opening framing.
   // For a panorama viewer the camera lives at origin and orbits around
   // the sphere center. To look in `dir`, we keep the target at origin
@@ -1115,6 +1127,7 @@ function skipPrev() {
 const NODE_AMBIENT_MIX = 0.6;
 let nodeAmbientAudio = null;
 let currentAmbientPath = null;
+let currentAmbientMix = NODE_AMBIENT_MIX;
 
 function fadeAudioElement(el, target, duration = 1500) {
   const start = el.volume;
@@ -1127,9 +1140,18 @@ function fadeAudioElement(el, target, duration = 1500) {
   requestAnimationFrame(step);
 }
 
-function setNodeAmbient(path) {
-  if (path === currentAmbientPath) return;
+function resolveAmbient(node) {
+  const path = typeof node?.ambient === 'function' ? node.ambient() : node?.ambient;
+  return { path, mix: node?.ambientMix ?? NODE_AMBIENT_MIX };
+}
+
+function setNodeAmbient(path, mix = NODE_AMBIENT_MIX) {
+  if (path === currentAmbientPath) {
+    currentAmbientMix = mix;
+    return;
+  }
   currentAmbientPath = path;
+  currentAmbientMix = mix;
   if (nodeAmbientAudio) {
     const old = nodeAmbientAudio;
     nodeAmbientAudio = null;
@@ -1143,7 +1165,7 @@ function setNodeAmbient(path) {
   // Environmental ambience belongs to the SFX channel, not music.
   audio.muted = audioPrefs.sfxMuted;
   audio.play()
-    .then(() => fadeAudioElement(audio, NODE_AMBIENT_MIX * audioPrefs.sfx, 1500))
+    .then(() => fadeAudioElement(audio, mix * audioPrefs.sfx, 1500))
     .catch(err => console.warn('[node-ambient] play blocked', err));
   nodeAmbientAudio = audio;
 }
@@ -1157,7 +1179,7 @@ const sfxCache = new Map();
 const PRELOAD_SFX = [
   'ui-tick', 'book-pages',
   'door-open', 'heavy-door-open',
-  'passage-open', 'interact-tap', 'brass-click',
+  'passage-open', 'interact-tap', 'brass-click', 'mechanical-gadget',
   'climbing-stairs', 'sigil-warp', 'linking-warp',
   'mechanism-whir', 'tide-take', 'lighthouse', 'mystical-chime',
   'shell-fade',
@@ -1355,37 +1377,64 @@ resetBtn.addEventListener('click', (e) => {
 });
 
 // ---- Changelog (Settings button + title-screen version tag) ---------
-const CHANGELOG_HTML = `
-  <h2>Changelog</h2>
-  <h3>v0.4.0 &mdash; 2026-05-14</h3>
-  <p class="change-label">New</p>
-  <ul class="changelog">
-    <li>The Green Country &mdash; a second Age opens beneath the canopy</li>
-    <li>Two more linking books at the ascension pedestal</li>
-    <li>An open notebook rests where the Keepers left it</li>
-  </ul>
-  <p class="change-label">Enhanced</p>
-  <ul class="changelog">
-    <li>The reversed shore &mdash; clearer skies, a sister moon</li>
-    <li>The ascension chamber &mdash; three pages, three paths</li>
-    <li>The dock door &mdash; the tree panel in greater detail</li>
-    <li>Music now cycles in order rather than at random</li>
-  </ul>
-  <p class="change-label">Fixed</p>
-  <ul class="changelog">
-    <li>Hover labels and location names no longer hide behind the sky</li>
-  </ul>
-  <hr class="rule">
-  <h3>v0.3.0 &mdash; 2026-05-11</h3>
-  <p class="change-label">New</p>
-  <ul class="changelog">
-    <li>A settings panel with brightness and sensitivity</li>
-    <li>Larger, clearer interaction zones</li>
-  </ul>
-  <div class="close">click to close</div>
-`;
-function showChangelog() {
-  showOverlay(CHANGELOG_HTML);
+// Source of truth lives in CHANGELOG.md. Top-level `# Heading` becomes h2;
+// each `## Version — date` becomes a release h3. A standalone `**Label**`
+// line becomes the `change-label` paragraph that styles the New/Enhanced/
+// Fixed groupings; `- item` lines collapse into a `<ul class="changelog">`;
+// `---` becomes the divider rule between releases.
+function changelogMdToHtml(md) {
+  const out = [];
+  let inList = false;
+  const closeList = () => {
+    if (inList) { out.push('</ul>'); inList = false; }
+  };
+  for (const raw of md.replace(/\r\n/g, '\n').split('\n')) {
+    const line = raw.trim();
+    if (!line) { closeList(); continue; }
+    if (line === '---') { closeList(); out.push('<hr class="rule">'); continue; }
+    let m;
+    if ((m = line.match(/^#\s+(.+)$/))) {
+      closeList(); out.push(`<h2>${m[1]}</h2>`); continue;
+    }
+    if ((m = line.match(/^##\s+(.+)$/))) {
+      closeList(); out.push(`<h3>${m[1]}</h3>`); continue;
+    }
+    if ((m = line.match(/^-\s+(.+)$/))) {
+      if (!inList) { out.push('<ul class="changelog">'); inList = true; }
+      out.push(`<li>${m[1]}</li>`);
+      continue;
+    }
+    if ((m = line.match(/^\*\*([^*]+)\*\*$/))) {
+      closeList(); out.push(`<p class="change-label">${m[1]}</p>`); continue;
+    }
+    closeList();
+    out.push(`<p>${line}</p>`);
+  }
+  closeList();
+  return out.join('\n');
+}
+
+let changelogHtmlPromise = null;
+function getChangelogHtml() {
+  if (!changelogHtmlPromise) {
+    changelogHtmlPromise = fetch('CHANGELOG.md')
+      .then(r => r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`)))
+      .then(md => changelogMdToHtml(md) + '\n<div class="close">click to close</div>')
+      .catch(err => {
+        // Clear the promise so a later open re-attempts the fetch.
+        changelogHtmlPromise = null;
+        console.warn('[changelog] load failed', err);
+        return '<h2>Changelog</h2><p>Could not load changelog.</p>'
+             + '<div class="close">click to close</div>';
+      });
+  }
+  return changelogHtmlPromise;
+}
+// Warm the cache so the first open feels instant.
+getChangelogHtml();
+
+async function showChangelog() {
+  showOverlay(await getChangelogHtml());
 }
 document.getElementById('show-changelog').addEventListener('click', (e) => {
   e.stopPropagation();
@@ -1418,7 +1467,7 @@ volSfx.addEventListener('input', () => {
   audioPrefs.sfx = parseFloat(volSfx.value);
   localStorage.setItem('mystVolSfx', audioPrefs.sfx);
   // Node ambient (environmental) lives on the SFX channel.
-  if (nodeAmbientAudio) nodeAmbientAudio.volume = audioPrefs.sfx * NODE_AMBIENT_MIX;
+  if (nodeAmbientAudio) nodeAmbientAudio.volume = audioPrefs.sfx * currentAmbientMix;
   playSfx('ui-tick');
 });
 muteMusicBtn.addEventListener('click', (e) => {
@@ -1511,8 +1560,9 @@ function beginExperience() {
     titleScreenActive = false;
     document.body.classList.remove('title-active');
     // World ambience (water/wind) layers in now that the title is gone.
-    if (currentNode && WORLD[currentNode].ambient) {
-      setNodeAmbient(WORLD[currentNode].ambient);
+    if (currentNode) {
+      const { path, mix } = resolveAmbient(WORLD[currentNode]);
+      if (path) setNodeAmbient(path, mix);
     }
     if (!shouldShowIntro) {
       // Returning player — skip straight to gameplay music.
