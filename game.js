@@ -1,16 +1,20 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-// ---- Version label (bottom-right on title screen) -------------------
-// Reads the VERSION file at repo root. Bump that file each release —
-// no rebuild needed, the title picks it up on next visit.
-fetch('VERSION')
+// ---- Version + asset cache-busting ---------------------------------
+// VERSION is read once at module load from the repo-root VERSION file
+// so it can never drift from what the rest of the project considers
+// "current". Top-level await is intentional — every asset URL flows
+// through assetUrl() and needs VERSION resolved before first load.
+// Bump the VERSION file on each release; the cache-bust is automatic.
+const VERSION = (await fetch('VERSION')
   .then((r) => (r.ok ? r.text() : ''))
-  .then((v) => {
-    const tag = document.getElementById('version-tag');
-    if (tag && v) tag.textContent = v.trim();
-  })
-  .catch(() => { /* version label is decorative; ignore */ });
+  .catch(() => '')).trim() || 'unknown';
+
+const assetUrl = (path) => `${path}?v=${VERSION}`;
+
+const versionTag = document.getElementById('version-tag');
+if (versionTag) versionTag.textContent = VERSION;
 
 // ---- Procedural panorama generator ----------------------------------
 // Generates a 2048x1024 equirectangular image so we don't need real assets.
@@ -85,10 +89,9 @@ function makePano({ skyTop, skyBottom, ground, accent, stars = false, sun = null
 }
 
 // ---- Real panorama loader (Skybox AI exports, etc.) -----------------
-// Cache-bust query param. Use a fixed version for shipped builds so
-// browsers can actually cache panoramas across revisits. Bump when art
-// changes.
-const PANO_CACHE_BUST = '?v=1.0';
+// Pano URLs flow through assetUrl() — every VERSION bump invalidates
+// the browser cache automatically so updated art lands without manual
+// hard-refreshes.
 const textureLoader = new THREE.TextureLoader();
 const panoCache = new Map();
 // Patched to renderer.capabilities.getMaxAnisotropy() after the renderer
@@ -96,7 +99,7 @@ const panoCache = new Map();
 let maxAnisotropy = 1;
 function loadPano(url) {
   if (!panoCache.has(url)) {
-    const tex = textureLoader.load(url + PANO_CACHE_BUST);
+    const tex = textureLoader.load(assetUrl(url));
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = maxAnisotropy;
     panoCache.set(url, tex);
@@ -144,10 +147,19 @@ const state = {
   greenTreeInspected: false,
   greenBasinInspected: false,
   greenShellInspected: false,
+  cottageCompleted: false,
+  cottageJournalLeftRead: false,
+  cottageJournalRightRead: false,
+  cottageSpiralInspected: false,
+  cottageCompassInspected: false,
+  cottageShellInspected: false,
 };
 
 // ---- Action handlers (run on click for non-travel hotspots) ---------
 const ACTIONS = {
+  readCaptainsLog: () => {
+    showOverlay(CAPTAINS_LOG_HTML);
+  },
   readBook: () => {
     state.libraryBookRead = true;
     // Several pages turning — the player is reading through the book.
@@ -256,17 +268,23 @@ const ACTIONS = {
     `);
     refreshCurrentNode();
   },
-  inspectSealedBook: () => {
-    playSfx('key-lock-insert');
+  touchKeepersBook: () => {
+    state.cottageCompleted = true;
+    playSfx('linking-warp');
+    refreshCurrentNode();
     showOverlay(`
-      <h2>The Sealed Book</h2>
-      <p>A book bound in deep red leather, its cover pressed with a
-      coiling spiral in tarnished brass, winding inward to a single
-      pearl — the Keepers' own mark. The clasp is shut and warm, and
-      will not yield to your touch.</p>
-      <p><em>Not yet, perhaps. Not yet.</em></p>
-      <div class="close">click to close</div>
-    `);
+      <h2>The Keepers' Book</h2>
+      <p>The cover is deep red leather, worn warm with handling.
+      The page within is alive — a stone cottage on a cliff above
+      the sea, an empty chair pulled close to a cold hearth, sigils
+      carved into the walls.</p>
+      <p>You press your palm flat against the page. The chamber
+      dissolves around you.</p>
+      <p><em>You feel yourself fall toward the place that was theirs.</em></p>
+      <div class="close">click anywhere to depart</div>
+    `, () => {
+      travelTo('keepersCottage', { fadeMs: 3000 });
+    });
   },
   inspectOpenBook: () => {
     playSfx('book-open');
@@ -340,6 +358,95 @@ const ACTIONS = {
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
+  },
+  inspectCottageJournalLeft: () => {
+    state.cottageJournalLeftRead = true;
+    playSfx('book-open');
+    showOverlay(`
+      <h2>A Journal in a Careful Hand</h2>
+      <p>The page is pristine — kept so carefully it might be a textbook.
+      Every line measured, every margin even. They wrote about the work:
+      the brass, the books, the sigils that wanted careful drawing. They
+      wrote about the sea outside their window. They wrote about her.</p>
+      <p><em>They were not afraid when they wrote this.</em></p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectCottageJournalRight: () => {
+    state.cottageJournalRightRead = true;
+    playSfx('book-open');
+    showOverlay(`
+      <h2>A Journal in a Different Hand</h2>
+      <p>More sketch than text — pages crowded with drawings, half-
+      glimpses, fragments. Visions and memories. The shape of light at
+      dawn. Words appear only where the drawings cannot say it.</p>
+      <p><em>The last entry stops mid-thought.</em></p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectCottageShell: () => {
+    state.cottageShellInspected = true;
+    playSfx('shell-fade');
+    showOverlay(`
+      <h2>A Small Shell</h2>
+      <p>Tucked beneath the desk, half-hidden in the shadow — deep purple
+      and warm to the touch. You have held one like it before — on a shore
+      beneath twin moons, on a moss-covered root in a green country.</p>
+      <p>This one is the third. Or perhaps the first. They carried it
+      with them; or it followed them; or it was always here, and you
+      have been chasing its likeness across the worlds.</p>
+      <p><em>They did not stay. But they did not go alone.</em></p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectCottageSpiral: () => {
+    state.cottageSpiralInspected = true;
+    playSfx('interact-tap');
+    showOverlay(`
+      <h2>The Keepers' Spiral</h2>
+      <p>Carved into the stone, deep enough to last. The shape your
+      hand already remembers — from the dock door, from the cover
+      of a red book in the chamber above.</p>
+      <p>This was their mark, and this was their home.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectCottageCompass: () => {
+    state.cottageCompassInspected = true;
+    playSfx('interact-tap');
+    showOverlay(`
+      <h2>A Brass Compass</h2>
+      <p>Pocket-sized, brass-bezeled, cool in your palm. The needle
+      has been removed — or fell out, or was never there. The
+      cardinal points remain, and they no longer mean anything.</p>
+      <p>You remember the compass on the captain's table, the one
+      that stopped spinning the day you arrived. You wonder which
+      of them stopped first.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  ascendCottageLoft: () => {
+    playSfx('climbing-stairs');
+    showOverlay(`
+      <h2>The Loft Door</h2>
+      <p>The door at the top of the stairs has been waiting for you.
+      The handle is brass and familiar. You climb.</p>
+      <p>The hum of the wind beyond the stone fades, then sharpens,
+      then fades again — as if there is more than one wind on the
+      other side.</p>
+      <p><em>The Age accepts you.</em></p>
+      <div class="close">click to depart</div>
+    `, () => {
+      triggerEndscreen(
+        'The cottage falls quiet behind you, and the door closes itself.<br>' +
+        'Wherever the next Age lies, you carry with you the names you did not learn.'
+      );
+    });
   },
   finalDeparture: () => {
     playSfx('tide-take');
@@ -454,6 +561,20 @@ const ACTIONS = {
     `);
     if (firstTime) refreshCurrentNode();
   },
+  inspectSpentSigil: () => {
+    playSfx('metallic-thud');
+    showOverlay(`
+      <h2>A Brass Sigil-Plate</h2>
+      <p>A circle of brass, dulled with age. The pearl at its
+      center is long gone, its empty hollow filling slowly with
+      library dust.</p>
+      <p>You kneel and lay a hand on it. The metal is cold — not
+      the cold of dead stone, but the cold of something that was
+      warm once, and has remembered to be still.</p>
+      <p><em>Whoever made it is no longer here.</em></p>
+      <div class="close">click to close</div>
+    `);
+  },
 };
 
 // ---- Book-frame geometry (hollow rectangle outline) -----------------
@@ -480,13 +601,18 @@ function makeBookFrame(w = 0.5, h = 1.8, t = 0.08) {
 const WORLD = {
   dock: {
     name: 'The Dock',
-    pano: () => loadPano('panos/dock-updated.jpg'),
+    pano: () => loadPano('panos/dock.jpg'),
     // Per-node ambient — water, gulls, wind. Loops while the player
     // is at the dock; crossfades out when they travel away.
     ambient: 'audio/sfx/dock-ambient.mp3',
     // Open framing — the player's first sight is the ship that brought them.
     startDir: [0.73, -0.15, 0.67],
     hotspots: () => [
+      // The ship — Captain Renn's vessel, waiting at anchor. Wide short panel
+      // to match the hull silhouette; opens the captain's log on click.
+      { action: 'readCaptainsLog', dir: [0.7, -0.25, 0.67], w: 5.0, h: 1.5,
+        label: "Captain Renn's ship", color: 0xffaa44, shape: 'panel',
+        sfx: 'key-lock-insert' },
       // Three door panels — only the spiral is the Keepers' mark.
       // Book-frame outlines match the tall narrow panel shapes.
       { action: 'inspectDoorTree', dir: [-0.83, 0.5, -0.29], w: 1.1, h: 2.1, roll: -0.08,
@@ -514,15 +640,18 @@ const WORLD = {
     // physically reflects the discovery. updated = pre-read, activated = post-read.
     pano: () => loadPano(state.libraryBookRead
       ? 'panos/library-activated.jpg'
-      : 'panos/library-updated.jpg'),
+      : 'panos/library.jpg'),
     // Open framing — the spiral staircase + lectern in view, with the
     // empty bookshelf catching the eye in peripheral vision.
     startDir: [0.1, -0.04, -0.99],
     hotspots: () => [
-      // Sigil teleports the player back to the dock — fast travel shortcut.
-      { to: 'dock', dir: [-0.47, -0.66, 0.58], label: 'step onto the sigil',
-        color: 0x7affd2,
-        sfx: 'sigil-warp', fadeMs: 1800 },
+      // Spent brass sigil-plate set into the library floor. Inspect-only;
+      // the pearl is gone and the plate no longer links anywhere. Rendered
+      // as the default travel-ring (matches the ascension's working plate
+      // in scale) but in dark burnt brown to signal a dead link.
+      { action: 'inspectSpentSigil', dir: [-0.47, -0.66, 0.58],
+        label: 'a brass sigil-plate',
+        color: 0xb07835 },
       // Lectern book — only becomes clickable once the player has
       // inspected the empty slot and noticed the book. Hides after read.
       { action: 'readBook', dir: [0.86, -0.025, 0.5], label: 'read the open book',
@@ -562,23 +691,26 @@ const WORLD = {
         label: 'a glowing book — touch the page',
         color: 0x9aff7a,
         hidden: () => state.shoreCompleted || state.greenCompleted },
-      // The Keepers' sealed book — red leather, spiral sigil.
-      // Inspect-only in v0.4.0; becomes the cottage Age portal in v0.5.0+.
-      { action: 'inspectSealedBook',
+      // The Keepers' red book — third linking book, the cottage Age.
+      { action: 'touchKeepersBook',
         dir: [0.26, -0.34, -0.9],
-        label: 'a sealed book — clasped shut',
+        label: 'a glowing book — touch the page',
         color: 0xff5a4a,
-        hidden: () => state.shoreCompleted || state.greenCompleted },
+        hidden: () => state.shoreCompleted || state.greenCompleted
+                      || state.cottageCompleted },
       // The Keepers' open notebook — lore + dedication easter egg.
+      // Sized to match the notebook's full open-spread footprint on
+      // the pedestal table (the book reads huge in the pano).
       { action: 'inspectOpenBook',
         dir: [0.1, -0.63, -0.77],
         label: 'an open notebook, mid-thought',
-        color: 0xffaa44,
+        color: 0xffaa44, shape: 'open-book', w: 6.0, h: 4.5,
         hidden: () => state.shoreCompleted || state.greenCompleted },
-      // Return to the library — escape valve so the player can leave
-      // without committing to an ending.
-      { to: 'library', dir: [-0.85, -0.45, 0.25], label: 'return to the library',
-        sfx: 'leaving-walk', fadeMs: 4000,
+      // Step onto the sigil-plate — links the player back to the library.
+      // Escape valve so they can leave without committing to an ending.
+      { to: 'library', dir: [-0.85, -0.45, 0.25], label: 'step onto the sigil',
+        color: 0x7affd2,
+        sfx: 'sigil-warp', fadeMs: 1800,
         hidden: () => state.shoreCompleted || state.greenCompleted },
     ],
   },
@@ -643,12 +775,66 @@ const WORLD = {
                         && state.greenShellInspected) },
     ],
   },
+  keepersCottage: {
+    name: "The Keepers' Cottage",
+    pano: () => loadPano('panos/keepers-cottage.jpg'),
+    // Per-node ambient — wind outside the stone, room-tone of long emptiness.
+    ambient: 'audio/sfx/wind-outside-room.mp3',
+    // wind-outside-room.mp3 is mastered quietly — push it above the default
+    // 0.6 environmental mix so the room actually breathes.
+    ambientMix: 1.5,
+    startDir: [-0.98, 0.16, -0.13],
+    hotspots: () => [
+      // Left desk journal — the careful chronicler's hand. Pristine
+      // textbook layout next to the brass candelabra and orrery.
+      // Sized to hug the journal's full open-spread footprint.
+      { action: 'inspectCottageJournalLeft', dir: [0.11, -0.56, -0.82],
+        label: 'an open journal on the left desk',
+        color: 0xffaa44, shape: 'open-book', w: 4.0, h: 3.0,
+        hidden: () => state.cottageJournalLeftRead },
+      // Right desk journal — the dreamer's hand, sketches and a
+      // last entry that stops mid-thought.
+      { action: 'inspectCottageJournalRight', dir: [0.72, -0.66, -0.19],
+        label: 'an open journal on the right desk',
+        color: 0xffaa44, shape: 'open-book', w: 4.0, h: 3.0,
+        hidden: () => state.cottageJournalRightRead },
+      // Spiral carved into the stone column beside the hearth — the
+      // Keepers' own mark. Tall vertical panel frame to encompass
+      // the full recessed carving (upper curl + pearl + lower curl).
+      { action: 'inspectCottageSpiral', dir: [-0.45, 0.04, 0.89],
+        label: 'a spiral carved into the stone',
+        color: 0xffd27a, shape: 'panel', w: 2.0, h: 5.0,
+        hidden: () => state.cottageSpiralInspected },
+      // Needleless brass compass resting on a side table by the
+      // armchair — cross-Age callback to the captain's stopped compass.
+      { action: 'inspectCottageCompass', dir: [0.7, -0.65, 0.31],
+        label: 'a brass compass on the books',
+        color: 0xc0d0ff, shape: 'circle',
+        hidden: () => state.cottageCompassInspected },
+      // Small purple shell tucked under the left desk — cross-Age
+      // callback to the reversed shore + green country shells.
+      { action: 'inspectCottageShell', dir: [0.25, -0.76, -0.6],
+        label: 'a small purple shell',
+        color: 0xc8a0ff, shape: 'circle',
+        hidden: () => state.cottageShellInspected },
+      // Terminal exit — door at the top of the staircase. Hidden until
+      // all five inspects are complete.
+      { action: 'ascendCottageLoft', dir: [-0.85, 0.4, 0.33],
+        label: 'the door at the top of the stairs',
+        color: 0x7affd2,
+        hidden: () => !(state.cottageJournalLeftRead
+                        && state.cottageJournalRightRead
+                        && state.cottageSpiralInspected
+                        && state.cottageCompassInspected
+                        && state.cottageShellInspected) },
+    ],
+  },
   observatory: {
     name: 'The Observatory',
     // Pano swaps when the player activates the brass mechanism.
     pano: () => loadPano(state.observatoryMechanismActive
       ? 'panos/observatory-activated.jpg'
-      : 'panos/observatory-updated.jpg'),
+      : 'panos/observatory.jpg'),
     // Mechanism's gears loop once activated, including on return visits.
     ambient: () => state.observatoryMechanismActive
       ? 'audio/sfx/gears.mp3'
@@ -656,6 +842,11 @@ const WORLD = {
     // gears.mp3 is mastered quietly — push it well above the default 0.6
     // environmental mix so the mechanism feels present in the room.
     ambientMix: 1.5,
+    // Re-fire the mechanism whir on each return visit, so the player
+    // hears the room come alive each time — not just the first.
+    onEnter: () => {
+      if (state.observatoryMechanismActive) playSfx('mechanism-whir');
+    },
     // Open framing — sea of clouds and constellations. Mechanism is
     // discovered by turning, not handed to the player on arrival.
     startDir: [0.88, 0.17, 0.44],
@@ -663,7 +854,7 @@ const WORLD = {
       { to: 'dock', dir: [0.41, -0.91, -0.07], label: 'back to the dock',
         sfx: 'door-open', fadeMs: 3600 },
       // Brass mechanism — clue + puzzle gate. Hidden once activated.
-      { action: 'activateMechanism', dir: [-1, 0.03, -0.04],
+      { action: 'activateMechanism', dir: [-0.85, 0.02, -0.04],
         label: 'the brass mechanism',
         color: 0xffaa44, shape: 'button',
         hidden: () => state.observatoryMechanismActive },
@@ -754,7 +945,15 @@ function buildHotspots(node) {
     // hit-pad size below.
     let geom, hitW = 0, hitH = 0;
     if (hs.shape === 'book')           { geom = makeBookFrame(0.5, 1.8, 0.12); hitW = 0.7;  hitH = 2.0; }
-    else if (hs.shape === 'open-book') { geom = makeBookFrame(1.8, 0.5, 0.12); hitW = 2.0;  hitH = 0.7; }
+    else if (hs.shape === 'open-book') {
+      // Open-book frames can override w/h per-hotspot to fit books of
+      // different shapes (the lectern's wide volume vs. the cottage's
+      // squarer journals).
+      const pw = hs.w ?? 1.8;
+      const ph = hs.h ?? 0.5;
+      geom = makeBookFrame(pw, ph, 0.12);
+      hitW = pw + 0.2; hitH = ph + 0.2;
+    }
     else if (hs.shape === 'panel')     {
       // Panel frames can override w/h per-hotspot for irregular carvings.
       const pw = hs.w ?? 0.95;
@@ -916,6 +1115,9 @@ async function travelTo(key, opts = {}) {
     controls.update();
   }
   fadeEl.classList.remove('active');
+  // Per-node arrival hook — fires after fade clears so any one-shot sfx
+  // lands while the player is fully in the room.
+  if (typeof node.onEnter === 'function') node.onEnter();
 }
 
 // ---- Dev mode: aim at a spot, press H to capture hotspot direction --
@@ -1008,6 +1210,7 @@ const audioPrefs = {
 // the listed order, wrapping at the end.
 const ambientAudio = document.getElementById('ambient');
 const titleMusicAudio = document.getElementById('title-music');
+titleMusicAudio.src = assetUrl('audio/title.mp3');
 ambientAudio.volume = 0;
 titleMusicAudio.volume = 0;
 
@@ -1077,7 +1280,7 @@ function startGameplayMusic() {
   if (idx < 0) idx = 0;
   currentTrackIndex = idx;
   const track = GAMEPLAY_PLAYLIST[currentTrackIndex];
-  ambientAudio.src = track.url;
+  ambientAudio.src = assetUrl(track.url);
   ambientAudio.volume = 0;
   ambientAudio.play()
     .then(() => fadeAudioElement(ambientAudio, audioPrefs.music, 3000))
@@ -1087,7 +1290,7 @@ function startGameplayMusic() {
 // When a gameplay track ends, advance to the next one in order.
 ambientAudio.addEventListener('ended', () => {
   const track = pickNextGameplayTrack();
-  ambientAudio.src = track.url;
+  ambientAudio.src = assetUrl(track.url);
   ambientAudio.play().catch(err => console.warn('[ambient] next', err));
   updateTrackLabel();
 });
@@ -1095,7 +1298,7 @@ ambientAudio.addEventListener('ended', () => {
 // Player controls for cycling tracks.
 function playSpecificTrack(idx) {
   currentTrackIndex = idx;
-  ambientAudio.src = GAMEPLAY_PLAYLIST[idx].url;
+  ambientAudio.src = assetUrl(GAMEPLAY_PLAYLIST[idx].url);
   ambientAudio.volume = audioPrefs.musicMuted ? 0 : audioPrefs.music;
   ambientAudio.play().catch(err => console.warn('[track]', err));
   updateTrackLabel();
@@ -1159,7 +1362,7 @@ function setNodeAmbient(path, mix = NODE_AMBIENT_MIX) {
     setTimeout(() => { old.pause(); old.src = ''; }, 1700);
   }
   if (!path) return;
-  const audio = new Audio(path);
+  const audio = new Audio(assetUrl(path));
   audio.loop = true;
   audio.volume = 0;
   // Environmental ambience belongs to the SFX channel, not music.
@@ -1177,15 +1380,15 @@ const sfxCache = new Map();
 // Preload every SFX at boot — without this, the first play of each
 // sound has a noticeable lag while the browser decodes the file.
 const PRELOAD_SFX = [
-  'ui-tick', 'book-pages',
-  'door-open', 'heavy-door-open',
+  'ui-tick', 'book-pages', 'book-open', 'key-lock-insert',
+  'door-open', 'heavy-door-open', 'metallic-thud',
   'passage-open', 'interact-tap', 'brass-click', 'mechanical-gadget',
   'climbing-stairs', 'sigil-warp', 'linking-warp',
   'mechanism-whir', 'tide-take', 'lighthouse', 'mystical-chime',
   'shell-fade',
 ];
 PRELOAD_SFX.forEach(name => {
-  const sfx = new Audio(`audio/sfx/${name}.mp3`);
+  const sfx = new Audio(assetUrl(`audio/sfx/${name}.mp3`));
   sfx.preload = 'auto';
   sfxCache.set(name, sfx);
 });
@@ -1193,7 +1396,7 @@ function playSfx(name, volume = 1.0) {
   if (audioPrefs.sfxMuted) return null;
   let sfx = sfxCache.get(name);
   if (!sfx) {
-    sfx = new Audio(`audio/sfx/${name}.mp3`);
+    sfx = new Audio(assetUrl(`audio/sfx/${name}.mp3`));
     sfxCache.set(name, sfx);
   }
   sfx.volume = volume * audioPrefs.sfx;
@@ -1484,11 +1687,6 @@ muteSfxBtn.addEventListener('click', (e) => {
   if (!audioPrefs.sfxMuted) playSfx('ui-tick');
 });
 
-document.getElementById('reread-log').addEventListener('click', (e) => {
-  e.stopPropagation();
-  closeAllPanels();
-  showOverlay(CAPTAINS_LOG_HTML);
-});
 document.getElementById('replay-btn').addEventListener('click', () => {
   location.reload();
 });
@@ -1529,7 +1727,7 @@ const dockReady = new Promise(resolve => {
   const img = new Image();
   img.onload = resolve;
   img.onerror = resolve; // don't block forever if pano 404s
-  img.src = 'panos/dock-updated.jpg' + PANO_CACHE_BUST;
+  img.src = assetUrl('panos/dock.jpg');
 });
 const titleMusicReady = new Promise(resolve => {
   if (titleMusicAudio.readyState >= 3) resolve();
