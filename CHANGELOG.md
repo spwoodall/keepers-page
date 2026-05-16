@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.5.1 — 2026-05-15
+
+**Enhanced**
+
+- The Ascension Chamber shrine — updated panorama
+- The observatory mechanism now uses a fuller gear sound while it runs
+- The Ascension Chamber panorama preloads at boot so the room is ready on first visit
+
+---
+
 ## v0.5.0 — 2026-05-14
 
 **New**

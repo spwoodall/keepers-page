@@ -107,6 +107,10 @@ function loadPano(url) {
   return panoCache.get(url);
 }
 // Preload alternate state panoramas so puzzle-swaps are instant.
+// Ascension is also preloaded here — it's the only non-dock pano on the
+// critical path and TextureLoader returns an empty texture until the image
+// data arrives, so an unprepared first visit renders black for a full cycle.
+loadPano('panos/ascension.jpg');
 loadPano('panos/library-activated.jpg');
 loadPano('panos/observatory-activated.jpg');
 loadPano('panos/reversed-shore.jpg');
@@ -837,7 +841,7 @@ const WORLD = {
       : 'panos/observatory.jpg'),
     // Mechanism's gears loop once activated, including on return visits.
     ambient: () => state.observatoryMechanismActive
-      ? 'audio/sfx/gears.mp3'
+      ? 'audio/sfx/running-gears.mp3'
       : null,
     // gears.mp3 is mastered quietly — push it well above the default 0.6
     // environmental mix so the mechanism feels present in the room.
