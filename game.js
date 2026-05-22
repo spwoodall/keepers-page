@@ -455,8 +455,7 @@ const ACTIONS = {
       travelTo('cottageUpperHall', { fadeMs: 1500 });
     });
   },
-  finalDeparture: () => {
-    playSfx('tide-take');
+  wadeToMonolith: () => {
     showOverlay(`
       <h2>The Tide</h2>
       <p>You step into the water. It does not retreat from you;
@@ -468,6 +467,7 @@ const ACTIONS = {
       <p>The shore recedes. The smaller moon recedes.</p>
       <div class="close">click to approach</div>
     `, () => {
+      playSfx('wave-crash');
       travelTo('shoreMonolith', { fadeMs: 3000 });
     });
   },
@@ -578,6 +578,21 @@ const ACTIONS = {
     `);
   },
 
+  inspectLibraryWindow: () => {
+    playSfx('interact-tap');
+    showOverlay(`
+      <h2>The Window</h2>
+      <p>The glass is old enough to have memory — the island bends
+      slightly through it. Below, the dock. Beyond that, the shore
+      where the tide runs wrong. Further still, the shape of the
+      lighthouse against the twin moons, though it is daylight here
+      and there should be no moons at all.</p>
+      <p>You press a hand to the glass. It is warm. The world outside
+      does not notice you looking at it.</p>
+      <div class="close">click to close</div>
+    `);
+  },
+
   // ---- Shore multi-room -----------------------------------------------
   inspectMonolithCarvings: () => {
     playSfx('interact-tap');
@@ -656,16 +671,47 @@ const ACTIONS = {
       <div class="close">click to close</div>
     `);
   },
-  inspectChamberWalls: () => {
+  inspectChamberPortal: () => {
     playSfx('interact-tap');
     showOverlay(`
-      <h2>The Wave Symbols</h2>
-      <p>The same mark, covering every surface the stone offers —
-      carved close, carved deep, carved with patience that became
-      obsession. You count three dozen in one pass before you stop
-      counting.</p>
-      <p>A single carved circle near the plinth has nothing inside
-      it. Waiting for something to fill it from above.</p>
+      <h2>The Stone Aperture</h2>
+      <p>A perfect circle cut through the rock — not broken through,
+      not worn away. Carved. Whoever made it knew exactly what they
+      wanted: a hole that leads nowhere, framed like a window that
+      has never held glass.</p>
+      <p>You look through it. The other side is the same chamber
+      you are standing in. And yet you cannot shake the feeling
+      that it is watching you back.</p>
+      <div class="close">click to close</div>
+    `);
+  },
+  inspectChamberSpiral: () => {
+    playSfx('interact-tap');
+    showOverlay(`
+      <h2>The Concentric Rings</h2>
+      <p>Circles within circles, each one scored with the same
+      patient depth. Not a symbol — a record. Like a cross-section
+      of something that grew very slowly in the dark.</p>
+      <p>You count eleven rings before you lose track of where one
+      ends and the next begins. Whatever was being measured here,
+      it took a long time.</p>
+      <div class="close">click to close</div>
+    `);
+  },
+  inspectFloorDiscs: () => {
+    playSfx('water-drop');
+    const activated = state.lighthouseBeamRedirected;
+    showOverlay(`
+      <h2>The Floor Circles</h2>
+      <p>Two discs of glass set flush into the sand — ringed
+      in stone, polished once, clouded now. They are positioned
+      beneath a gap in the ceiling that is not quite a hole.</p>
+      ${activated
+        ? `<p>The beam found them. They burn white and do not flicker —
+           as if they have been waiting for exactly this, and are not
+           surprised that it finally came.</p>`
+        : `<p>Whatever they are waiting to receive has not arrived yet.</p>`
+      }
       <div class="close">click to close</div>
     `);
   },
@@ -673,11 +719,11 @@ const ACTIONS = {
     state.shoreMonolithChamberSolved = true;
     playSfx('sigil-warp');
     showOverlay(`
-      <h2>The Lit Panel</h2>
+      <h2>The Basin</h2>
       <p>The light finds it cleanly — the beam has always been
-      aimed at this. You press your palm to the carved stone.
-      It is warm. Not the warmth of stone in sun. The warmth
-      of something living.</p>
+      aimed at this. You reach into the glow and let your hand
+      rest beneath the surface. It is warm. Not the warmth of
+      water in sun. The warmth of something living.</p>
       <p>The chamber hums once, low and long. The water stills.
       Something beneath the floor shifts and does not return.</p>
       <p><em>The Age accepts you.</em></p>
@@ -1104,6 +1150,10 @@ const WORLD = {
       { action: 'interactSlot', dir: [-0.17, 0.16, 0.97], label: 'an empty slot in the shelf',
         color: 0xa078ff, shape: 'book',
         hidden: () => state.libraryBookRead },
+      // Window behind the lectern — vista inspect. Future: room or outside space.
+      { action: 'inspectLibraryWindow', dir: [0.86, 0.17, 0.48],
+        label: 'a tall window', color: 0xa078ff, shape: 'quad',
+        corners: [[1.44,3.04], [1.53,-3.04], [-1.53,-3.04], [-1.44,3.04]] },
       // Spiral staircase — main exit, always visible.
       { to: 'observatory', dir: [0.52, -0.2, -0.83], label: 'climb the spiral staircase',
         sfx: 'climbing-stairs', sfxDelay: 500, fadeMs: 6500 },
@@ -1161,6 +1211,7 @@ const WORLD = {
     pano: () => loadPano('panos/reversed-shore.jpg'),
     // Per-node ambient — the Reversed Shore's signature soundscape.
     ambient: 'audio/sfx/shore-ambient.mp3',
+    ambientMix: 1.8,
     startDir: [0.39, 0.15, -0.91],
     hotspots: () => [
       { action: 'inspectShoreLighthouse', dir: [0.99, 0.04, -0.15],
@@ -1176,7 +1227,7 @@ const WORLD = {
         color: 0xc8a0ff, shape: 'circle',
         hidden: () => state.shoreShellInspected },
       // Final exit — only appears once all three have been seen.
-      { action: 'finalDeparture', dir: [-0.94, -0.16, 0.28],
+      { action: 'wadeToMonolith', dir: [-0.94, -0.16, 0.28],
         label: 'walk into the tide',
         color: 0x7affd2, shape: 'circle',
         hidden: () => !(state.shoreLighthouseInspected
@@ -1316,33 +1367,40 @@ const WORLD = {
     name: 'The Monolith',
     pano: () => loadPano(state.lighthouseBeamRedirected ? 'panos/shore-monolith-activated.jpg' : 'panos/shore-monolith.jpg'),
     ambient: 'audio/sfx/shore-ambient.mp3',
+    ambientMix: 1.8,
     startDir: [-0.8, 0.19, 0.58],
     hotspots: () => [
-      { action: 'inspectMonolithCarvings', dir: [0.92, -0.02, -0.38], shape: 'quad',
-        corners: [[0.87,1.31], [0.87,-1.31], [-0.87,-1.31], [-0.87,1.31]],
+      { action: 'inspectMonolithCarvings', dir: [0.96, -0.04, -0.27], shape: 'quad',
+        corners: [[0.65,0.87], [0.65,-0.87], [-0.65,-0.87], [-0.65,0.87]],
         label: 'wave carvings on the stone', color: 0xa078ff },
       { to: 'shoreMonolithChamber', dir: [0.22, -0.03, -0.98],
-        label: 'the passage into the dark', sfx: 'leaving-walk', fadeMs: 2400 },
+        label: () => state.lighthouseBeamRedirected ? 'the chamber beyond' : 'the passage into the dark',
+        sfx: 'leaving-walk', fadeMs: 4000 },
       { to: 'shoreLighthouse', dir: [0.94, 0.11, 0.32],
         label: 'the distant lighthouse', sfx: 'leaving-walk', fadeMs: 3000 },
       { to: 'reversedShore', dir: [0.22, -0.1, 0.97],
-        label: 'back to the shore', sfx: 'tide-take', fadeMs: 2000 },
+        label: 'back to the shore', sfx: 'wave-crash', fadeMs: 4000 },
     ],
   },
   shoreMonolithChamber: {
     name: 'The Chamber',
     pano: () => loadPano(state.lighthouseBeamRedirected ? 'panos/shore-monolith-chamber-activated.jpg' : 'panos/shore-monolith-chamber.jpg'),
-    startDir: [0.2, -0.05, -0.98],
+    ambient: 'audio/sfx/monolith-chamber-ambient.mp3',
+    startDir: [-0.65, 0.11, -0.75],
     hotspots: () => [
-      { action: 'inspectChamberWalls', dir: [0.2, -0.02, -0.98],
-        label: 'the wave symbols on the walls', color: 0xa078ff, shape: 'quad',
-        corners: [[8.71,3.78], [5.46,-4], [-5.88,-4], [-8.29,4.21]] },
+      { action: 'inspectChamberPortal', dir: [-0.69, 0.09, 0.72],
+        label: 'a stone aperture in the arch', color: 0xa078ff, shape: 'circle' },
+      { action: 'inspectChamberSpiral', dir: [0.44, 0.03, -0.9],
+        label: 'a spiral carving', color: 0xa078ff, shape: 'quad',
+        corners: [[1.99,7.25], [1.62,-6.86], [-1.93,-7.66], [-1.67,7.27]] },
+      { action: 'inspectFloorDiscs', dir: [-0.11, -0.65, 0.75],
+        label: 'two circles in the floor', color: 0xa078ff, shape: 'circle' },
       // Puzzle target — only lit once beam is redirected from the lighthouse.
-      { action: 'touchChamberPanel', dir: [0.18, -0.41, -0.89],
-        label: 'a carved panel, lit from within', color: 0x7affd2, shape: 'circle',
+      { action: 'touchChamberPanel', dir: [-0.63, -0.31, -0.71],
+        label: 'the basin, lit from within', color: 0x7affd2, shape: 'circle',
         hidden: () => !state.lighthouseBeamRedirected || state.shoreMonolithChamberSolved },
-      { to: 'shoreMonolith', dir: [0.91, -0.04, 0.42],
-        label: 'back through the passage', sfx: 'leaving-walk', fadeMs: 2000 },
+      { to: 'shoreMonolith', dir: [0.94, -0.28, -0.21],
+        label: 'back through the passage', sfx: 'leaving-walk', fadeMs: 3500 },
     ],
   },
   shoreLighthouse: {
@@ -1628,7 +1686,7 @@ function buildHotspots(node) {
     const userData = {
       target: hs.to,         // travel target (may be undefined)
       action: hs.action,     // action key (may be undefined)
-      label: hs.label,
+      label: typeof hs.label === 'function' ? hs.label() : hs.label,
       sfx: hs.sfx,           // optional one-shot SFX on click
       sfxDelay: hs.sfxDelay, // optional ms delay before SFX fires
       fadeMs: hs.fadeMs,     // optional fade-out duration override
@@ -2219,7 +2277,7 @@ const PRELOAD_SFX = [
   'door-open', 'heavy-door-open', 'metallic-thud',
   'passage-open', 'interact-tap', 'brass-click', 'mechanical-gadget',
   'climbing-stairs', 'sigil-warp', 'linking-warp',
-  'mechanism-whir', 'tide-take', 'lighthouse', 'mystical-chime',
+  'mechanism-whir', 'wave-crash', 'lighthouse', 'mystical-chime',
   'shell-fade',
 ];
 PRELOAD_SFX.forEach(name => {
