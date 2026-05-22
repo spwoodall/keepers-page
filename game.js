@@ -1091,9 +1091,9 @@ const WORLD = {
       // the pearl is gone and the plate no longer links anywhere. Rendered
       // as the default travel-ring (matches the ascension's working plate
       // in scale) but in dark burnt brown to signal a dead link.
-      { action: 'inspectSpentSigil', dir: [-0.47, -0.66, 0.58],
-        label: 'a brass sigil-plate',
-        color: 0xb07835 },
+      { action: 'inspectSpentSigil', dir: [-0.48, -0.66, 0.58],
+        label: 'a brass sigil-plate', color: 0xb07835, shape: 'quad',
+        corners: [[3.06,0.58], [1.22,-1.87], [-3.24,-0.33], [-1.04,1.63]] },
       // Lectern book — only becomes clickable once the player has
       // inspected the empty slot and noticed the book. Hides after read.
       { action: 'readBook', dir: [0.86, -0.025, 0.5], label: 'read the open book',
@@ -1178,7 +1178,7 @@ const WORLD = {
       // Final exit — only appears once all three have been seen.
       { action: 'finalDeparture', dir: [-0.94, -0.16, 0.28],
         label: 'walk into the tide',
-        color: 0x7affd2,
+        color: 0x7affd2, shape: 'circle',
         hidden: () => !(state.shoreLighthouseInspected
                         && state.shoreMoonInspected
                         && state.shoreShellInspected) },
@@ -1321,8 +1321,8 @@ const WORLD = {
       { action: 'inspectMonolithCarvings', dir: [0.92, -0.02, -0.38], shape: 'quad',
         corners: [[0.87,1.31], [0.87,-1.31], [-0.87,-1.31], [-0.87,1.31]],
         label: 'wave carvings on the stone', color: 0xa078ff },
-      { to: 'shoreMonolithChamber', dir: [0.16, -0.04, -0.99],
-        label: 'the passage into the dark', sfx: 'heavy-door-open', fadeMs: 2400 },
+      { to: 'shoreMonolithChamber', dir: [0.22, -0.03, -0.98],
+        label: 'the passage into the dark', sfx: 'leaving-walk', fadeMs: 2400 },
       { to: 'shoreLighthouse', dir: [0.94, 0.11, 0.32],
         label: 'the distant lighthouse', sfx: 'leaving-walk', fadeMs: 3000 },
       { to: 'reversedShore', dir: [0.22, -0.1, 0.97],
@@ -1331,17 +1331,18 @@ const WORLD = {
   },
   shoreMonolithChamber: {
     name: 'The Chamber',
-    pano: () => loadPano('panos/shore-monolith-chamber.jpg'),
-    startDir: [0, 0, -1], // DIR — capture with H-key dev mode
+    pano: () => loadPano(state.lighthouseBeamRedirected ? 'panos/shore-monolith-chamber-activated.jpg' : 'panos/shore-monolith-chamber.jpg'),
+    startDir: [0.2, -0.05, -0.98],
     hotspots: () => [
-      { action: 'inspectChamberWalls', dir: [0, 0, -1],
-        label: 'the wave symbols on the walls', color: 0xa078ff },
+      { action: 'inspectChamberWalls', dir: [0.18, -0.02, -0.98],
+        label: 'the wave symbols on the walls', color: 0xa078ff, shape: 'quad',
+        corners: [[7.83,3.78], [4.12,-4], [-4.75,-4], [-7.21,4.22]] },
       // Puzzle target — only lit once beam is redirected from the lighthouse.
-      { action: 'touchChamberPanel', dir: [0, 0, -1],
-        label: 'a carved panel, lit from within', color: 0x7affd2,
+      { action: 'touchChamberPanel', dir: [0.18, -0.41, -0.89],
+        label: 'a carved panel, lit from within', color: 0x7affd2, shape: 'circle',
         hidden: () => !state.lighthouseBeamRedirected || state.shoreMonolithChamberSolved },
-      { to: 'shoreMonolith', dir: [0, 0, -1],
-        label: 'back through the iron door', sfx: 'heavy-door-open', fadeMs: 2000 },
+      { to: 'shoreMonolith', dir: [0.91, -0.04, 0.42],
+        label: 'back through the passage', sfx: 'leaving-walk', fadeMs: 2000 },
     ],
   },
   shoreLighthouse: {
