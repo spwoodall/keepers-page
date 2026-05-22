@@ -598,12 +598,12 @@ const ACTIONS = {
       <h2>A Rusted Logbook</h2>
       <p>The pages are swollen with salt water, barely legible.
       The last surviving entry reads:</p>
-      <p><em>"The beam has three positions — sky, sea, depths.
-      We have tried the first two. Neither was right. Whatever
-      it watches, it is neither sky nor sea. It must be
-      what lies between."</em></p>
-      <p>Below, in the same hand, a single word circled twice:
-      <em>between.</em></p>
+      <p><em>"The beam has three angles. We tried the highest first —
+      nothing answered. The middle second — still nothing. The
+      Keeper's notes say the subject cannot be found at any surface.
+      I have been staring at the third position for three tides.
+      I am afraid that it is correct. I am more afraid of what
+      will happen if it is."</em></p>
       <div class="close">click to close</div>
     `);
   },
@@ -1346,27 +1346,28 @@ const WORLD = {
   },
   shoreLighthouse: {
     name: 'The Lighthouse',
-    pano: () => loadPano('panos/shore-lighthouse.jpg'),
-    startDir: [0, 0, -1], // DIR — capture with H-key dev mode
+    pano: () => loadPano(state.lighthouseBeamRedirected ? 'panos/shore-lighthouse-activated.jpg' : 'panos/shore-lighthouse.jpg'),
+    startDir: [0.98, -0.12, -0.17],
     hotspots: () => [
-      { action: 'readLighthouseLog', dir: [0, 0, -1],
-        label: 'a rusted logbook', color: 0xffaa44, shape: 'open-book', w: 3.0, h: 2.0 },
+      { action: 'readLighthouseLog', dir: [-0.3, -0.24, -0.92],
+        label: 'a rusted logbook', color: 0xffaa44, shape: 'quad',
+        corners: [[3.19,0.87], [3.14,-0.44], [-3.14,-0.87], [-3.19,0.44]] },
       // Three dial positions — puzzle origin. Depths is correct.
       // All three dirs need H-key capture once pano is in.
-      { action: 'setDialSky', dir: [0, 0.15, -1],
+      { action: 'setDialSky', dir: [0.59, 0.65, -0.48],
         label: 'the dial — sky position', color: 0xa078ff, shape: 'circle',
         hidden: () => state.lighthouseBeamRedirected },
-      { action: 'setDialSea', dir: [0, 0, -1],
+      { action: 'setDialSea', dir: [0.76, 0.62, 0.19],
         label: 'the dial — sea position', color: 0xa078ff, shape: 'circle',
         hidden: () => state.lighthouseBeamRedirected },
-      { action: 'setDialDepths', dir: [0, -0.15, -1],
+      { action: 'setDialDepths', dir: [0.89, 0.42, -0.17],
         label: 'the dial — depths position', color: 0xa078ff, shape: 'circle',
         hidden: () => state.lighthouseBeamRedirected },
       // Post-redirect — single confirm inspect.
-      { action: 'inspectRedirectedBeam', dir: [0, -0.15, -1],
-        label: 'the redirected beam', color: 0x7affd2,
+      { action: 'inspectRedirectedBeam', dir: [0.98, -0.12, -0.17],
+        label: 'the redirected beam', color: 0x7affd2, shape: 'circle', r: 0.5,
         hidden: () => !state.lighthouseBeamRedirected },
-      { to: 'shoreMonolith', dir: [0, 0, -1],
+      { to: 'shoreMonolith', dir: [-0.62, -0.38, 0.69],
         label: 'back to the monolith', sfx: 'leaving-walk', fadeMs: 2000 },
     ],
   },
@@ -1620,7 +1621,7 @@ function buildHotspots(node) {
       hitW = pw + 0.2; hitH = ph + 0.2;
     }
     else if (hs.shape === 'button')    { geom = new THREE.CircleGeometry(0.5, 32); hitW = hitH = 1.2; }
-    else if (hs.shape === 'circle')    { geom = new THREE.RingGeometry(0.7, 0.85, 32); hitW = hitH = 1.9; }
+    else if (hs.shape === 'circle')    { const r = hs.r ?? 0.85; geom = new THREE.RingGeometry(r - 0.15, r, 32); hitW = hitH = r * 2.2; }
     else if (hs.action)                { geom = makeBookFrame(1.4, 1.4, 0.12); hitW = hitH = 1.6; }
     else                                { geom = new THREE.RingGeometry(1.2, 1.6, 32); hitW = hitH = 3.4; }
     const userData = {
