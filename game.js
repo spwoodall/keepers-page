@@ -1334,9 +1334,9 @@ const WORLD = {
     pano: () => loadPano(state.lighthouseBeamRedirected ? 'panos/shore-monolith-chamber-activated.jpg' : 'panos/shore-monolith-chamber.jpg'),
     startDir: [0.2, -0.05, -0.98],
     hotspots: () => [
-      { action: 'inspectChamberWalls', dir: [0.18, -0.02, -0.98],
+      { action: 'inspectChamberWalls', dir: [0.2, -0.02, -0.98],
         label: 'the wave symbols on the walls', color: 0xa078ff, shape: 'quad',
-        corners: [[7.83,3.78], [4.12,-4], [-4.75,-4], [-7.21,4.22]] },
+        corners: [[8.71,3.78], [5.46,-4], [-5.88,-4], [-8.29,4.21]] },
       // Puzzle target — only lit once beam is redirected from the lighthouse.
       { action: 'touchChamberPanel', dir: [0.18, -0.41, -0.89],
         label: 'a carved panel, lit from within', color: 0x7affd2, shape: 'circle',
