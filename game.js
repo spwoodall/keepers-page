@@ -160,6 +160,7 @@ const state = {
   // Shore multi-room
   shoreLighthouseLogRead: false,
   lighthouseBeamRedirected: false,
+  chamberDiscsRead: false,
   shoreMonolithChamberSolved: false,
   // Green multi-room
   greenCanopyAligned: false,
@@ -345,7 +346,7 @@ const ACTIONS = {
   },
   inspectShoreMoon: () => {
     state.shoreMoonInspected = true;
-    playSfx('mystical-chime');
+    playSfx('mystical-chime', 2.0);
     showOverlay(`
       <h2>The Smaller Moon</h2>
       <p>It hangs low above the horizon, paler than its larger
@@ -579,7 +580,7 @@ const ACTIONS = {
   },
 
   inspectLibraryWindow: () => {
-    playSfx('interact-tap');
+    playSfx('knock-on-window');
     showOverlay(`
       <h2>The Window</h2>
       <p>The glass is old enough to have memory — the island bends
@@ -661,7 +662,7 @@ const ACTIONS = {
     refreshCurrentNode();
   },
   inspectRedirectedBeam: () => {
-    playSfx('interact-tap');
+    playSfx('beam-sound', 2.0);
     showOverlay(`
       <h2>The Redirected Beam</h2>
       <p>The beam holds downward now, its light passing through
@@ -699,8 +700,9 @@ const ACTIONS = {
     `);
   },
   inspectFloorDiscs: () => {
-    playSfx('water-drop');
     const activated = state.lighthouseBeamRedirected;
+    playSfx(activated ? 'mystical-chime' : 'water-drop', activated ? 2.0 : 1.0);
+    if (activated) state.chamberDiscsRead = true;
     showOverlay(`
       <h2>The Floor Circles</h2>
       <p>Two discs of glass set flush into the sand — ringed
@@ -709,7 +711,9 @@ const ACTIONS = {
       ${activated
         ? `<p>The beam found them. They burn white and do not flicker —
            as if they have been waiting for exactly this, and are not
-           surprised that it finally came.</p>`
+           surprised that it finally came.</p>
+           <p>Two circles. Two moons. The same diameter, the same spacing.
+           Whoever built this chamber stood on that shore and measured.</p>`
         : `<p>Whatever they are waiting to receive has not arrived yet.</p>`
       }
       <div class="close">click to close</div>
@@ -750,7 +754,7 @@ const ACTIONS = {
     `);
   },
   inspectWrongSkyGap: () => {
-    playSfx('mystical-chime');
+    playSfx('mystical-chime', 2.0);
     showOverlay(`
       <h2>The Gap in the Roots</h2>
       <p>Through the braided ceiling — a twilight sky, overcast
@@ -810,7 +814,7 @@ const ACTIONS = {
     `);
   },
   inspectCanopyView: () => {
-    playSfx('mystical-chime');
+    playSfx('mystical-chime', 2.0);
     showOverlay(`
       <h2>The Forest</h2>
       <p>It goes on in every direction to every horizon. The gold
@@ -930,7 +934,7 @@ const ACTIONS = {
     `);
   },
   inspectLoftWindow: () => {
-    playSfx('mystical-chime');
+    playSfx('mystical-chime', 2.0);
     showOverlay(`
       <h2>The Window</h2>
       <p>A calm sea at golden hour. No twin moons. No reversed tide.
@@ -1375,9 +1379,9 @@ const WORLD = {
         label: 'wave carvings on the stone', color: 0xa078ff },
       { to: 'shoreMonolithChamber', dir: [0.22, -0.03, -0.98],
         label: () => state.lighthouseBeamRedirected ? 'the chamber beyond' : 'the passage into the dark',
-        sfx: 'leaving-walk', fadeMs: 4000 },
+        sfx: 'leaving-walk', sfxVolume: 2.0, fadeMs: 4000 },
       { to: 'shoreLighthouse', dir: [0.94, 0.11, 0.32],
-        label: 'the distant lighthouse', sfx: 'leaving-walk', fadeMs: 3000 },
+        label: 'the distant lighthouse', sfx: 'linking-warp', fadeMs: 3000 },
       { to: 'reversedShore', dir: [0.22, -0.1, 0.97],
         label: 'back to the shore', sfx: 'wave-crash', fadeMs: 4000 },
     ],
@@ -1394,13 +1398,17 @@ const WORLD = {
         label: 'a spiral carving', color: 0xa078ff, shape: 'quad',
         corners: [[1.99,7.25], [1.62,-6.86], [-1.93,-7.66], [-1.67,7.27]] },
       { action: 'inspectFloorDiscs', dir: [-0.11, -0.65, 0.75],
-        label: 'two circles in the floor', color: 0xa078ff, shape: 'circle' },
-      // Puzzle target — only lit once beam is redirected from the lighthouse.
+        label: 'two circles in the floor', color: 0xa078ff, shape: 'circle',
+        hidden: () => state.lighthouseBeamRedirected },
+      // Lit version — teal, visible once beam is redirected, hides after player reads.
+      { action: 'inspectFloorDiscs', dir: [-0.11, -0.65, 0.75],
+        label: 'two circles in the floor', color: 0x7affd2, shape: 'circle',
+        hidden: () => !state.lighthouseBeamRedirected || state.chamberDiscsRead },
       { action: 'touchChamberPanel', dir: [-0.63, -0.31, -0.71],
         label: 'the basin, lit from within', color: 0x7affd2, shape: 'circle',
-        hidden: () => !state.lighthouseBeamRedirected || state.shoreMonolithChamberSolved },
+        hidden: () => !state.chamberDiscsRead || state.shoreMonolithChamberSolved },
       { to: 'shoreMonolith', dir: [0.94, -0.28, -0.21],
-        label: 'back through the passage', sfx: 'leaving-walk', fadeMs: 3500 },
+        label: 'back through the passage', sfx: 'leaving-walk', sfxVolume: 2.0, fadeMs: 3500 },
     ],
   },
   shoreLighthouse: {
@@ -1427,7 +1435,7 @@ const WORLD = {
         label: 'the redirected beam', color: 0x7affd2, shape: 'circle', r: 0.5,
         hidden: () => !state.lighthouseBeamRedirected },
       { to: 'shoreMonolith', dir: [-0.62, -0.38, 0.69],
-        label: 'back to the monolith', sfx: 'leaving-walk', fadeMs: 2000 },
+        label: 'back to the monolith', sfx: 'climbing-stairs', fadeMs: 4500 },
     ],
   },
 
@@ -1688,6 +1696,7 @@ function buildHotspots(node) {
       action: hs.action,     // action key (may be undefined)
       label: typeof hs.label === 'function' ? hs.label() : hs.label,
       sfx: hs.sfx,           // optional one-shot SFX on click
+      sfxVolume: hs.sfxVolume, // optional volume multiplier for sfx (default 1.0)
       sfxDelay: hs.sfxDelay, // optional ms delay before SFX fires
       fadeMs: hs.fadeMs,     // optional fade-out duration override
     };
@@ -1754,10 +1763,10 @@ addEventListener('click', (e) => {
   raycaster.setFromCamera(pointer, camera);
   const hit = raycaster.intersectObjects(hotspotGroup.children)[0];
   if (!hit) return;
-  const { target, action, sfx, sfxDelay, fadeMs } = hit.object.userData;
+  const { target, action, sfx, sfxVolume, sfxDelay, fadeMs } = hit.object.userData;
   if (sfx) {
-    if (sfxDelay) setTimeout(() => playSfx(sfx), sfxDelay);
-    else playSfx(sfx);
+    if (sfxDelay) setTimeout(() => playSfx(sfx, sfxVolume ?? 1.0), sfxDelay);
+    else playSfx(sfx, sfxVolume ?? 1.0);
   }
   if (action && ACTIONS[action]) ACTIONS[action]();
   else if (target) travelTo(target, { fadeMs });
@@ -1801,11 +1810,15 @@ function showOverlay(html, onClose) {
 }
 overlayEl.addEventListener('click', () => {
   overlayEl.classList.remove('active');
+  const hadCallback = !!overlayCloseCallback;
   if (overlayCloseCallback) {
     const cb = overlayCloseCallback;
     overlayCloseCallback = null;
     cb();
   }
+  // Rebuild hotspots for pure inspection closes so state changes are reflected.
+  // Skip when there's an onClose callback — those trigger navigation.
+  if (!hadCallback && currentNode) buildHotspots(WORLD[currentNode]);
 });
 
 let currentNode = null;
@@ -2278,7 +2291,7 @@ const PRELOAD_SFX = [
   'passage-open', 'interact-tap', 'brass-click', 'mechanical-gadget',
   'climbing-stairs', 'sigil-warp', 'linking-warp',
   'mechanism-whir', 'wave-crash', 'lighthouse', 'mystical-chime',
-  'shell-fade',
+  'shell-fade', 'beam-sound', 'knock-on-window', 'ambient-peaceful-ray-light',
 ];
 PRELOAD_SFX.forEach(name => {
   const sfx = new Audio(assetUrl(`audio/sfx/${name}.mp3`));
@@ -2292,7 +2305,7 @@ function playSfx(name, volume = 1.0) {
     sfx = new Audio(assetUrl(`audio/sfx/${name}.mp3`));
     sfxCache.set(name, sfx);
   }
-  sfx.volume = volume * audioPrefs.sfx;
+  sfx.volume = Math.min(1, volume * audioPrefs.sfx);
   sfx.currentTime = 0;
   sfx.play().catch(err => console.warn('[sfx]', name, err));
   return sfx;
@@ -2555,7 +2568,7 @@ volMusic.addEventListener('input', () => {
   audioPrefs.music = parseFloat(volMusic.value);
   localStorage.setItem('mystVolMusic', audioPrefs.music);
   if (audioStarted) {
-    if (!(state.shoreCompleted || state.greenCompleted)) ambientAudio.volume = audioPrefs.music;
+    ambientAudio.volume = audioPrefs.music;
     titleMusicAudio.volume = audioPrefs.music;
   }
 });
