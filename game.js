@@ -2291,7 +2291,7 @@ const PRELOAD_SFX = [
   'passage-open', 'interact-tap', 'brass-click', 'mechanical-gadget',
   'climbing-stairs', 'sigil-warp', 'linking-warp',
   'mechanism-whir', 'wave-crash', 'lighthouse', 'mystical-chime',
-  'shell-fade', 'beam-sound', 'knock-on-window', 'ambient-peaceful-ray-light',
+  'shell-fade', 'beam-sound', 'knock-on-window', 'ambient-peaceful-ray-light', 'fx-light',
 ];
 PRELOAD_SFX.forEach(name => {
   const sfx = new Audio(assetUrl(`audio/sfx/${name}.mp3`));
