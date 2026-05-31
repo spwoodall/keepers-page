@@ -142,8 +142,10 @@ const state = {
   librarySlotInspected: false,
   libraryBookRead: false,
   observatoryMechanismActive: false,
-  shoreCompleted: false,
+  shoreCompleted: false,   // shore book pressed in ascension (age entered)
+  shoreReturned: false,    // shore puzzle solved, player returned to ascension
   greenCompleted: false,
+  greenReturned: false,
   dockDoorUnlocked: false,
   shoreLighthouseInspected: false,
   shoreMoonInspected: false,
@@ -152,6 +154,7 @@ const state = {
   greenBasinInspected: false,
   greenShellInspected: false,
   cottageCompleted: false,
+  cottageReturned: false,
   cottageJournalLeftRead: false,
   cottageJournalRightRead: false,
   cottageSpiralInspected: false,
@@ -733,9 +736,10 @@ const ACTIONS = {
       <p><em>The Age accepts you.</em></p>
       <div class="close">click to depart</div>
     `, () => {
-      triggerEndscreen(
+      state.shoreReturned = true;
+      triggerAgeReturn(
         'The light that watched the depths has found what it sought.<br>' +
-        'Wherever the next Age lies, you carry with you the silence of this water.'
+        'The water stills. Somewhere above, the shore is waiting to be remembered.'
       );
     });
   },
@@ -864,9 +868,10 @@ const ACTIONS = {
       <p><em>The Age accepts you.</em></p>
       <div class="close">click to depart</div>
     `, () => {
-      triggerEndscreen(
+      state.greenReturned = true;
+      triggerAgeReturn(
         'The roots close behind you, and the star field fades back to root and dark.<br>' +
-        'Wherever the next Age lies, you carry with you the warmth of old wood.'
+        'The warmth of old wood stays with you as the green country recedes.'
       );
     });
   },
@@ -1024,9 +1029,10 @@ const ACTIONS = {
       <p><em>The Age accepts you.</em></p>
       <div class="close">click to depart</div>
     `, () => {
-      triggerEndscreen(
+      state.cottageReturned = true;
+      triggerAgeReturn(
         'The light between the moons moved on, and you let it.<br>' +
-        'Wherever the next Age lies, you carry with you the names you did not learn.'
+        'The names you did not learn stay behind with the cold hearth and the open journals.'
       );
     });
   },
@@ -1180,36 +1186,50 @@ const WORLD = {
         dir: [0.06, -0.34, -0.94], shape: 'quad',
         corners: [[1.29,2.93], [1.14,-3.58], [-1.15,-2.72], [-1.28,3.36]],
         label: 'a glowing book — touch the page', color: 0x5a9aff,
-        hidden: () => state.shoreCompleted || state.greenCompleted },
+        hidden: () => state.shoreCompleted },
       // The green country's linking book — green leather, tree sigil.
       { action: 'touchGreenBook',
         dir: [-0.13, -0.35, -0.93], shape: 'quad',
         corners: [[1.41,2.82], [1.22,-4.12], [-1.04,-2.39], [-1.58,3.68]],
         label: 'a glowing book — touch the page', color: 0x9aff7a,
-        hidden: () => state.shoreCompleted || state.greenCompleted },
+        hidden: () => state.greenCompleted },
       // The Keepers' red book — third linking book, the cottage Age.
       { action: 'touchKeepersBook',
         dir: [0.26, -0.37, -0.89], shape: 'quad',
         corners: [[0.85,2.29], [0.76,-2.93], [-0.76,-2.5], [-0.85,3.15]],
         label: 'a glowing book — touch the page', color: 0xff5a4a,
-        hidden: () => state.shoreCompleted || state.greenCompleted
-                      || state.cottageCompleted },
+        hidden: () => state.cottageCompleted },
       // The Keepers' open notebook — lore + dedication easter egg.
-      // Sized to match the notebook's full open-spread footprint on
-      // the pedestal table (the book reads huge in the pano).
       { action: 'inspectOpenBook',
         dir: [0.09, -0.65, -0.76], shape: 'quad',
         corners: [[4.7,3.22], [6.42,-2.58], [-5.82,-3.3], [-5.29,2.66]],
         label: 'an open notebook, mid-thought', color: 0xffaa44,
-        hidden: () => state.shoreCompleted || state.greenCompleted },
-      // Step onto the sigil-plate — links the player back to the library.
-      // Escape valve so they can leave without committing to an ending.
+        hidden: () => state.shoreReturned && state.greenReturned && state.cottageReturned },
+      // Step onto the sigil-plate — escape valve back to library.
       { to: 'library', dir: [-0.85, -0.45, 0.25], label: 'step onto the sigil',
         color: 0x7affd2,
         sfx: 'sigil-warp', fadeMs: 1800,
-        hidden: () => state.shoreCompleted || state.greenCompleted },
+        hidden: () => state.shoreReturned && state.greenReturned && state.cottageReturned },
+      // Bizarre realm orrery — unlocks when all 3 Ages are returned from.
+      { to: 'bizarreRealm', dir: [0.71, 0.11, -0.7],
+        label: 'the orrery — something has changed', color: 0xd4aaff,
+        sfx: 'ambient-peaceful-ray-light', sfxVolume: 1.5, fadeMs: 4000,
+        hidden: () => !(state.shoreReturned && state.greenReturned && state.cottageReturned) },
     ],
   },
+  // ---- Bizarre Realm (stub — pano pending) ----------------------------
+  bizarreRealm: {
+    name: 'The Fourth Age',
+    pano: null, // pano pending — stub node only
+    ambient: 'audio/sfx/ambient-peaceful-ray-light.mp3',
+    onEnter: () => fadeAudio(0, 3000),
+    startDir: [0, 0, -1],
+    hotspots: () => [
+      { to: 'ascension', dir: [0, 0, 1], label: 'return to the chamber',
+        sfx: 'sigil-warp', fadeMs: 2000 },
+    ],
+  },
+
   reversedShore: {
     name: 'The Reversed Shore',
     pano: () => loadPano('panos/reversed-shore.jpg'),
@@ -1318,8 +1338,8 @@ const WORLD = {
                         && state.cottageSpiralInspected
                         && state.cottageCompassInspected
                         && state.cottageShellInspected) },
-      // Right staircase — same destination. DIR needs H-key capture on updated pano.
-      { action: 'ascendCottageLoft', dir: [0, 0, -1],
+      // Right staircase — DIR captured 2026-05-31. Leads to same upper hall.
+      { action: 'ascendCottageLoft', dir: [-0.04, 0.47, -0.88],
         label: 'the right staircase',
         color: 0x7affd2,
         hidden: () => !(state.cottageJournalLeftRead
@@ -1520,15 +1540,15 @@ const WORLD = {
     ambientMix: 1.0,
     startDir: [0, 0, -1], // DIR — capture with H-key dev mode
     hotspots: () => [
-      { action: 'inspectNamePlaques', dir: [0, 0, -1],
+      { action: 'inspectNamePlaques', dir: [0, 0.1, -1],
         label: 'two name plaques on the wall', color: 0xffaa44 },
-      { action: 'inspectHallCoats', dir: [0, 0, -1],
+      { action: 'inspectHallCoats', dir: [0.4, 0.1, -0.9],
         label: 'two coats on the rack', color: 0xa078ff },
-      { to: 'cottageLoft', dir: [0, 0, -1],
+      { to: 'cottageLoft', dir: [-0.7, 0, -0.7],
         label: 'the left door', sfx: 'door-open', fadeMs: 1800 },
-      { to: 'cottageTower', dir: [0, 0, -1],
+      { to: 'cottageTower', dir: [0.7, 0, -0.7],
         label: 'the right door', sfx: 'door-open', fadeMs: 1800 },
-      { to: 'keepersCottage', dir: [0, 0, -1],
+      { to: 'keepersCottage', dir: [0, -0.2, 1],
         label: 'back down the stairs', sfx: 'climbing-stairs', fadeMs: 1500 },
     ],
   },
@@ -1541,16 +1561,16 @@ const WORLD = {
     startDir: [0, 0, -1], // DIR — capture with H-key dev mode
     hotspots: () => [
       // Puzzle origin — folded note gives the orrery clue. Hides once read.
-      { action: 'readLoftNote', dir: [0, 0, -1],
+      { action: 'readLoftNote', dir: [0.3, -0.3, -0.9],
         label: 'a folded note on the desk', color: 0xffaa44, shape: 'open-book', w: 2.0, h: 1.5,
         hidden: () => state.cottageLoftNoteRead },
-      { action: 'inspectLoftMirror', dir: [0, 0, -1],
+      { action: 'inspectLoftMirror', dir: [-0.5, 0.2, -0.85],
         label: 'letters tucked in the mirror frame', color: 0xffaa44 },
-      { action: 'inspectLoftQuilt', dir: [0, 0, -1],
+      { action: 'inspectLoftQuilt', dir: [0.8, -0.3, -0.5],
         label: 'the spiral quilt on the bed', color: 0xffd27a },
-      { action: 'inspectLoftWindow', dir: [0, 0, -1],
+      { action: 'inspectLoftWindow', dir: [0, 0.3, -0.95],
         label: 'the window', color: 0xc0d0ff, shape: 'circle' },
-      { to: 'cottageUpperHall', dir: [0, 0, -1],
+      { to: 'cottageUpperHall', dir: [0, 0, 1],
         label: 'back to the upper hall', sfx: 'door-open', fadeMs: 1500 },
     ],
   },
@@ -1562,26 +1582,26 @@ const WORLD = {
     onEnter: () => { state.cottageTowerSeen = true; },
     startDir: [0, 0, -1], // DIR — capture with H-key dev mode
     hotspots: () => [
-      { action: 'inspectStarCharts', dir: [0, 0, -1],
+      { action: 'inspectStarCharts', dir: [0.6, -0.3, -0.75],
         label: 'the star charts', color: 0xffaa44, shape: 'open-book', w: 4.0, h: 2.5 },
-      { action: 'inspectTowerNotebook', dir: [0, 0, -1],
+      { action: 'inspectTowerNotebook', dir: [-0.6, -0.3, -0.75],
         label: 'an open notebook', color: 0xffaa44, shape: 'open-book', w: 3.0, h: 2.0 },
       // Three orrery arm positions — puzzle target. Second arm (pale moon) is correct.
       // Dirs need H-key capture on orrery face. Hidden once set.
-      { action: 'setOrreryArm1', dir: [0.2, 0, -1],
+      { action: 'setOrreryArm1', dir: [-0.25, 0.1, -0.96],
         label: 'the orrery — first arm', color: 0xffd27a, shape: 'circle',
         hidden: () => state.cottageTowerOrrerySet },
       { action: 'setOrreryArm2', dir: [0, 0, -1],
         label: 'the orrery — second arm, pale moon', color: 0xffd27a, shape: 'circle',
         hidden: () => state.cottageTowerOrrerySet },
-      { action: 'setOrreryArm3', dir: [-0.2, 0, -1],
+      { action: 'setOrreryArm3', dir: [0.25, 0.1, -0.96],
         label: 'the orrery — third arm', color: 0xffd27a, shape: 'circle',
         hidden: () => state.cottageTowerOrrerySet },
       // Age terminal — only unlocked once orrery is correctly set.
-      { action: 'useTelescope', dir: [0, 0, -1],
+      { action: 'useTelescope', dir: [0.7, 0.1, -0.7],
         label: 'the telescope', color: 0x7affd2,
         hidden: () => !state.cottageTowerOrrerySet },
-      { to: 'cottageUpperHall', dir: [0, 0, -1],
+      { to: 'cottageUpperHall', dir: [0, 0, 1],
         label: 'back to the upper hall', sfx: 'door-open', fadeMs: 1500 },
     ],
   },
@@ -1635,7 +1655,8 @@ scene.add(sphere);
 // Always re-evaluate the node's pano fn so state-driven swaps work.
 // The underlying loadPano/makePano calls handle their own caching.
 function getPano(key) {
-  return WORLD[key].pano();
+  const p = WORLD[key].pano;
+  return p ? p() : null;
 }
 
 // Update the current node's panorama + hotspots in place — no fade.
@@ -1803,6 +1824,18 @@ function triggerEndscreen(epilogueHtml) {
   if (nodeAmbientAudio) fadeAudioElement(nodeAmbientAudio, 0, 4000);
 }
 
+const ageTransitionEl = document.getElementById('age-transition');
+function triggerAgeReturn(epilogueHtml) {
+  ageTransitionEl.querySelector('.age-epilogue').innerHTML = epilogueHtml;
+  ageTransitionEl.classList.add('active');
+  fadeAudio(0, 3000);
+  if (nodeAmbientAudio) fadeAudioElement(nodeAmbientAudio, 0, 3000);
+  ageTransitionEl.addEventListener('click', () => {
+    ageTransitionEl.classList.remove('active');
+    travelTo('ascension', { fadeMs: 2000 });
+  }, { once: true });
+}
+
 function showOverlay(html, onClose) {
   overlayPanel.innerHTML = html;
   overlayEl.classList.add('active');
@@ -1851,6 +1884,10 @@ async function travelTo(key, opts = {}) {
     controls.update();
   }
   fadeEl.classList.remove('active');
+  // Restore gameplay music if it was faded out for an age transition.
+  if (gameplayMusicStarted && !audioPrefs.musicMuted && ambientAudio.volume < audioPrefs.music) {
+    fadeAudioElement(ambientAudio, audioPrefs.music, 2000);
+  }
   // Per-node arrival hook — fires after fade clears so any one-shot sfx
   // lands while the player is fully in the room.
   if (typeof node.onEnter === 'function') node.onEnter();

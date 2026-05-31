@@ -66,6 +66,24 @@ body.rect-capture canvas { cursor: crosshair; }
   transition: color 200ms;
 }
 #overlay .close:hover { color: #ffd27a; }
+#age-transition {
+  position: fixed; inset: 0; background: #000;
+  display: none; opacity: 0;
+  align-items: center; justify-content: center; flex-direction: column;
+  z-index: 20; pointer-events: none;
+  transition: opacity 1800ms ease-in;
+  cursor: pointer;
+}
+#age-transition.active { display: flex; opacity: 1; pointer-events: auto; }
+#age-transition .age-epilogue {
+  color: #aaa; font: italic 18px/1.7 Georgia, serif;
+  max-width: 520px; text-align: center; padding: 0 24px;
+}
+#age-transition .age-continue {
+  margin-top: 48px; color: #555;
+  font: 11px monospace; letter-spacing: 3px; text-transform: uppercase;
+}
+
 #endscreen {
   position: fixed; inset: 0; background: #000;
   display: none; opacity: 0;
