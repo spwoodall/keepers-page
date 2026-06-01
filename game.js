@@ -1048,6 +1048,52 @@ const ACTIONS = {
       );
     });
   },
+
+  // ---- Bizarre realm — climactic two-book choice ----------------------
+  touchKeeperOneBook: () => {
+    playSfx('page-turn');
+    showOverlay(`
+      <h2>The First Book</h2>
+      <p>The handwriting is looping and unhurried — the hand of
+      someone who wrote for comfort as much as memory.</p>
+      <p><em>I do not know if anyone will ever come this far. I
+      wrote this Age for the two of us — a place to sit above the
+      clouds and remember that the worlds are still there, even
+      when we cannot reach them.</em></p>
+      <p><em>If you are reading this, then the page still works.
+      The link still holds.</em></p>
+      <p><em>Take the shell home, if you find one. They travel
+      well.</em></p>
+      <div class="close">click to close</div>
+    `, () => {
+      triggerEndscreen(
+        'You close the cover. The clouds below the plateau catch the moonlight and hold it.<br>' +
+        'Wherever the Keepers are, they left the door open.'
+      );
+    });
+  },
+
+  touchKeeperTwoBook: () => {
+    playSfx('page-turn');
+    showOverlay(`
+      <h2>The Second Book</h2>
+      <p>The handwriting is compact and careful, each letter
+      measured — the hand of someone who wrote to think.</p>
+      <p><em>The second moon reached its alignment last night. I
+      have been watching it for eleven years.</em></p>
+      <p><em>What I have learned: the Ages do not end when you
+      leave them. The shore still turns. The roots still grow.
+      The canopy still watches the horizon. We are not the point
+      of any of this.</em></p>
+      <p><em>Which is, I think, exactly right.</em></p>
+      <div class="close">click to close</div>
+    `, () => {
+      triggerEndscreen(
+        'You close the cover. The second moon climbs toward its twin, unhurried.<br>' +
+        'The Age continues without you, exactly as it should.'
+      );
+    });
+  },
 };
 
 // ---- Book-frame geometry (hollow rectangle outline) -----------------
@@ -1232,15 +1278,41 @@ const WORLD = {
   // ---- Bizarre Realm (stub — pano pending) ----------------------------
   bizarreRealm: {
     name: 'The Fourth Age',
-    pano: null, // pano pending — stub node only
+    pano: () => loadPano('panos/bizarre-realm.jpg'),
     onEnter: () => {
       fadeAudio(0, 3000);
       setTimeout(() => playSfx('ambient-peaceful-ray-light', 1.5), 2000);
+      setTimeout(() => {
+        bizarreRealmMusicActive = true;
+        ambientAudio.loop = true;
+        ambientAudio.src = assetUrl(BIZARRE_REALM_TRACK.url);
+        ambientAudio.volume = audioPrefs.musicMuted ? 0 : audioPrefs.music;
+        ambientAudio.play().catch(err => console.warn('[bizarre]', err));
+        updateTrackLabel();
+      }, 3500);
     },
-    startDir: [0, 0, -1],
+    startDir: [0.67, 0.49, -0.56],
     hotspots: () => [
-      { to: 'ascension', dir: [0, 0, 1], label: 'return to the chamber',
-        sfx: 'sigil-warp', fadeMs: 2000 },
+      { to: 'bizarreRealmTree', dir: [0.77, 0.47, -0.44],
+        label: 'toward the tree', sfx: 'stone-footsteps', fadeMs: 3500 },
+      { to: 'ascension', dir: [-0.29, -0.44, 0.85],
+        label: 'return to the chamber', sfx: 'sigil-warp', fadeMs: 3000 },
+    ],
+  },
+
+  bizarreRealmTree: {
+    name: 'The Fourth Age',
+    pano: () => loadPano('panos/bizarre-realm-tree.jpg'),
+    startDir: [-0.07, -0.39, -0.92],
+    hotspots: () => [
+      { action: 'touchKeeperOneBook', dir: [0.06, -0.71, -0.7],
+        label: 'an open book — looping hand', color: 0xffd27a, shape: 'quad',
+        corners: [[2,1.31],[2.9,-0.19],[-1.85,-1.5],[-3.06,0.38]] },
+      { action: 'touchKeeperTwoBook', dir: [0.35, -0.68, -0.64],
+        label: 'an open book — careful hand', color: 0xd4aaff, shape: 'quad',
+        corners: [[2.53,1.07],[2.44,-1.02],[-2.46,-0.74],[-2.51,0.68]] },
+      { to: 'bizarreRealm', dir: [0.24, -0.73, 0.64],
+        label: 'back to the plateau', sfx: 'stone-footsteps', fadeMs: 3500 },
     ],
   },
 
@@ -1868,6 +1940,11 @@ let currentNode = null;
 async function travelTo(key, opts = {}) {
   const node = WORLD[key];
   if (!node) return;
+  if (bizarreRealmMusicActive && key !== 'bizarreRealm' && key !== 'bizarreRealmTree') {
+    bizarreRealmMusicActive = false;
+    ambientAudio.loop = false;
+    playSpecificTrack(currentTrackIndex >= 0 ? currentTrackIndex : 0);
+  }
   const fadeMs = opts.fadeMs ?? 600;
   fadeEl.classList.add('active');
   await new Promise(r => setTimeout(r, fadeMs));
@@ -2168,6 +2245,12 @@ titleMusicAudio.src = assetUrl('audio/title.mp3');
 ambientAudio.volume = 0;
 titleMusicAudio.volume = 0;
 
+const BIZARRE_REALM_TRACK = {
+  url: 'audio/low_atmos-space-relaxation-atmosphere-514706.mp3',
+  label: 'The Fourth Age',
+};
+let bizarreRealmMusicActive = false;
+
 const GAMEPLAY_PLAYLIST = [
   { url: 'audio/atlasaudio-ambient-astronomy-511860.mp3',
     label: 'Astronomy' },
@@ -2215,6 +2298,7 @@ addEventListener('click', startAmbient, { once: true, capture: true });
 function updateTrackLabel() {
   const el = document.getElementById('track-name');
   if (!el) return;
+  if (bizarreRealmMusicActive) { el.innerHTML = BIZARRE_REALM_TRACK.label; return; }
   el.innerHTML = currentTrackIndex >= 0
     ? GAMEPLAY_PLAYLIST[currentTrackIndex].label
     : '&mdash;';
@@ -2243,6 +2327,7 @@ function startGameplayMusic() {
 }
 // When a gameplay track ends, advance to the next one in order.
 ambientAudio.addEventListener('ended', () => {
+  if (bizarreRealmMusicActive) return;
   const track = pickNextGameplayTrack();
   ambientAudio.src = assetUrl(track.url);
   ambientAudio.play().catch(err => console.warn('[ambient] next', err));
@@ -2258,8 +2343,7 @@ function playSpecificTrack(idx) {
   updateTrackLabel();
 }
 function skipNext() {
-  // Title screen is locked to the title track — no skipping until dismissed.
-  if (titleScreenActive) return;
+  if (titleScreenActive || bizarreRealmMusicActive) return;
   if (currentTrackIndex < 0) {
     // Title dismissed but gameplay hasn't kicked in yet — start it.
     startGameplayMusic();
@@ -2269,7 +2353,7 @@ function skipNext() {
   playSpecificTrack((currentTrackIndex + 1) % len);
 }
 function skipPrev() {
-  if (titleScreenActive) return;
+  if (titleScreenActive || bizarreRealmMusicActive) return;
   if (currentTrackIndex < 0) {
     startGameplayMusic();
     return;
