@@ -1190,8 +1190,8 @@ const WORLD = {
   ascension: {
     name: 'The Ascension Chamber',
     pano: () => loadPano('panos/ascension.jpg'),
-    // Per-node ambient — high-altitude wind, the chamber sits in the sky.
     ambient: 'audio/sfx/ascension-ambient.mp3',
+    startDir: [-0.95, -0.3, -0.09],
     hotspots: () => [
       // The shore's linking book — blue leather, wave sigil.
       { action: 'touchLinkingBook',
@@ -1224,7 +1224,7 @@ const WORLD = {
         hidden: () => state.shoreReturned && state.greenReturned && state.cottageReturned },
       // Bizarre realm orrery — unlocks when all 3 Ages are returned from.
       { to: 'bizarreRealm', dir: [0.71, 0.11, -0.7],
-        label: 'the orrery — something has changed', color: 0xd4aaff,
+        label: 'the armillary sphere — it holds something new', color: 0xd4aaff,
         sfx: 'ambient-peaceful-ray-light', sfxVolume: 1.5, fadeMs: 4000,
         hidden: () => !(state.shoreReturned && state.greenReturned && state.cottageReturned) },
     ],
@@ -1233,8 +1233,10 @@ const WORLD = {
   bizarreRealm: {
     name: 'The Fourth Age',
     pano: null, // pano pending — stub node only
-    ambient: 'audio/sfx/ambient-peaceful-ray-light.mp3',
-    onEnter: () => fadeAudio(0, 3000),
+    onEnter: () => {
+      fadeAudio(0, 3000);
+      setTimeout(() => playSfx('ambient-peaceful-ray-light', 1.5), 2000);
+    },
     startDir: [0, 0, -1],
     hotspots: () => [
       { to: 'ascension', dir: [0, 0, 1], label: 'return to the chamber',
@@ -1840,7 +1842,7 @@ function triggerAgeReturn(epilogueHtml) {
   if (nodeAmbientAudio) fadeAudioElement(nodeAmbientAudio, 0, 3000);
   ageTransitionEl.addEventListener('click', () => {
     ageTransitionEl.classList.remove('active');
-    travelTo('ascension', { fadeMs: 2000 });
+    travelTo('ascension', { fadeMs: 2000, startDir: [0.38, -0.33, -0.86] });
   }, { once: true });
 }
 
@@ -1885,8 +1887,9 @@ async function travelTo(key, opts = {}) {
   // the sphere center. To look in `dir`, we keep the target at origin
   // and position the camera a tiny offset in the OPPOSITE direction —
   // which rotates the view without changing the orbit radius.
-  if (node.startDir) {
-    const dir = new THREE.Vector3(...node.startDir).normalize();
+  const startDir = opts.startDir ?? node.startDir;
+  if (startDir) {
+    const dir = new THREE.Vector3(...startDir).normalize();
     controls.target.set(0, 0, 0);
     camera.position.copy(dir).multiplyScalar(-0.01);
     controls.update();
