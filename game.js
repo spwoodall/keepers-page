@@ -248,7 +248,7 @@ const ACTIONS = {
   },
   inspectGreenTree: () => {
     state.greenTreeInspected = true;
-    playSfx('interact-tap');
+    playSfx('tree-rustle', 2.0);
     showOverlay(`
       <h2>The Ancient Trees</h2>
       <p>Their trunks rise like the columns of a hall without ceiling —
@@ -320,7 +320,7 @@ const ACTIONS = {
     `);
   },
   stepIntoRoots: () => {
-    playSfx('footsteps-in-grass');
+    playSfx('footsteps-in-forest');
     showOverlay(`
       <h2>Between the Roots</h2>
       <p>You step into the gap. The bark you touched before is now
@@ -748,25 +748,14 @@ const ACTIONS = {
   inspectRootAltar: () => {
     playSfx('interact-tap');
     showOverlay(`
-      <h2>The Root Altar</h2>
-      <p>A flat surface of root worn smooth by many hands. At its
-      center, the same mark as the dock door's left panel — the
-      tree. Beneath it, carved smaller in a different hand:</p>
+      <h2>The Stone Altar</h2>
+      <p>Cut stone, deliberately placed — not grown here. The
+      knotwork panels are old work, careful work. Someone brought
+      this here and left it among the moss.</p>
+      <p>On the flat top, the same mark as the dock door's left
+      panel — the tree. Carved smaller beside it, in a different hand:</p>
       <p><em>"The tree knows its own. The stone above
       remembers."</em></p>
-      <div class="close">click to close</div>
-    `);
-  },
-  inspectWrongSkyGap: () => {
-    playSfx('mystical-chime', 2.0);
-    showOverlay(`
-      <h2>The Gap in the Roots</h2>
-      <p>Through the braided ceiling — a twilight sky, overcast
-      and still. You came from a world of gold sunset. This sky
-      should not exist here.</p>
-      <p>You look at the pool. The pool reflects the sky you came
-      from. Everything here has its reflection somewhere else
-      entirely.</p>
       <div class="close">click to close</div>
     `);
   },
@@ -786,7 +775,7 @@ const ACTIONS = {
     refreshCurrentNode();
   },
   alignDiskWave: () => {
-    playSfx('interact-tap');
+    playSfx('sweep-away');
     showOverlay(`
       <h2>The Wave</h2>
       <p>You turn the stone to the wave symbol. The hollow below
@@ -797,13 +786,25 @@ const ACTIONS = {
     `);
   },
   alignDiskSpiral: () => {
-    playSfx('interact-tap');
+    playSfx('sweep-away');
     showOverlay(`
       <h2>The Spiral</h2>
       <p>You turn the stone to the Keepers' mark. The hollow
       flickers — almost — then settles back to dark. The spiral
       opens other doors. Not this one.</p>
       <p><em>Not this one.</em></p>
+      <div class="close">click to close</div>
+    `);
+  },
+  inspectWallDisc: () => {
+    playSfx('interact-tap');
+    showOverlay(`
+      <h2>The Stone Disc</h2>
+      <p>A cross-section of the tree itself, or something shaped to
+      resemble one. The knotwork carved into it is old — older than
+      the platform, older than the staircase. At its center, a small
+      sphere of pale stone, suspended in a shallow socket.</p>
+      <p>It does not move. It is waiting for something.</p>
       <div class="close">click to close</div>
     `);
   },
@@ -843,7 +844,7 @@ const ACTIONS = {
     `);
   },
   inspectRootGlyphs: () => {
-    playSfx('interact-tap');
+    playSfx('sweep-away');
     showOverlay(`
       <h2>A Carved Symbol</h2>
       <p>Something is carved into this root — a glyph, a
@@ -1286,7 +1287,7 @@ const WORLD = {
       // Terminal exit — only appears once all three have been seen.
       { action: 'stepIntoRoots', dir: [0.31, 0.08, -0.95],
         label: 'step between the great roots',
-        color: 0x7affd2,
+        color: 0x7affd2, shape: 'circle',
         hidden: () => !(state.greenTreeInspected
                         && state.greenBasinInspected
                         && state.greenShellInspected) },
@@ -1462,72 +1463,69 @@ const WORLD = {
   // ---- Green multi-room nodes -----------------------------------------
   greenRootHollow: {
     name: 'The Root Hollow',
-    pano: () => loadPano('panos/green-root-hollow.jpg'),
+    pano: () => loadPano('panos/green-country-hollow.jpg'),
     ambient: 'audio/sfx/green-ambient.mp3',
-    startDir: [0, 0, -1], // DIR — capture with H-key dev mode
+    startDir: [-0.83, 0.11, -0.55],
     hotspots: () => [
-      { action: 'inspectRootAltar', dir: [0, 0, -1],
-        label: 'a worn flat root — the altar', color: 0xffaa44 },
-      { action: 'inspectWrongSkyGap', dir: [0, 0.4, -1],
-        label: 'a gap in the roots above', color: 0xc0d0ff, shape: 'circle' },
-      { to: 'greenRootDepths', dir: [0, -0.3, -1],
-        label: 'a passage descending into the roots', sfx: 'footsteps-in-grass', fadeMs: 2400 },
-      { to: 'greenCanopy', dir: [0, 0.3, -1],
+      { action: 'inspectRootAltar', dir: [-0.46, -0.39, -0.8],
+        label: 'a carved stone altar', color: 0xffaa44, shape: 'quad',
+        corners: [[2.88,1.32], [3.11,-1.32], [-3.11,-1.32], [-2.88,1.32]] },
+
+      { to: 'greenRootDepths', dir: [-0.38, -0.34, 0.86],
+        label: 'a passage descending into the roots', sfx: 'footsteps-in-forest', fadeMs: 2400 },
+      { to: 'greenCanopy', dir: [0.2, 0.33, 0.92],
         label: 'the hollow trunk going up', sfx: 'climbing-stairs', fadeMs: 2400 },
-      { to: 'greenCountry', dir: [0, 0, -1],
-        label: 'back to the green country', sfx: 'footsteps-in-grass', fadeMs: 2000 },
+      { to: 'greenCountry', dir: [0.66, 0.21, -0.73],
+        label: 'back to the green country', sfx: 'footsteps-in-forest', fadeMs: 4000 },
     ],
   },
   greenRootDepths: {
     name: 'The Root Depths',
-    pano: () => loadPano('panos/green-root-depths.jpg'),
-    startDir: [0, 0, -1], // DIR — capture with H-key dev mode
+    pano: () => loadPano('panos/green-country-depths.jpg'),
+    ambient: 'audio/sfx/dripping-water-stalactites-cave.mp3',
+    startDir: [0.91, -0.42, 0.04],
     hotspots: () => [
-      { action: 'inspectDepthsPool', dir: [0, -0.4, -1],
+      { action: 'inspectDepthsPool', dir: [-0.97, -0.17, 0.16],
         label: 'the underground pool', color: 0xc0d0ff, shape: 'circle' },
-      // Three shadowed root glyphs — flavor only until canopy disk aligned.
-      // Dirs need H-key capture. Spread across the sphere so they feel distinct.
-      { action: 'inspectRootGlyphs', dir: [0.4, 0, -0.9],
+      { action: 'inspectRootGlyphs', dir: [0.47, -0.45, -0.75],
         label: 'a carved symbol in shadow', color: 0xa078ff, shape: 'circle',
         hidden: () => state.greenCanopyAligned },
-      { action: 'inspectRootGlyphs', dir: [-0.4, 0, -0.9],
+      { action: 'inspectRootGlyphs', dir: [0.15, -0.34, 0.93],
         label: 'a carved symbol in shadow', color: 0xa078ff, shape: 'circle',
         hidden: () => state.greenCanopyAligned },
-      { action: 'inspectRootGlyphs', dir: [0, 0.15, -1],
-        label: 'a carved symbol in shadow', color: 0xa078ff, shape: 'circle',
+      { action: 'inspectRootGlyphs', dir: [-0.71, -0.27, -0.65],
+        label: 'markings hidden among the roots', color: 0xa078ff, shape: 'circle',
         hidden: () => state.greenCanopyAligned },
-      // Puzzle target — only visible once disk is aligned from the canopy.
-      { action: 'touchLitRoot', dir: [0, 0, -1],
+      { action: 'touchLitRoot', dir: [-0.97, -0.17, 0.16],
         label: 'a symbol lit from above', color: 0x7affd2,
         hidden: () => !state.greenCanopyAligned || state.greenRootDepthsSolved },
-      { to: 'greenRootHollow', dir: [0, 0, -1],
+      { to: 'greenRootHollow', dir: [-0.93, -0.15, -0.35],
         label: 'back up to the hollow', sfx: 'climbing-stairs', fadeMs: 2000 },
     ],
   },
   greenCanopy: {
     name: 'The Canopy',
-    pano: () => loadPano('panos/green-canopy.jpg'),
+    pano: () => loadPano(state.greenCanopyAligned ? 'panos/green-country-canopy-activated.jpg' : 'panos/green-country-canopy.jpg'),
     ambient: 'audio/sfx/green-ambient.mp3',
-    startDir: [0, 0, -1], // DIR — capture with H-key dev mode
+    startDir: [-0.84, 0.14, -0.52],
     hotspots: () => [
-      { action: 'inspectCanopyView', dir: [0, 0.1, -1],
+      { action: 'inspectCanopyView', dir: [0.73, -0.11, -0.67],
         label: 'the endless forest below', color: 0x9aff7a, shape: 'panel', w: 5.0, h: 3.0 },
-      // Three disk symbol positions — puzzle origin. Tree is correct.
-      // Dirs need H-key capture on the disk face.
-      { action: 'alignDiskTree', dir: [0, -0.35, -1],
-        label: 'the stone disk — tree symbol', color: 0x9aff7a, shape: 'circle',
+      { action: 'inspectWallDisc', dir: [-0.62, -0.78, 0.02],
+        label: 'a carved stone disc — a pearl at its center', color: 0xffaa44, shape: 'circle' },
+      { action: 'alignDiskTree', dir: [0.66, -0.57, 0.5],
+        label: 'a tree carved into the stone', color: 0x9aff7a, shape: 'circle',
         hidden: () => state.greenCanopyAligned },
-      { action: 'alignDiskWave', dir: [0.25, -0.35, -1],
-        label: 'the stone disk — wave symbol', color: 0xa078ff, shape: 'circle',
+      { action: 'alignDiskWave', dir: [-0.74, -0.65, -0.18],
+        label: 'a wave carved into the stone', color: 0xa078ff, shape: 'circle',
         hidden: () => state.greenCanopyAligned },
-      { action: 'alignDiskSpiral', dir: [-0.25, -0.35, -1],
-        label: 'the stone disk — spiral symbol', color: 0xffd27a, shape: 'circle',
+      { action: 'alignDiskSpiral', dir: [-0.71, -0.66, 0.25],
+        label: 'a spiral carved into the stone', color: 0xffd27a, shape: 'circle',
         hidden: () => state.greenCanopyAligned },
-      // Post-alignment — single confirm inspect.
-      { action: 'inspectAlignedDisk', dir: [0, -0.35, -1],
-        label: 'the aligned disk', color: 0x7affd2,
+      { action: 'inspectAlignedDisk', dir: [-0.74, -0.65, -0.18],
+        label: 'the disk — aligned', color: 0x7affd2,
         hidden: () => !state.greenCanopyAligned },
-      { to: 'greenRootHollow', dir: [0, 0, -1],
+      { to: 'greenRootHollow', dir: [-0.68, -0.01, 0.74],
         label: 'back down the hollow trunk', sfx: 'climbing-stairs', fadeMs: 2000 },
     ],
   },
@@ -2166,8 +2164,8 @@ const GAMEPLAY_PLAYLIST = [
     label: 'Waves &amp; Piano' },
   { url: 'audio/anton_vlasov-ambient-chill-drone-15790.mp3',
     label: 'Drone' },
-  { url: 'audio/desifreemusic-flowing-river-sounds-blended-with-calming-drone-pads-377064.mp3',
-    label: 'Flowing River' },
+  { url: 'audio/juraganvisi-nocturnal-piano-reflections-with-dreamlike-pads-and-lo-fi-v2-416000.mp3',
+    label: 'Nocturnal Piano' },
 ];
 let currentTrackIndex = -1;
 
@@ -2329,6 +2327,7 @@ const PRELOAD_SFX = [
   'climbing-stairs', 'sigil-warp', 'linking-warp',
   'mechanism-whir', 'wave-crash', 'lighthouse', 'mystical-chime',
   'shell-fade', 'beam-sound', 'knock-on-window', 'ambient-peaceful-ray-light', 'fx-light',
+  'tree-rustle', 'sweep-away', 'footsteps-in-forest',
 ];
 PRELOAD_SFX.forEach(name => {
   const sfx = new Audio(assetUrl(`audio/sfx/${name}.mp3`));

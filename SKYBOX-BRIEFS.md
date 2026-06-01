@@ -56,7 +56,13 @@ Palette: gold amber sunset warmth, ancient deep green, bioluminescent green-gold
 
 ---
 
-### 4. `panos/green-root-hollow.jpg` — Hub
+### 4. `panos/green-country-hollow.jpg` — Hub ✅ Generated 2026-05-31
+
+**Status:** Exterior root-between-trees shot (not interior cathedral as briefed). Re-spec'd: reads as arrival threshold, coheres with green-country's ground-level root feel. Keep.
+
+**Photoshop needed:**
+- Bioluminescent green-gold glow traces along root seams (subtle lichen)
+- Darken bottom-center gap between roots to hint at descending passage to depths
 
 **Role:** Player arrives from stepIntoRoots action. Two exits: descending passage → greenRootDepths, ascending hollow trunk → greenCanopy.
 
@@ -68,7 +74,13 @@ cold blue tones, open sky overhead, stone walls, people, modern elements, bright
 
 ---
 
-### 5. `panos/green-root-depths.jpg` — Branch A (puzzle target)
+### 5. `panos/green-country-depths.jpg` — Branch A (puzzle target) ✅ Generated 2026-05-31
+
+**Status:** Strongest of the three. Bioluminescent pool, root columns, proper dark claustrophobia — all nailed. Hard blue horizontal band on left/right edges is a panorama seam artifact.
+
+**Photoshop needed:**
+- Soften/blend the hard blue edge bands left and right
+- Paint carved glyphs (symbol clusters) onto the two large foreground root surfaces — the center pool glow = the lit root terminal
 
 **Role:** Multiple carved symbol clusters on the root walls — most in shadow. When state.greenCanopyAligned is true, light from above illuminates one specific root cluster. Player touches the lit root to complete the Green puzzle.
 
@@ -80,7 +92,13 @@ sunlight, warm tones, daytime, open sky, people, fire, orange tones, modern elem
 
 ---
 
-### 6. `panos/green-canopy.jpg` — Branch B (puzzle origin)
+### 6. `panos/green-country-canopy.jpg` — Branch B (puzzle origin) ✅ Generated 2026-05-31
+
+**Status:** Remixed gen (2026-05-31) — use this one. Purple sky stays as feature (elevated canopy catches different light). Floor disc already has glowing gold spiral carvings — reads as interactive puzzle piece. Wall disc has intricate carved knotwork — inspect point (tree-ring lore). Warm amber foreground already bridges to green-country palette. Stone pillars visible far left — atmospheric detail, keep.
+
+**Photoshop needed (light lift):**
+- Add **tree** and **wave** symbols to the remaining two sectors of the floor disc, matching the existing gold glow style (spiral is already there)
+- Optional: slightly boost warm amber ground tone to pull closer to green-country sunset
 
 **Role:** Carved stone disk in platform floor has three symbols (tree, wave, spiral). Rotating to tree symbol sets state.greenCanopyAligned, sending light down to illuminate the correct root cluster in the depths.
 
