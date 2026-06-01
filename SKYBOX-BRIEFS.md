@@ -155,6 +155,37 @@ cold tones, personal items, quilts, casual clutter, letters, people, modern elem
 
 ---
 
+## Bizarre Realm (The Fourth Age)
+
+Palette: cosmic night, twin moons, Milky Way arc, cloud sea far below, no warm tones except distant sunset horizon glow.
+
+---
+
+### 10. `panos/bizarre-realm.jpg` — Landing node ✅ Generated + PS Done (2026-06-01)
+
+**Status:** Wide plateau above a cloud sea. Glowing spiral floor carvings, twin moons, Milky Way arc, ancient tree silhouette on right. Two travel hotspots: toward tree (`bizarreRealmTree`) + return to chamber (`ascension`). Bizarre realm locked track plays on arrival.
+
+**Photoshop completed:**
+- Twin moons added to sky ✅
+- Spiral glow patterns painted onto stone floor ✅
+
+**startDir:** `[0.67, 0.49, -0.56]` — faces tree + Milky Way on arrival
+**Ambient:** locked track `audio/low_atmos-space-relaxation-atmosphere-514706.mp3` (plays via `onEnter`, not `ambient:` field)
+
+---
+
+### 11. `panos/bizarre-realm-tree.jpg` — Tree close-up node ✅ Generated + PS Done (2026-06-01)
+
+**Status:** Close-up of massive tree roots with two open linking books nestled at the base. Twin moons, cloud sea, sunset glow on horizon. Two book quads are the climactic two-choice ending (`touchKeeperOneBook` / `touchKeeperTwoBook`).
+
+**Photoshop completed:**
+- Two open books PS'd into tree roots ✅
+- Twin moons added ✅
+
+**startDir:** `[-0.07, -0.39, -0.92]` — looks down at books with cloud sea behind
+
+---
+
 ## Generation Notes
 
 - If a gen's lighting is right but color drifts, fix in Photoshop (see prior Age edits for precedent).
