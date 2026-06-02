@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pano Preview</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0d0906; color: #c8a96e; font-family: monospace; overflow: hidden; }
+    canvas { display: block; }
+
+    #drop-zone {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; pointer-events: none;
+      transition: opacity 0.4s;
+    }
+    #drop-zone.hidden { opacity: 0; }
+    #drop-zone h1 { font-size: 13px; letter-spacing: 2px; color: #ffd27a; text-transform: uppercase; }
+    #drop-zone p  { font-size: 11px; color: #7a5c3a; letter-spacing: 1px; line-height: 1.8; text-align: center; }
+    #drop-zone .hint { font-size: 10px; color: #4a3820; }
+
+    #drop-overlay {
+      position: fixed; inset: 0;
+      border: 2px dashed #ffd27a44;
+      pointer-events: none; opacity: 0;
+      transition: opacity 0.2s;
+    }
+    #drop-overlay.active { opacity: 1; }
+
+    #info {
+      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+      font-size: 10px; letter-spacing: 1px; color: #4a3820;
+      white-space: nowrap; pointer-events: none;
+      transition: opacity 0.4s;
+    }
+    #info.hidden { opacity: 0; }
+
+    #loading {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      font-size: 11px; letter-spacing: 2px; color: #ffd27a88;
+      pointer-events: none; opacity: 0; transition: opacity 0.3s;
+    }
+    #loading.visible { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<div id="drop-zone">
+  <h1>Pano Preview</h1>
+  <p>
+    Drop an equirectangular image here<br>
+    or use <code style="color:#ffd27a88">?pano=&lt;url&gt;</code>
+  </p>
+  <p class="hint">drag &middot; look around</p>
+</div>
+
+<div id="drop-overlay"></div>
+<div id="loading">loading&hellip;</div>
+<div id="info" class="hidden"></div>
+
+<script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ---- Renderer -------------------------------------------------------
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// ---- Scene / Camera / Controls --------------------------------------
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1100);
+camera.position.set(0, 0, 0.01);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableZoom = false;
+controls.enablePan = false;
+controls.rotateSpeed = -0.4;
+
+// ---- Sphere ---------------------------------------------------------
+const geom = new THREE.SphereGeometry(500, 60, 40);
+geom.scale(-1, 1, 1);
+const mat = new THREE.MeshBasicMaterial({ map: null });
+scene.add(new THREE.Mesh(geom, mat));
+
+// ---- Texture loader -------------------------------------------------
+const loader = new THREE.TextureLoader();
+loader.crossOrigin = 'anonymous';
+
+function loadUrl(url, label) {
+  const loading = document.getElementById('loading');
+  const dropZone = document.getElementById('drop-zone');
+  const info = document.getElementById('info');
+
+  loading.classList.add('visible');
+  loader.load(
+    url,
+    (tex) => {
+      mat.map = tex;
+      mat.needsUpdate = true;
+      loading.classList.remove('visible');
+      dropZone.classList.add('hidden');
+      info.textContent = label;
+      info.classList.remove('hidden');
+    },
+    undefined,
+    () => {
+      loading.classList.remove('visible');
+      info.textContent = 'failed to load — check CORS or URL';
+      info.classList.remove('hidden');
+    }
+  );
+}
+
+// ---- ?pano= param ---------------------------------------------------
+const param = new URLSearchParams(location.search).get('pano');
+if (param) loadUrl(param, param.split('/').pop());
+
+// ---- Drag and drop --------------------------------------------------
+const overlay = document.getElementById('drop-overlay');
+
+document.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  overlay.classList.add('active');
+});
+document.addEventListener('dragleave', () => overlay.classList.remove('active'));
+document.addEventListener('drop', (e) => {
+  e.preventDefault();
+  overlay.classList.remove('active');
+  const file = e.dataTransfer.files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  const url = URL.createObjectURL(file);
+  loadUrl(url, file.name);
+});
+
+// ---- Resize ---------------------------------------------------------
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// ---- Render loop ----------------------------------------------------
+(function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+})();
+</script>
+</body>
+</html>
