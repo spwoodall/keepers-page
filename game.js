@@ -433,7 +433,7 @@ const ACTIONS = {
   },
   inspectCottageCompass: () => {
     state.cottageCompassInspected = true;
-    playSfx('interact-tap');
+    playSfx('drop-item', 2.0);
     showOverlay(`
       <h2>A Brass Compass</h2>
       <p>Pocket-sized, brass-bezeled, cool in your palm. The needle
@@ -597,6 +597,24 @@ const ACTIONS = {
     `);
   },
 
+  inspectLibraryBooks: () => {
+    playSfx('book-pages');
+    showOverlay(`
+      <h2>The Shelves</h2>
+      <p>The shelves run deeper than any single life. Hundreds of
+      bindings — cracked leather, oiled cloth, vellum gone the color
+      of tea — and many of them are sets. Twenty volumes. Thirty.
+      One spans an entire run of shelf in matching dark green, sixty
+      spines numbered in faded gold.</p>
+      <p>You pull one out at random. The spine creaks softly. Inside:
+      notation in three different hands across as many decades,
+      marginalia answering marginalia, a final entry on the last
+      page that reads simply <em>enough.</em></p>
+      <p>The Keepers were not in a hurry. They never were.</p>
+      <div class="close">click to close</div>
+    `);
+  },
+
   // ---- Shore multi-room -----------------------------------------------
   inspectMonolithCarvings: () => {
     playSfx('interact-tap');
@@ -617,12 +635,13 @@ const ACTIONS = {
       <h2>A Rusted Logbook</h2>
       <p>The pages are swollen with salt water, barely legible.
       The last surviving entry reads:</p>
-      <p><em>"The beam has three angles. We tried the highest first —
-      nothing answered. The middle second — still nothing. The
-      Keeper's notes say the subject cannot be found at any surface.
-      I have been staring at the third position for three tides.
-      I am afraid that it is correct. I am more afraid of what
-      will happen if it is."</em></p>
+      <p><em>"The dial knows three voices. The Keepers wrote:
+      the subject lies neither in sky nor in sea — but in what
+      lies between.</em></p>
+      <p><em>I have read that line every night for three tides.
+      I have not yet been brave enough to set the dial. I am
+      afraid that they were right. I am more afraid of what
+      answers if they are."</em></p>
       <div class="close">click to close</div>
     `);
   },
@@ -659,7 +678,7 @@ const ACTIONS = {
       locks — straight down, as it was always built to be —
       and the hole fills with cold light that travels farther
       than it should. Somewhere below, something receives it.</p>
-      <p><em>Neither sky nor sea. What lies between.</em></p>
+      <p><em>You have looked where the Keepers would not.</em></p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -1222,6 +1241,11 @@ const WORLD = {
       { action: 'inspectLibraryWindow', dir: [0.86, 0.17, 0.48],
         label: 'a tall window', color: 0xa078ff, shape: 'quad',
         corners: [[1.44,3.04], [1.53,-3.04], [-1.53,-3.04], [-1.44,3.04]] },
+      // The shelves themselves — flavor inspect on the Keepers' patience.
+      // Wide quad spans the far wall of bindings.
+      { action: 'inspectLibraryBooks', dir: [-0.32, 0.12, -0.94], shape: 'quad',
+        corners: [[10.4,3.63], [10.75,-3.77], [-10.83,-4.29], [-10.32,4.43]],
+        label: 'the long rows of books', color: 0xffaa44 },
       // Spiral staircase — main exit, always visible.
       { to: 'observatory', dir: [0.52, -0.2, -0.83], label: 'climb the spiral staircase',
         sfx: 'climbing-stairs', sfxDelay: 500, fadeMs: 6500 },
@@ -1281,7 +1305,6 @@ const WORLD = {
     pano: () => loadPano('panos/bizarre-realm.jpg'),
     onEnter: () => {
       fadeAudio(0, 3000);
-      setTimeout(() => playSfx('ambient-peaceful-ray-light', 1.5), 2000);
       setTimeout(() => {
         bizarreRealmMusicActive = true;
         ambientAudio.loop = true;
@@ -1289,7 +1312,7 @@ const WORLD = {
         ambientAudio.volume = audioPrefs.musicMuted ? 0 : audioPrefs.music;
         ambientAudio.play().catch(err => console.warn('[bizarre]', err));
         updateTrackLabel();
-      }, 3500);
+      }, 500);
     },
     startDir: [0.67, 0.49, -0.56],
     hotspots: () => [
@@ -1578,7 +1601,7 @@ const WORLD = {
         label: 'a carved symbol in shadow', color: 0xa078ff, shape: 'circle' },
       { action: 'inspectRootGlyphs', dir: [-0.71, -0.27, -0.65],
         label: 'markings hidden among the roots', color: 0xa078ff, shape: 'circle' },
-      { action: 'touchLitRoot', dir: [0.92, -0.4, 0.05],
+      { action: 'touchLitRoot', dir: [-0.64, -0.49, 0.59],
         label: 'a symbol lit from above', color: 0x7affd2,
         hidden: () => !state.greenCanopyAligned || state.greenRootDepthsSolved },
       { to: 'greenRootHollow', dir: [-0.97, -0.17, 0.17],
@@ -1640,19 +1663,21 @@ const WORLD = {
     ambient: 'audio/sfx/wind-outside-room.mp3',
     ambientMix: 0.8,
     onEnter: () => { state.cottageLoftSeen = true; },
-    startDir: [0, 0, -1], // DIR — capture with H-key dev mode
+    startDir: [0.27, 0.04, 0.96],
     hotspots: () => [
       // Puzzle origin — folded note gives the orrery clue. Hides once read.
-      { action: 'readLoftNote', dir: [0.3, -0.3, -0.9],
-        label: 'a folded note on the desk', color: 0xffaa44, shape: 'open-book', w: 2.0, h: 1.5,
+      { action: 'readLoftNote', dir: [0.36, -0.42, 0.84], shape: 'quad',
+        corners: [[1.5,0.99], [2.57,-0.64], [-1.55,-0.97], [-2.52,0.62]],
+        label: 'a folded note on the desk', color: 0xffaa44,
         hidden: () => state.cottageLoftNoteRead },
-      { action: 'inspectLoftMirror', dir: [-0.5, 0.2, -0.85],
+      { action: 'inspectLoftMirror', dir: [-0.99, 0.16, 0.03],
         label: 'letters tucked in the mirror frame', color: 0xffaa44 },
-      { action: 'inspectLoftQuilt', dir: [0.8, -0.3, -0.5],
+      { action: 'inspectLoftQuilt', dir: [-0.89, -0.44, 0.12], shape: 'quad',
+        corners: [[7.79,2.05], [5.59,-4.35], [-8.7,-1.38], [-4.68,3.68]],
         label: 'the spiral quilt on the bed', color: 0xffd27a },
-      { action: 'inspectLoftWindow', dir: [0, 0.3, -0.95],
+      { action: 'inspectLoftWindow', dir: [0.27, 0.14, 0.95],
         label: 'the window', color: 0xc0d0ff, shape: 'circle' },
-      { to: 'cottageUpperHall', dir: [0, 0, 1],
+      { to: 'cottageUpperHall', dir: [0.01, -0.06, -1],
         label: 'back to the upper hall', sfx: 'door-open', fadeMs: 1500 },
     ],
   },

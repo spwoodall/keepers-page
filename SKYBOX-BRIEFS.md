@@ -131,7 +131,18 @@ cold tones, bright daylight, open spaces, people, modern elements, fire, blue to
 
 ---
 
-### 8. `panos/cottage-loft.jpg` — Branch A (puzzle origin)
+### 8. `panos/cottage-loft.jpg` — Branch A (puzzle origin) ✅ Generated 2026-06-05 · PS ✅ Done
+
+**Status:** Vaulted stone bedchamber, arched window with stone balustrade onto sunset sea (sells the loft elevation), spiral quilt on the bed with a half-read book left face-down, brass keepsake box + folded note on the desk, wooden trunk on the floor. Round age-darkened mercury-glass mirror set into the bed alcove with a warm sunset glint catching at lower-right.
+
+**Photoshop completed:**
+- Live flowers (desk vase + floor pot) removed → keepsake box + wooden trunk ✅
+- Round mirror painted into bed alcove with darkened tarnished glass and warm pinpoint highlight ✅
+- Balustrade added beyond the window for elevation cue ✅
+- Half-read book added to the bed ✅
+
+**startDir:** `[0.27, 0.04, 0.96]` — arrives facing the window/sunset with desk + note in lower vision
+**Ambient:** `audio/sfx/wind-outside-room.mp3` at mix 0.8
 
 **Role:** Folded note on writing desk sets state.cottageLoftNoteRead when read. Note reads: "When the second arm reaches the pale moon, the glass will find it." Unlocks orrery interaction in the tower. No scientific instruments — this is the personal space.
 
