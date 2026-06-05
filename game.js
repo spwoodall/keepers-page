@@ -890,12 +890,11 @@ const ACTIONS = {
     showOverlay(`
       <h2>The Lit Root</h2>
       <p>The light from above falls on this one — just this one,
-      out of all of them. You lay your hand on the symbol. The
-      root is warm. The glyph pulses once, slowly, as though the
-      tree above felt it.</p>
+      out of all of them. You lay your hand on the root. It is
+      warm. The glyph along its surface pulses once, slowly, as
+      though the tree above felt it.</p>
       <p>The pool stills. The star field sharpens. The roots part
-      around you — not an exit, an acknowledgment. The Age knows
-      you have been here.</p>
+      around you — not an exit, an acknowledgment.</p>
       <p><em>The Age accepts you.</em></p>
       <div class="close">click to depart</div>
     `, () => {
@@ -1360,9 +1359,10 @@ const WORLD = {
         color: 0xc8a0ff, shape: 'circle',
         hidden: () => state.shoreShellInspected },
       // Final exit — only appears once all three have been seen.
+      // Passage shape so it reads as a true travel ring (overlay before travel).
       { action: 'wadeToMonolith', dir: [-0.94, -0.16, 0.28],
         label: 'walk into the tide',
-        color: 0x7affd2, shape: 'circle',
+        color: 0x7affd2, shape: 'passage',
         hidden: () => !(state.shoreLighthouseInspected
                         && state.shoreMoonInspected
                         && state.shoreShellInspected) },
@@ -1393,9 +1393,11 @@ const WORLD = {
         color: 0xc8a0ff, shape: 'circle',
         hidden: () => state.greenShellInspected },
       // Terminal exit — only appears once all three have been seen.
+      // Passage shape so it reads as a true travel ring (the overlay runs
+      // before the actual travel).
       { action: 'stepIntoRoots', dir: [0.31, 0.08, -0.95],
         label: 'step between the great roots',
-        color: 0x7affd2, shape: 'circle',
+        color: 0x7affd2, shape: 'passage',
         hidden: () => !(state.greenTreeInspected
                         && state.greenBasinInspected
                         && state.greenShellInspected) },
@@ -1439,9 +1441,10 @@ const WORLD = {
         color: 0xc8a0ff, shape: 'circle',
         hidden: () => state.cottageShellInspected },
       // Left staircase — hidden until all five inspects are complete.
+      // Passage shape so it reads as a true travel ring (overlay before travel).
       { action: 'ascendCottageLoft', dir: [-0.85, 0.4, 0.33],
         label: 'the left staircase',
-        color: 0x7affd2,
+        color: 0x7affd2, shape: 'passage',
         hidden: () => !(state.cottageJournalLeftRead
                         && state.cottageJournalRightRead
                         && state.cottageSpiralInspected
@@ -1450,7 +1453,7 @@ const WORLD = {
       // Right staircase — DIR captured 2026-05-31. Leads to same upper hall.
       { action: 'ascendCottageLoft', dir: [-0.04, 0.47, -0.88],
         label: 'the right staircase',
-        color: 0x7affd2,
+        color: 0x7affd2, shape: 'passage',
         hidden: () => !(state.cottageJournalLeftRead
                         && state.cottageJournalRightRead
                         && state.cottageSpiralInspected
@@ -1575,9 +1578,9 @@ const WORLD = {
     ambient: 'audio/sfx/green-ambient.mp3',
     startDir: [-0.83, 0.11, -0.55],
     hotspots: () => [
-      { action: 'inspectRootAltar', dir: [-0.46, -0.39, -0.8],
+      { action: 'inspectRootAltar', dir: [-0.49, -0.05, -0.87],
         label: 'a carved stone altar', color: 0xffaa44, shape: 'quad',
-        corners: [[2.88,1.32], [3.11,-1.32], [-3.11,-1.32], [-2.88,1.32]] },
+        corners: [[2.37,0.74], [2.39,-0.63], [-2.4,-0.77], [-2.36,0.67]] },
 
       { to: 'greenRootDepths', dir: [-0.38, -0.34, 0.86],
         label: 'a passage descending into the roots', sfx: 'footsteps-in-forest', fadeMs: 3500 },
@@ -1589,7 +1592,11 @@ const WORLD = {
   },
   greenRootDepths: {
     name: 'The Root Depths',
-    pano: () => loadPano('panos/green-country-depths.jpg'),
+    // Pano swaps when the canopy disc is aligned — the cold light from above
+    // finds the lit root only after the puzzle is set.
+    pano: () => loadPano(state.greenCanopyAligned
+      ? 'panos/green-country-depths-activated.jpg'
+      : 'panos/green-country-depths.jpg'),
     ambient: 'audio/sfx/dripping-water-stalactites-cave.mp3',
     startDir: [0.94, -0.2, 0.29],
     hotspots: () => [
@@ -1602,7 +1609,7 @@ const WORLD = {
       { action: 'inspectRootGlyphs', dir: [-0.71, -0.27, -0.65],
         label: 'markings hidden among the roots', color: 0xa078ff, shape: 'circle' },
       { action: 'touchLitRoot', dir: [-0.64, -0.49, 0.59],
-        label: 'a symbol lit from above', color: 0x7affd2,
+        label: 'the root lit from above', color: 0x7affd2, shape: 'circle',
         hidden: () => !state.greenCanopyAligned || state.greenRootDepthsSolved },
       { to: 'greenRootHollow', dir: [-0.97, -0.17, 0.17],
         label: 'back up to the hollow', sfx: 'footsteps-in-forest', fadeMs: 3500 },
@@ -1706,7 +1713,7 @@ const WORLD = {
         hidden: () => state.cottageTowerOrrerySet },
       // Age terminal — only unlocked once orrery is correctly set.
       { action: 'useTelescope', dir: [0.7, 0.1, -0.7],
-        label: 'the telescope', color: 0x7affd2,
+        label: 'the telescope', color: 0x7affd2, shape: 'circle',
         hidden: () => !state.cottageTowerOrrerySet },
       { to: 'cottageUpperHall', dir: [0, 0, 1],
         label: 'back to the upper hall', sfx: 'door-open', fadeMs: 1500 },
@@ -1817,6 +1824,10 @@ function buildHotspots(node) {
     }
     else if (hs.shape === 'button')    { geom = new THREE.CircleGeometry(0.5, 32); hitW = hitH = 1.2; }
     else if (hs.shape === 'circle')    { const r = hs.r ?? 0.85; geom = new THREE.RingGeometry(r - 0.15, r, 32); hitW = hitH = r * 2.2; }
+    // Passage ring — same geometry as the default travel ring, for action-style
+    // hotspots that semantically represent an active passage (e.g. an Age entry
+    // gated behind state, where clicking shows a transition overlay before travel).
+    else if (hs.shape === 'passage')   { geom = new THREE.RingGeometry(1.2, 1.6, 32); hitW = hitH = 3.4; }
     else if (hs.action)                { geom = makeBookFrame(1.4, 1.4, 0.12); hitW = hitH = 1.6; }
     else                                { geom = new THREE.RingGeometry(1.2, 1.6, 32); hitW = hitH = 3.4; }
     const userData = {

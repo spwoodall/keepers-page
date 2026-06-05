@@ -76,11 +76,12 @@ cold blue tones, open sky overhead, stone walls, people, modern elements, bright
 
 ### 5. `panos/green-country-depths.jpg` — Branch A (puzzle target) ✅ Generated 2026-05-31 · PS ✅ Done
 
-**Status:** Strongest of the three. Bioluminescent pool, root columns, proper dark claustrophobia — all nailed.
+**Status:** Strongest of the three. Bioluminescent pool, root columns, proper dark claustrophobia — all nailed. Pano swaps with the canopy puzzle: `green-country-depths.jpg` = pre-alignment (dark, root system harder to read, lit cluster not yet illuminated), `green-country-depths-activated.jpg` = post-alignment (cold light from above picks out the correct root cluster). Same panorama geometry — hotspot dirs work on both.
 
 **Photoshop completed:**
 - Blue edge bands not visible in-game — no blend needed ✅
 - Carved glyphs painted onto two foreground root surfaces ✅
+- Dark variant added (2026-06-05) for pre-alignment state ✅
 
 **Ambient:** `dripping-water-stalactites-cave.mp3` at default mix
 
