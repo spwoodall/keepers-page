@@ -11,7 +11,14 @@ const VERSION = (await fetch('VERSION')
   .then((r) => (r.ok ? r.text() : ''))
   .catch(() => '')).trim() || 'unknown';
 
-const assetUrl = (path) => `${path}?v=${VERSION}`;
+// On localhost we swap VERSION for a per-session timestamp so iterating on
+// panos / audio doesn't get pinned to whatever the disk cache holds for the
+// last-seen `?v=<VERSION>` URL. Captured once at module load — every asset
+// URL in this session shares the same value, so panoCache stays consistent.
+const isLocalDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+const cacheBust = isLocalDev ? Date.now() : VERSION;
+
+const assetUrl = (path) => `${path}?v=${cacheBust}`;
 
 const versionTag = document.getElementById('version-tag');
 if (versionTag) versionTag.textContent = VERSION;
@@ -168,6 +175,7 @@ const state = {
   // Green multi-room
   greenCanopyAligned: false,
   greenRootDepthsSolved: false,
+  greenDepthsPearlsInspected: false,
   // Cottage multi-room
   cottageLoftNoteRead: false,
   cottageTowerOrrerySet: false,
@@ -852,11 +860,14 @@ const ACTIONS = {
     playSfx('mystical-chime', 2.0);
     showOverlay(`
       <h2>The Forest</h2>
-      <p>It goes on in every direction to every horizon. The gold
-      sunset catches the top of the canopy and holds it like
-      something precious. From here you understand that the forest
-      is not a place inside a larger world — the forest is the
-      world, and everything else is what you find at its edges.</p>
+      <p>The canopy spreads to every horizon, broken in places by
+      pale stone spires that rise out of the leaves like the fingers
+      of something the forest grew around but never quite swallowed.
+      The gold sunset catches the top of all of it — leaves and stone
+      alike — and holds it like something precious.</p>
+      <p>From here you understand that this Age is not laid out
+      around a center. It is canopy, and the canopy is everything,
+      and the stone fingers are not buildings but reminders.</p>
       <p>This is the view the Keepers came up here to think.</p>
       <div class="close">click to close</div>
     `);
@@ -872,6 +883,22 @@ const ACTIONS = {
       long as you need.</p>
       <div class="close">click to close</div>
     `);
+  },
+  inspectDepthsPearls: () => {
+    state.greenDepthsPearlsInspected = true;
+    playSfx('water-drop');
+    showOverlay(`
+      <h2>The Pearls</h2>
+      <p>Small bright things scattered through the bioluminescent
+      water, each one catching what little light the cavern has
+      and holding it. Not jewels, not eggs — pearls, or something
+      old enough to be called pearls.</p>
+      <p>They lean toward the brightest part of the pool the way
+      a sleeping face turns toward a window. Whatever they are,
+      they are waiting to be seen.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
   },
   inspectRootGlyphs: () => {
     playSfx('sweep-away');
@@ -1602,6 +1629,12 @@ const WORLD = {
     hotspots: () => [
       { action: 'inspectDepthsPool', dir: [0.73, -0.64, 0.24],
         label: 'the underground pool', color: 0xc0d0ff, shape: 'circle' },
+      // Pearls — only visible in the dark/unaligned state. Once the canopy
+      // pours light into the chamber, they're no longer the only bright
+      // things in the room and the player's eye moves to the lit root.
+      { action: 'inspectDepthsPearls', dir: [-0.06, -0.84, -0.54], shape: 'circle',
+        label: 'small pearls in the water', color: 0xffd27a,
+        hidden: () => state.greenCanopyAligned || state.greenDepthsPearlsInspected },
       { action: 'inspectRootGlyphs', dir: [0.47, -0.45, -0.75],
         label: 'a carved symbol in shadow', color: 0xa078ff, shape: 'circle' },
       { action: 'inspectRootGlyphs', dir: [0.15, -0.34, 0.93],
