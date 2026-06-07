@@ -458,9 +458,10 @@ const ACTIONS = {
     playSfx('climbing-stairs');
     showOverlay(`
       <h2>The Upper Hall</h2>
-      <p>The staircase brings you to a narrow corridor. Two doors
-      face each other — left and right. Between them, the stone
-      wall carries two names you cannot quite read in this light.</p>
+      <p>The stairs rise into a long stone hallway, and the
+      hallway opens onto a narrow corridor. Two doors face each
+      other — left and right. Between them, the stone wall
+      carries two names you cannot quite read in this light.</p>
       <p>The wind outside sounds different up here. Closer.</p>
       <div class="close">click to continue</div>
     `, () => {
@@ -955,6 +956,36 @@ const ACTIONS = {
       from its hook in a long time — the shoulders have taken the
       shape of the wood. Two coats. Two people who stopped needing
       them at the same moment.</p>
+      <div class="close">click to close</div>
+    `);
+  },
+  inspectHallStarCharts: () => {
+    playSfx('book-pages');
+    showOverlay(`
+      <h2>The Star Charts</h2>
+      <p>An open scroll laid out on a small stand — a wheel of
+      constellations divided into twelve, marked in a careful
+      hand. Behind it, more scrolls leaning against the wall,
+      rolled and tied, waiting to be unrolled by hands that did
+      not come back.</p>
+      <p>Several of the marked stars are not on any sky you have
+      ever seen. The Keepers were watching something the rest of
+      the world cannot.</p>
+      <div class="close">click to close</div>
+    `);
+  },
+  inspectHallAntikythera: () => {
+    playSfx('brass-click');
+    showOverlay(`
+      <h2>The Mechanism</h2>
+      <p>An ancient device of brass and bronze, gears within
+      gears, older than the cottage and older than the stone the
+      cottage is built from. Some of the gears are sized to track
+      the moon. Some, the sun. Some, things you cannot name.</p>
+      <p>It does not move. Whoever last wound it has not been
+      here in a long time. The dust on the largest gear is
+      undisturbed except in the shape of two fingers — as if
+      someone reached toward it once and stopped.</p>
       <div class="close">click to close</div>
     `);
   },
@@ -1683,18 +1714,27 @@ const WORLD = {
     pano: () => loadPano('panos/cottage-upper-hall.jpg'),
     ambient: 'audio/sfx/wind-outside-room.mp3',
     ambientMix: 1.0,
-    startDir: [0, 0, -1], // DIR — capture with H-key dev mode
+    startDir: [-0.83, -0.32, -0.46],
     hotspots: () => [
-      { action: 'inspectNamePlaques', dir: [0, 0.1, -1],
+      { action: 'inspectNamePlaques', dir: [-0.83, -0.31, -0.46], shape: 'quad',
+        corners: [[2.71,2.83], [2.44,-2.79], [-2.42,-2.87], [-2.72,2.83]],
         label: 'two name plaques on the wall', color: 0xffaa44 },
-      { action: 'inspectHallCoats', dir: [0.4, 0.1, -0.9],
+      { action: 'inspectHallCoats', dir: [0.44, -0.03, 0.9],
         label: 'two coats on the rack', color: 0xa078ff },
-      { to: 'cottageLoft', dir: [-0.7, 0, -0.7],
+      // Star chart stand — Keepers' sky obsession, foreshadows the tower.
+      { action: 'inspectHallStarCharts', dir: [-0.06, -0.57, 0.82], shape: 'quad',
+        corners: [[2.52,4.67], [1.88,-4.69], [-1.83,-4.66], [-2.57,4.69]],
+        label: 'an open star chart on a stand', color: 0xffd27a },
+      // Antikythera-style brass mechanism — ancient astronomical computer.
+      { action: 'inspectHallAntikythera', dir: [0.52, -0.79, -0.32], shape: 'quad',
+        corners: [[1.54,3.35], [0.92,-3.36], [-1.02,-3.33], [-1.43,3.34]],
+        label: 'a brass mechanism of gears', color: 0xffd27a },
+      { to: 'cottageLoft', dir: [-0.69, -0.37, 0.61],
         label: 'the left door', sfx: 'door-open', fadeMs: 1800 },
-      { to: 'cottageTower', dir: [0.7, 0, -0.7],
+      { to: 'cottageTower', dir: [0.13, -0.37, -0.92],
         label: 'the right door', sfx: 'door-open', fadeMs: 1800 },
-      { to: 'keepersCottage', dir: [0, -0.2, 1],
-        label: 'back down the stairs', sfx: 'climbing-stairs', fadeMs: 1500 },
+      { to: 'keepersCottage', dir: [0.91, -0.39, 0.11],
+        label: 'back down the long hall', sfx: 'stone-footsteps', fadeMs: 1500 },
     ],
   },
   cottageLoft: {
@@ -2808,11 +2848,10 @@ document.getElementById('track-prev').addEventListener('click', (e) => {
 });
 
 // ---- Boot -----------------------------------------------------------
-// Intro shows once per browser. Append `?intro` to the URL to force it
-// again, or run `localStorage.removeItem('mystIntroSeen')` in the console.
-const INTRO_KEY = 'mystIntroSeen';
-const forceIntro = new URLSearchParams(location.search).has('intro');
-const shouldShowIntro = forceIntro || !localStorage.getItem(INTRO_KEY);
+// Captain's log shows on every session start. Age completions drop the
+// player back at the ascension chamber, not the dock, so the log only
+// fires when someone is actually beginning a fresh session — which is
+// the right moment for it.
 
 // Hide the help button/menu while the title/preload is up — they belong
 // to gameplay. Class is removed when the title fades out.
@@ -2870,12 +2909,6 @@ function beginExperience() {
       const { path, mix } = resolveAmbient(WORLD[currentNode]);
       if (path) setNodeAmbient(path, mix);
     }
-    if (!shouldShowIntro) {
-      // Returning player — skip straight to gameplay music.
-      startGameplayMusic();
-      return;
-    }
-    localStorage.setItem(INTRO_KEY, '1');
     setTimeout(() => showOverlay(CAPTAINS_LOG_HTML, startGameplayMusic), 400);
   }, 1500);
 }

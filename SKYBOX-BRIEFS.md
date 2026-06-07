@@ -120,7 +120,22 @@ Note: brass instruments are intentionally limited to the tower — do not add sc
 
 ---
 
-### 7. `panos/cottage-upper-hall.jpg` — Hub
+### 7. `panos/cottage-upper-hall.jpg` — Hub ✅ Generated 2026-06-06 · PS ✅ Done
+
+**Status:** Vaulted amber-stone corridor with two wooden doors flanking a central arched alcove. The alcove holds two stacked memorial plaques (deliberately illegible carved surfaces — overlay does the S./R. reveal). Coat rack with two old wool coats to the left, sticky cobweb patina draped throughout for the "long undisturbed" beat. Bonus features beyond brief: a small podium with an open constellation star chart + rolled scrolls (Keeper sky-obsession foreshadow), and an Antikythera-style brass mechanism in a glass-fronted cabinet on the right. Library hallways recede into golden light at both panorama wraps — the right-side hallway is the return route to keepersCottage (the original "stairs back down" beat couldn't be PS'd cleanly).
+
+**Photoshop completed:**
+- Original ornate alcove carving painted out → replaced with two stacked memorial plaques, deliberately illegible ✅
+- Cobwebs layered throughout for centuries-of-stillness patina ✅
+- Star chart stand + rolled scrolls added beside coat rack ✅
+- Brass Antikythera mechanism in glass cabinet added on the right ✅
+
+**startDir:** `[-0.83, -0.32, -0.46]` — arrives facing the two-plaques alcove (the "two Keepers" reveal is the first thing the player sees)
+**Ambient:** `audio/sfx/wind-outside-room.mp3` at mix 1.0
+
+**Bonus inspects beyond brief:** `inspectHallStarCharts` (foreshadows the tower's astronomy), `inspectHallAntikythera` (lore on the Keepers' obsession with celestial mechanisms; closes on the "dust undisturbed except in the shape of two fingers" beat).
+
+**Note on stair → hallway pivot:** The "back down the stairs" return route from the original brief couldn't be PS'd into the upper-hall pano cleanly, so the return is now `back down the long hall` (library hallway recession on the right). The ascent narration in `ascendCottageLoft` was updated to bridge: "The stairs rise into a long stone hallway, and the hallway opens onto a narrow corridor" — keeps the cottage-room staircase pano accurate while connecting to the new hallway exit.
 
 **Role:** Transitional corridor between keepersCottage and the two branch rooms. Left door → cottageLoft, right door → cottageTower. Name plaques are the first explicit evidence there were two Keepers.
 
