@@ -391,7 +391,7 @@ const ACTIONS = {
       <p>The page is pristine — kept so carefully it might be a textbook.
       Every line measured, every margin even. They wrote about the work:
       the brass, the books, the sigils that wanted careful drawing. They
-      wrote about the sea outside their window. They wrote about her.</p>
+      wrote about the sea outside their window. They wrote about him.</p>
       <p><em>They were not afraid when they wrote this.</em></p>
       <div class="close">click to close</div>
     `);
@@ -1800,7 +1800,7 @@ const WORLD = {
       // Age terminal — only unlocked once orrery is correctly set.
       { action: 'useTelescope', dir: [-0.54, 0.43, -0.73],
         label: 'the telescope', color: 0x7affd2, shape: 'circle',
-        hidden: () => !state.cottageTowerOrrerySet },
+        hidden: () => !state.cottageTowerOrrerySet || state.cottageReturned },
       { to: 'cottageUpperHall', dir: [0.88, -0.01, -0.48],
         label: 'back to the upper hall', sfx: 'door-open', fadeMs: 3600 },
     ],
@@ -1981,6 +1981,10 @@ const nodeNameEl = document.getElementById('node-name');
 addEventListener('click', (e) => {
   // Don't capture clicks on the overlay — let it close itself.
   if (e.target.closest('#overlay')) return;
+  // Same for the age-transition epilogue — without this, dismissing the
+  // epilogue bubbles to here and the raycast can re-hit the Age-terminal
+  // hotspot underneath, re-firing triggerAgeReturn.
+  if (e.target.closest('#age-transition')) return;
   if (titleScreenActive) return;
   if (rectCaptureMode) { captureRectCorner(e.clientX, e.clientY); return; }
   pointer.x = (e.clientX / innerWidth) * 2 - 1;
