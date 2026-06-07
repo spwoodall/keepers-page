@@ -14,6 +14,7 @@ body > canvas { filter: brightness(var(--brightness, 1)); }
   z-index: 5;
 }
 body.dev-mode #hud { display: block; }
+body.rect-capture canvas { cursor: crosshair; }
 #label {
   position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
   color: #fff; font: 14px monospace; opacity: 0;
@@ -65,6 +66,24 @@ body.dev-mode #hud { display: block; }
   transition: color 200ms;
 }
 #overlay .close:hover { color: #ffd27a; }
+#age-transition {
+  position: fixed; inset: 0; background: #000;
+  display: none; opacity: 0;
+  align-items: center; justify-content: center; flex-direction: column;
+  z-index: 20; pointer-events: none;
+  transition: opacity 1800ms ease-in;
+  cursor: pointer;
+}
+#age-transition.active { display: flex; opacity: 1; pointer-events: auto; }
+#age-transition .age-epilogue {
+  color: #aaa; font: italic 18px/1.7 Georgia, serif;
+  max-width: 520px; text-align: center; padding: 0 24px;
+}
+#age-transition .age-continue {
+  margin-top: 48px; color: #555;
+  font: 11px monospace; letter-spacing: 3px; text-transform: uppercase;
+}
+
 #endscreen {
   position: fixed; inset: 0; background: #000;
   display: none; opacity: 0;
@@ -503,6 +522,41 @@ ul.changelog li::before {
 #devhud.active { display: block; }
 #devhud .hint { color: #888; font-size: 11px; margin-bottom: 4px; }
 #devhud .snippet { color: #ffd27a; }
+#dev-travel-panel {
+  display: none;
+  position: fixed;
+  bottom: 80px;
+  left: 14px;
+  z-index: 120;
+  background: rgba(0,0,0,0.88);
+  border: 1px solid #ffd27a33;
+  padding: 12px 14px;
+  max-width: 520px;
+}
+#dev-travel-panel.active { display: block; }
+.dev-travel-title {
+  color: #ffd27a;
+  font: 11px monospace;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+#dev-travel-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+#dev-travel-grid button {
+  background: rgba(255,210,122,0.07);
+  border: 1px solid #ffd27a33;
+  color: #888;
+  font: 10px monospace;
+  letter-spacing: 0.5px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+#dev-travel-grid button:hover { background: rgba(255,210,122,0.18); color: #ffd27a; }
 #version-tag {
   position: fixed;
   right: 14px; bottom: 14px;

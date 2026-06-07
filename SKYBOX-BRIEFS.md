@@ -1,0 +1,243 @@
+# Skybox AI Briefs — v0.6.0 Multi-Room Expansion
+
+Preset for all generations: **M3 Magic Realism**
+Character limits: Main ≤ 600 · Negative ≤ 480
+
+Palette lines are baked into each brief. If a generation drifts in tone or color,
+regenerate before doing Photoshop — easier to fix at gen time.
+
+---
+
+## Shore Age
+
+Palette: cold night, twin moonlight, black volcanic stone, deep blue-black water, no warm tones.
+
+---
+
+### 1. `panos/shore-monolith.jpg` — Hub
+
+**Role:** Player arrives here after walking into the tide from reversedShore. Two exits: iron door → chamber, warp to distant lighthouse.
+
+**Main prompt:**
+Standing at the base of a massive black stone monolith rising from dark ocean water, nighttime, twin moons reflected in the still sea, monolith surface carved with concentric wave patterns, distant black lighthouse silhouetted against the moons on a far shoreline, low sea mist at water level, a low iron door set into the monolith base, ominous and ancient and sacred, magic realism.
+
+**Negative prompt:**
+warm colors, sunlight, daytime, people, fire, orange tones, red tones, vegetation, bright light, modern elements
+
+---
+
+### 2. `panos/shore-monolith-chamber.jpg` — Branch A (puzzle target)
+
+**Role:** Beam from lighthouse enters through wall seam and illuminates the plinth panel when state.lighthouseBeamRedirected is true. Panel click completes the Shore puzzle.
+
+**Main prompt:**
+Interior of a small chamber inside a black stone monolith, knee-deep bioluminescent water covering the floor glowing cold blue-green, walls densely carved with concentric wave and arc symbols, a single circular stone plinth rising from the center with a carved circular panel on its surface, a narrow seam in one wall where a thin shaft of light can enter, very low vaulted ceiling, humid and claustrophobic and sacred, magic realism.
+
+**Negative prompt:**
+warm colors, sunlight, daytime, people, fire, orange tones, wide open space, bright even lighting, modern elements
+
+---
+
+### 3. `panos/shore-lighthouse.jpg` — Branch B (puzzle origin)
+
+**Role:** Brass dial on beam mechanism has three position markers. Logbook clue: "neither sky nor sea — what lies between." Setting middle position sets state.lighthouseBeamRedirected, enabling the chamber puzzle.
+
+**Main prompt:**
+Interior of a tall black stone lighthouse tower, spiral stone stairs along the circular walls, a large brass beam mechanism aimed straight downward through a circular hole in the stone floor revealing dark water far below, a brass dial on the side of the mechanism with three etched position markers, an old rusted logbook chained to an iron post, salt-crusted walls, no outward windows, cold and abandoned, magic realism.
+
+**Negative prompt:**
+warm colors, sunlight, outward windows, sea views, people, orange tones, fire, bright light, vegetation, modern elements
+
+---
+
+## Green Country Age
+
+Palette: gold amber sunset warmth, ancient deep green, bioluminescent green-gold glow, overcast twilight sky in any visible gaps.
+
+---
+
+### 4. `panos/green-country-hollow.jpg` — Hub ✅ Generated 2026-05-31 · PS ✅ Done
+
+**Status:** Exterior root-between-trees shot (not interior cathedral as briefed). Re-spec'd: reads as arrival threshold, coheres with green-country's ground-level root feel. Keep.
+
+**Photoshop completed:**
+- Bioluminescent glow skipped — looked wrong on this gen, not needed
+- Bottom-center gap darkened to hint at descending passage ✅
+
+**Role:** Player arrives from stepIntoRoots action. Two exits: descending passage → greenRootDepths, ascending hollow trunk → greenCanopy.
+
+**Main prompt:**
+Interior of a vast root system beneath an ancient tree, a cathedral ceiling of massive interlocking braided roots, a gap overhead showing overcast twilight sky that does not match the gold sunset outside, bioluminescent lichen tracing root seams in green-gold glow, a shallow circular basin of still water on the root floor, two visible passages — one descending into darkness between roots, one ascending through the hollow tree trunk above, ancient and mystical, magic realism.
+
+**Negative prompt:**
+cold blue tones, open sky overhead, stone walls, people, modern elements, bright artificial lighting, crowded busy scene
+
+---
+
+### 5. `panos/green-country-depths.jpg` — Branch A (puzzle target) ✅ Generated 2026-05-31 · PS ✅ Done
+
+**Status:** Strongest of the three. Bioluminescent pool, root columns, proper dark claustrophobia — all nailed. Pano swaps with the canopy puzzle: `green-country-depths.jpg` = pre-alignment (dark, root system harder to read, lit cluster not yet illuminated), `green-country-depths-activated.jpg` = post-alignment (cold light from above picks out the correct root cluster). Same panorama geometry — hotspot dirs work on both.
+
+**Photoshop completed:**
+- Blue edge bands not visible in-game — no blend needed ✅
+- Carved glyphs painted onto two foreground root surfaces ✅
+- Dark variant added (2026-06-05) for pre-alignment state ✅
+
+**Ambient:** `dripping-water-stalactites-cave.mp3` at default mix
+
+**Role:** Multiple carved symbol clusters on the root walls — most in shadow. When state.greenCanopyAligned is true, light from above illuminates one specific root cluster. Player touches the lit root to complete the Green puzzle.
+
+**Main prompt:**
+Deep underground root cavern, enormous tree roots descending like columns into darkness, bioluminescent fungi and lichen as the only light source in cold green-blue, a dark underground pool reflecting a star field that does not exist overhead, multiple carved symbol clusters on the largest roots — glyphs, constellation shapes, spiral patterns — most in shadow with only a few lit, complete darkness beyond the lit area, ancient and disorienting and sacred, magic realism.
+
+**Negative prompt:**
+sunlight, warm tones, daytime, open sky, people, fire, orange tones, modern elements, bright even lighting, stone walls
+
+---
+
+### 6. `panos/green-country-canopy.jpg` — Branch B (puzzle origin) ✅ Generated 2026-05-31 · PS ✅ Done
+
+**Status:** Remixed gen (2026-05-31, amber sky). Floor disc has glowing gold tree/wave/spiral — all three symbols already present from gen. Wall disc = inspect (knotwork, tree-ring lore). `green-country-canopy-activated.jpg` = pano swap on alignment. Ambient: `rustling-wind.mp3` at mix 2.0.
+
+**Photoshop completed:**
+- Tree + wave symbols on floor disc — already in gen, no PS needed ✅
+- Amber sky boost — handled by remix gen ✅
+
+**Role:** Carved stone disk in platform floor has three symbols (tree, wave, spiral). Rotating to tree symbol sets state.greenCanopyAligned, sending light down to illuminate the correct root cluster in the depths.
+
+**Main prompt:**
+Small elevated platform at the top of an enormous hollow ancient tree trunk where it opens to the forest canopy, looking out over an endless vast forest at golden sunset, warm gold sky fully visible above the treeline, platform is worn ancient wood with carved spiral patterns, a carved stone disk set into the platform floor with three symbols — a tree, a wave, and a spiral — it appears to be a rotatable mechanism, a simple worn wooden seat facing the horizon, peaceful and elevated, magic realism.
+
+**Negative prompt:**
+cold tones, nighttime, underground, people, modern elements, stone walls, gray overcast sky, cluttered canopy, crowded
+
+---
+
+## Cottage Age
+
+Palette: warm amber stone, orange-gold sunset through windows, intimate warmth, no cold blues.
+Note: brass instruments are intentionally limited to the tower — do not add scientific equipment to loft or hall briefs.
+
+---
+
+### 7. `panos/cottage-upper-hall.jpg` — Hub ✅ Generated 2026-06-06 · PS ✅ Done
+
+**Status:** Vaulted amber-stone corridor with two wooden doors flanking a central arched alcove. The alcove holds two stacked memorial plaques (deliberately illegible carved surfaces — overlay does the S./R. reveal). Coat rack with two old wool coats to the left, sticky cobweb patina draped throughout for the "long undisturbed" beat. Bonus features beyond brief: a small podium with an open constellation star chart + rolled scrolls (Keeper sky-obsession foreshadow), and an Antikythera-style brass mechanism in a glass-fronted cabinet on the right. Library hallways recede into golden light at both panorama wraps — the right-side hallway is the return route to keepersCottage (the original "stairs back down" beat couldn't be PS'd cleanly).
+
+**Photoshop completed:**
+- Original ornate alcove carving painted out → replaced with two stacked memorial plaques, deliberately illegible ✅
+- Cobwebs layered throughout for centuries-of-stillness patina ✅
+- Star chart stand + rolled scrolls added beside coat rack ✅
+- Brass Antikythera mechanism in glass cabinet added on the right ✅
+
+**startDir:** `[-0.83, -0.32, -0.46]` — arrives facing the two-plaques alcove (the "two Keepers" reveal is the first thing the player sees)
+**Ambient:** `audio/sfx/wind-outside-room.mp3` at mix 1.0
+
+**Bonus inspects beyond brief:** `inspectHallStarCharts` (foreshadows the tower's astronomy), `inspectHallAntikythera` (lore on the Keepers' obsession with celestial mechanisms; closes on the "dust undisturbed except in the shape of two fingers" beat).
+
+**Note on stair → hallway pivot:** The "back down the stairs" return route from the original brief couldn't be PS'd into the upper-hall pano cleanly, so the return is now `back down the long hall` (library hallway recession on the right). The ascent narration in `ascendCottageLoft` was updated to bridge: "The stairs rise into a long stone hallway, and the hallway opens onto a narrow corridor" — keeps the cottage-room staircase pano accurate while connecting to the new hallway exit.
+
+**Role:** Transitional corridor between keepersCottage and the two branch rooms. Left door → cottageLoft, right door → cottageTower. Name plaques are the first explicit evidence there were two Keepers.
+
+**Main prompt:**
+Narrow stone corridor landing between floors of a cottage, warm amber stone vaulted ceiling, a small round window at the corridor end casting soft golden light, two wooden doors facing each other — left door plain worn wood, right door heavier with iron banding, two name plaques carved into the stone wall between the doors in different handwriting styles, a coat rack with two old wool coats hanging, an unlit iron lantern bracket, intimate and long-undisturbed, magic realism.
+
+**Negative prompt:**
+cold tones, bright daylight, open spaces, people, modern elements, fire, blue tones, scientific equipment, brass instruments, clutter
+
+---
+
+### 8. `panos/cottage-loft.jpg` — Branch A (puzzle origin) ✅ Generated 2026-06-05 · PS ✅ Done
+
+**Status:** Vaulted stone bedchamber, arched window with stone balustrade onto sunset sea (sells the loft elevation), spiral quilt on the bed with a half-read book left face-down, brass keepsake box + folded note on the desk, wooden trunk on the floor. Round age-darkened mercury-glass mirror set into the bed alcove with a warm sunset glint catching at lower-right.
+
+**Photoshop completed:**
+- Live flowers (desk vase + floor pot) removed → keepsake box + wooden trunk ✅
+- Round mirror painted into bed alcove with darkened tarnished glass and warm pinpoint highlight ✅
+- Balustrade added beyond the window for elevation cue ✅
+- Half-read book added to the bed ✅
+
+**startDir:** `[0.27, 0.04, 0.96]` — arrives facing the window/sunset with desk + note in lower vision
+**Ambient:** `audio/sfx/wind-outside-room.mp3` at mix 0.8
+
+**Role:** Folded note on writing desk sets state.cottageLoftNoteRead when read. Note reads: "When the second arm reaches the pale moon, the glass will find it." Unlocks orrery interaction in the tower. No scientific instruments — this is the personal space.
+
+**Main prompt:**
+Simple low-ceiling stone bedchamber, a narrow wooden bed with a worn quilt embroidered with a spiral pattern on the hem, a small round mirror on the wall with personal letters and cards and a pressed dried flower tucked into the frame, a small writing desk beneath a wide low window with a single folded note resting on the desk, the window shows a calm sea at golden sunset, a half-read book left open face-down on the pillow, personal and human and long-undisturbed, magic realism.
+
+**Negative prompt:**
+cold tones, brass instruments, orrery, telescope, scientific equipment, crowded, people, modern elements, blue tones, grand or imposing space
+
+---
+
+### 9. `panos/cottage-tower.jpg` — Branch B (puzzle target + Age terminal) ✅ Generated 2026-06-07 · PS ✅ Done
+
+**Status:** Vaulted circular observatory in twilight stone. Tall brass orrery on a wooden base dominates the left side, with three differentiable symbols on its ring (sun bottom-left, crescent pale moon bottom-right, larger/full moon disc top). Wooden drafting table front-center holds scattered hand-drawn constellation charts + a small open notebook. Stepped stone platform leads up to a small brass telescope mounted at an arched viewing window onto the night sky — twin moons clearly visible (bright larger moon + smaller pale moon). Bonus brass mechanism (astronomical clock / measuring device) sits between the orrery and the telescope steps, ambient detail.
+
+**Pano swap:** `cottage-tower.jpg` (pre-alignment) ↔ `cottage-tower-activated.jpg` (post-alignment, `state.cottageTowerOrrerySet === true`). Activation adds a subtle warm glow under the crescent pale-moon symbol + slightly brighter orrery center — confirms the puzzle locked without being heavy-handed. Mirrors the library/depths pattern.
+
+**Photoshop completed:**
+- Drafting table promoted to front-center with scattered star charts (was minimal in original gen) ✅
+- Orrery cleaned up with three clearly distinguishable celestial symbols ✅
+- Activated variant generated with subtle pale-moon glow on solve ✅
+
+**Ambient:** `audio/sfx/wind-outside-room.mp3` at mix 2.0 (higher than the loft — the tower is more exposed)
+
+**Orrery symbol mapping (final):**
+- **Arm 1 — Sun** (lower-left of ring): wrong. *"The Keepers were not watching for daylight things."*
+- **Arm 2 — Pale crescent moon** (lower-right of ring): CORRECT. Calls back to the loft note's *"the second arm reaches the pale moon."*
+- **Arm 3 — Larger/full moon disc** (top of ring): wrong. *"Silver, larger, polished bright. The lens remains clouded."*
+
+**Role:** Orrery interaction requires state.cottageLoftNoteRead. Three arm positions — correct one (second arm at the pale/smaller moon) unlocks the telescope. Looking through telescope triggers Age terminal. Orrery should look mechanically adjustable — exposed pivot arms and gears.
+
+**Orrery symbol discs (PS pass — Skybox won't land these reliably):** Each of the three arms ends in a small carved brass disc marking a celestial body. The arms point at their assigned discs by default:
+- **Arm 1** — a **sun disc** (warm beaten brass, polished but tarnished at the edges). Player overlay calls out: *"a small carved disc of brass marking the sun's position."*
+- **Arm 2** — a **pale moon disc** (the smaller of the two moons — silver-grey, low on its arc). This is the CORRECT alignment. Overlay calls out: *"the pale moon — the smaller one, low on its arc."*
+- **Arm 3** — a **larger moon disc** (silver, larger than the pale moon, polished bright). Overlay calls out: *"silver, larger, polished bright."*
+
+The three discs need to be visually distinguishable so the player can map the loft note's hint (*"the second arm reaches the pale moon"*) onto the orrery face. Without distinct symbols, the puzzle degrades to "click each arm to find the right one" rather than visual deduction.
+
+**Main prompt:**
+Circular stone tower observatory room, a large brass telescope on a pivoting floor mount aimed at the horizon through a wide arched window, a wooden drafting table covered in hand-drawn star charts each showing two moons, a brass orrery with exposed mechanical pivot arms and visible gears designed to be adjusted by hand, an open notebook with a half-drawn constellation diagram in a careful measured hand, arched windows showing sea and twilight sky with two moons, scholarly and purposeful, magic realism.
+
+**Negative prompt:**
+cold tones, personal items, quilts, casual clutter, letters, people, modern elements, blue tones, excessive decoration, warm cozy feel
+
+---
+
+## Bizarre Realm (The Fourth Age)
+
+Palette: cosmic night, twin moons, Milky Way arc, cloud sea far below, no warm tones except distant sunset horizon glow.
+
+---
+
+### 10. `panos/bizarre-realm.jpg` — Landing node ✅ Generated + PS Done (2026-06-01)
+
+**Status:** Wide plateau above a cloud sea. Glowing spiral floor carvings, twin moons, Milky Way arc, ancient tree silhouette on right. Two travel hotspots: toward tree (`bizarreRealmTree`) + return to chamber (`ascension`). Bizarre realm locked track plays on arrival.
+
+**Photoshop completed:**
+- Twin moons added to sky ✅
+- Spiral glow patterns painted onto stone floor ✅
+
+**startDir:** `[0.67, 0.49, -0.56]` — faces tree + Milky Way on arrival
+**Ambient:** locked track `audio/low_atmos-space-relaxation-atmosphere-514706.mp3` (plays via `onEnter`, not `ambient:` field)
+
+---
+
+### 11. `panos/bizarre-realm-tree.jpg` — Tree close-up node ✅ Generated + PS Done (2026-06-01)
+
+**Status:** Close-up of massive tree roots with two open linking books nestled at the base. Twin moons, cloud sea, sunset glow on horizon. Two book quads are the climactic two-choice ending (`touchKeeperOneBook` / `touchKeeperTwoBook`).
+
+**Photoshop completed:**
+- Two open books PS'd into tree roots ✅
+- Twin moons added ✅
+
+**startDir:** `[-0.07, -0.39, -0.92]` — looks down at books with cloud sea behind
+
+---
+
+## Generation Notes
+
+- If a gen's lighting is right but color drifts, fix in Photoshop (see prior Age edits for precedent).
+- Re-capture hotspot directions with H-key dev mode after every new pano — previous vectors point at the old pano's pixel positions.
+- Interior spaces will naturally be dimmer than outdoor originals; acceptable as long as stone/material color matches the Age palette.

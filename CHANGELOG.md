@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.6.0 — 2026-06-07
+
+**New**
+
+- The Ages open up. Each of the three reads now unfolds into multiple rooms — not a single chamber but a journey, with passages and puzzles and the quiet things the Keepers left behind
+- The Reversed Shore — a black monolith rises from dark water under twin moons. A distant lighthouse holds a brass dial mechanism and a salt-swollen logbook whose last entry was written in fear
+- The Monolith Chamber — bioluminescent water around a carved plinth, where the beam from the lighthouse finds its mark
+- The Green Country deepens — a root hollow at its center, a depths chamber where the wrong star field pools in dark water, and a canopy platform at the top of a hollow tree
+- The Keepers' Cottage extends upward — an upper hall, the personal loft, and a circular tower observatory above. Two names worn nearly to silence, two old wool coats on the rack, a brass mechanism of celestial gears that has not been wound in a long time
+- The Fourth Age — accessible only after the three are completed. A plateau above a cloud sea, twin moons, the Milky Way arc, and two open books at the base of an ancient tree
+- A telescope at the top of the cottage tower — adjust the orrery to find what the Keepers were watching
+
+**Enhanced**
+
+- Active passages now read as travel rings, not inspections — clearer which hotspots take you somewhere and which ask you to look closer
+- Each Age completion returns the player with its own quiet epilogue
+- The captain's log now opens at the start of every session
+- The cottage interior sounds more like stone — no longer the metallic ring of a different kind of stair
+- Letters, paper, brass, fabric — each carries its own sound now
+- A warm glow confirms when a puzzle has aligned
+
+**Fixed**
+
+- The Fourth Age's music now begins on arrival, not when you first move
+- The lighthouse logbook clue is a riddle, not a walkthrough of the answer
+- The Keepers' twin moons are consistent across every depiction
+- Several arrival framings now lead the eye toward what matters in the room
+
+---
+
 ## v0.5.1 — 2026-05-15
 
 **Enhanced**
