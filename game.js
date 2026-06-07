@@ -1778,7 +1778,7 @@ const WORLD = {
     ambient: 'audio/sfx/wind-outside-room.mp3',
     ambientMix: 2.0,
     onEnter: () => { state.cottageTowerSeen = true; },
-    startDir: [0.44, 0.23, 0.87],
+    startDir: [-0.69, -0.52, -0.5],
     hotspots: () => [
       { action: 'inspectStarCharts', dir: [-0.73, -0.46, -0.51], shape: 'quad',
         corners: [[6.7,1.03], [4.98,-2.16], [-6.95,-1.72], [-4.73,2.84]],
