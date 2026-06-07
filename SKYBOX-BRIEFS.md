@@ -170,9 +170,32 @@ cold tones, brass instruments, orrery, telescope, scientific equipment, crowded,
 
 ---
 
-### 9. `panos/cottage-tower.jpg` — Branch B (puzzle target + Age terminal)
+### 9. `panos/cottage-tower.jpg` — Branch B (puzzle target + Age terminal) ✅ Generated 2026-06-07 · PS ✅ Done
 
-**Role:** Orrery interaction requires state.cottageLoftNoteRead. Three arm positions — correct one (second arm at pale/smaller moon) unlocks the telescope. Looking through telescope triggers Age terminal. Orrery should look mechanically adjustable — exposed pivot arms and gears.
+**Status:** Vaulted circular observatory in twilight stone. Tall brass orrery on a wooden base dominates the left side, with three differentiable symbols on its ring (sun bottom-left, crescent pale moon bottom-right, larger/full moon disc top). Wooden drafting table front-center holds scattered hand-drawn constellation charts + a small open notebook. Stepped stone platform leads up to a small brass telescope mounted at an arched viewing window onto the night sky — twin moons clearly visible (bright larger moon + smaller pale moon). Bonus brass mechanism (astronomical clock / measuring device) sits between the orrery and the telescope steps, ambient detail.
+
+**Pano swap:** `cottage-tower.jpg` (pre-alignment) ↔ `cottage-tower-activated.jpg` (post-alignment, `state.cottageTowerOrrerySet === true`). Activation adds a subtle warm glow under the crescent pale-moon symbol + slightly brighter orrery center — confirms the puzzle locked without being heavy-handed. Mirrors the library/depths pattern.
+
+**Photoshop completed:**
+- Drafting table promoted to front-center with scattered star charts (was minimal in original gen) ✅
+- Orrery cleaned up with three clearly distinguishable celestial symbols ✅
+- Activated variant generated with subtle pale-moon glow on solve ✅
+
+**Ambient:** `audio/sfx/wind-outside-room.mp3` at mix 2.0 (higher than the loft — the tower is more exposed)
+
+**Orrery symbol mapping (final):**
+- **Arm 1 — Sun** (lower-left of ring): wrong. *"The Keepers were not watching for daylight things."*
+- **Arm 2 — Pale crescent moon** (lower-right of ring): CORRECT. Calls back to the loft note's *"the second arm reaches the pale moon."*
+- **Arm 3 — Larger/full moon disc** (top of ring): wrong. *"Silver, larger, polished bright. The lens remains clouded."*
+
+**Role:** Orrery interaction requires state.cottageLoftNoteRead. Three arm positions — correct one (second arm at the pale/smaller moon) unlocks the telescope. Looking through telescope triggers Age terminal. Orrery should look mechanically adjustable — exposed pivot arms and gears.
+
+**Orrery symbol discs (PS pass — Skybox won't land these reliably):** Each of the three arms ends in a small carved brass disc marking a celestial body. The arms point at their assigned discs by default:
+- **Arm 1** — a **sun disc** (warm beaten brass, polished but tarnished at the edges). Player overlay calls out: *"a small carved disc of brass marking the sun's position."*
+- **Arm 2** — a **pale moon disc** (the smaller of the two moons — silver-grey, low on its arc). This is the CORRECT alignment. Overlay calls out: *"the pale moon — the smaller one, low on its arc."*
+- **Arm 3** — a **larger moon disc** (silver, larger than the pale moon, polished bright). Overlay calls out: *"silver, larger, polished bright."*
+
+The three discs need to be visually distinguishable so the player can map the loft note's hint (*"the second arm reaches the pale moon"*) onto the orrery face. Without distinct symbols, the puzzle degrades to "click each arm to find the right one" rather than visual deduction.
 
 **Main prompt:**
 Circular stone tower observatory room, a large brass telescope on a pivoting floor mount aimed at the horizon through a wide arched window, a wooden drafting table covered in hand-drawn star charts each showing two moons, a brass orrery with exposed mechanical pivot arms and visible gears designed to be adjusted by hand, an open notebook with a half-drawn constellation diagram in a careful measured hand, arched windows showing sea and twilight sky with two moons, scholarly and purposeful, magic realism.

@@ -455,7 +455,7 @@ const ACTIONS = {
     refreshCurrentNode();
   },
   ascendCottageLoft: () => {
-    playSfx('climbing-stairs');
+    playSfx('stone-footsteps');
     showOverlay(`
       <h2>The Upper Hall</h2>
       <p>The stairs rise into a long stone hallway, and the
@@ -1051,13 +1051,13 @@ const ACTIONS = {
       <div class="close">click to close</div>
     `);
   },
-  inspectTowerNotebook: () => {
+  inspectTowerLogbook: () => {
     playSfx('book-open');
     showOverlay(`
       <h2>A Half-Drawn Constellation</h2>
-      <p>The same careful hand as the notebook in the ascension
-      chamber. Seven stars placed, the eighth left undrawn. In
-      the margin:</p>
+      <p>The same careful hand as the journals downstairs. Seven
+      stars placed across the spread, the eighth left undrawn.
+      In the margin:</p>
       <p><em>"R — the eighth star is where the pale moon sat last
       Midsummer. Work it backward from there."</em></p>
       <p>You have seen this constellation before, reflected in
@@ -1068,10 +1068,11 @@ const ACTIONS = {
   setOrreryArm1: () => {
     playSfx('interact-tap');
     showOverlay(`
-      <h2>The First Position</h2>
-      <p>You move the arm to its first stop. The orrery clicks and
-      continues turning. Through the telescope, the glass stays
-      clouded. The alignment is not right.</p>
+      <h2>The First Arm</h2>
+      <p>You move the first arm to its stop — a small carved disc
+      of brass marking the sun's position. The arm settles. Through
+      the telescope, the lens stays clouded. The Keepers were not
+      watching for daylight things.</p>
       <p><em>Not this one.</em></p>
       <div class="close">click to close</div>
     `);
@@ -1094,16 +1095,17 @@ const ACTIONS = {
   setOrreryArm3: () => {
     playSfx('interact-tap');
     showOverlay(`
-      <h2>The Third Position</h2>
-      <p>You move the arm to the third stop. The orrery hums
-      briefly and resumes. The telescope remains clouded. This
-      position was mapped for something else entirely.</p>
+      <h2>The Third Arm</h2>
+      <p>You move the third arm — its disc is silver, larger,
+      polished bright. The arm comes to rest at the larger of the
+      two moons. The orrery hums and stills. The lens remains
+      clouded.</p>
       <p><em>Not this one.</em></p>
       <div class="close">click to close</div>
     `);
   },
   useTelescope: () => {
-    playSfx('interact-tap');
+    playSfx('sigil-warp');
     showOverlay(`
       <h2>The Telescope</h2>
       <p>You press your eye to the lens. The instrument has been
@@ -1361,15 +1363,20 @@ const WORLD = {
     name: 'The Fourth Age',
     pano: () => loadPano('panos/bizarre-realm.jpg'),
     onEnter: () => {
-      fadeAudio(0, 3000);
-      setTimeout(() => {
-        bizarreRealmMusicActive = true;
-        ambientAudio.loop = true;
-        ambientAudio.src = assetUrl(BIZARRE_REALM_TRACK.url);
-        ambientAudio.volume = audioPrefs.musicMuted ? 0 : audioPrefs.music;
-        ambientAudio.play().catch(err => console.warn('[bizarre]', err));
-        updateTrackLabel();
-      }, 500);
+      // Swap to the locked bizarre realm track and fade UP from silence.
+      // Earlier version did `fadeAudio(0, 3000)` then jammed volume in a
+      // setTimeout — the in-flight fade kept stomping the new volume back
+      // down to 0, so the track played silently until the next travel
+      // re-fade brought it back up.
+      bizarreRealmMusicActive = true;
+      ambientAudio.loop = true;
+      ambientAudio.src = assetUrl(BIZARRE_REALM_TRACK.url);
+      ambientAudio.volume = 0;
+      ambientAudio.play().catch(err => console.warn('[bizarre]', err));
+      if (!audioPrefs.musicMuted) {
+        fadeAudioElement(ambientAudio, audioPrefs.music, 2000);
+      }
+      updateTrackLabel();
     },
     startDir: [0.67, 0.49, -0.56],
     hotspots: () => [
@@ -1604,7 +1611,7 @@ const WORLD = {
   shoreLighthouse: {
     name: 'The Lighthouse',
     pano: () => loadPano(state.lighthouseBeamRedirected ? 'panos/shore-lighthouse-activated.jpg' : 'panos/shore-lighthouse.jpg'),
-    startDir: [0.98, -0.12, -0.17],
+    startDir: [0.4, -0.1, 0.91],
     hotspots: () => [
       { action: 'readLighthouseLog', dir: [-0.3, -0.24, -0.92],
         label: 'a rusted logbook', color: 0xffaa44, shape: 'quad',
@@ -1734,7 +1741,7 @@ const WORLD = {
       { to: 'cottageTower', dir: [0.13, -0.37, -0.92],
         label: 'the right door', sfx: 'door-open', fadeMs: 3600 },
       { to: 'keepersCottage', dir: [0.91, -0.39, 0.11],
-        label: 'back down the long hall', sfx: 'stone-footsteps', fadeMs: 6500 },
+        label: 'back down the long hall', sfx: 'stone-footsteps', fadeMs: 3500 },
     ],
   },
   cottageLoft: {
@@ -1763,32 +1770,38 @@ const WORLD = {
   },
   cottageTower: {
     name: 'The Tower',
-    pano: () => loadPano('panos/cottage-tower.jpg'),
+    // Pano swaps when the orrery is set — the room responds to the puzzle
+    // (subtle warm glow on the pale-moon symbol + central illumination).
+    pano: () => loadPano(state.cottageTowerOrrerySet
+      ? 'panos/cottage-tower-activated.jpg'
+      : 'panos/cottage-tower.jpg'),
     ambient: 'audio/sfx/wind-outside-room.mp3',
     ambientMix: 2.0,
     onEnter: () => { state.cottageTowerSeen = true; },
-    startDir: [0, 0, -1], // DIR — capture with H-key dev mode
+    startDir: [0.44, 0.23, 0.87],
     hotspots: () => [
-      { action: 'inspectStarCharts', dir: [0.6, -0.3, -0.75],
-        label: 'the star charts', color: 0xffaa44, shape: 'open-book', w: 4.0, h: 2.5 },
-      { action: 'inspectTowerNotebook', dir: [-0.6, -0.3, -0.75],
-        label: 'an open notebook', color: 0xffaa44, shape: 'open-book', w: 3.0, h: 2.0 },
+      { action: 'inspectStarCharts', dir: [-0.73, -0.46, -0.51], shape: 'quad',
+        corners: [[6.7,1.03], [4.98,-2.16], [-6.95,-1.72], [-4.73,2.84]],
+        label: 'the star charts', color: 0xffaa44 },
+      { action: 'inspectTowerLogbook', dir: [0.33, -0.05, -0.94], shape: 'quad',
+        corners: [[2.63,0.85], [3.56,-1.07], [-2.82,-0.9], [-3.37,1.12]],
+        label: 'an open logbook', color: 0xffaa44 },
       // Three orrery arm positions — puzzle target. Second arm (pale moon) is correct.
       // Dirs need H-key capture on orrery face. Hidden once set.
-      { action: 'setOrreryArm1', dir: [-0.25, 0.1, -0.96],
+      { action: 'setOrreryArm1', dir: [0.61, 0.03, 0.79],
         label: 'the orrery — first arm', color: 0xffd27a, shape: 'circle',
         hidden: () => state.cottageTowerOrrerySet },
-      { action: 'setOrreryArm2', dir: [0, 0, -1],
-        label: 'the orrery — second arm, pale moon', color: 0xffd27a, shape: 'circle',
+      { action: 'setOrreryArm2', dir: [0.27, 0.04, 0.96],
+        label: 'the orrery — second arm', color: 0xffd27a, shape: 'circle',
         hidden: () => state.cottageTowerOrrerySet },
-      { action: 'setOrreryArm3', dir: [0.25, 0.1, -0.96],
+      { action: 'setOrreryArm3', dir: [0.39, 0.53, 0.75],
         label: 'the orrery — third arm', color: 0xffd27a, shape: 'circle',
         hidden: () => state.cottageTowerOrrerySet },
       // Age terminal — only unlocked once orrery is correctly set.
-      { action: 'useTelescope', dir: [0.7, 0.1, -0.7],
+      { action: 'useTelescope', dir: [-0.54, 0.43, -0.73],
         label: 'the telescope', color: 0x7affd2, shape: 'circle',
         hidden: () => !state.cottageTowerOrrerySet },
-      { to: 'cottageUpperHall', dir: [0, 0, 1],
+      { to: 'cottageUpperHall', dir: [0.88, -0.01, -0.48],
         label: 'back to the upper hall', sfx: 'door-open', fadeMs: 3600 },
     ],
   },
