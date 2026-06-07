@@ -949,7 +949,7 @@ const ACTIONS = {
     `);
   },
   inspectHallCoats: () => {
-    playSfx('interact-tap');
+    playSfx('bed-sheets');
     showOverlay(`
       <h2>Two Coats</h2>
       <p>Heavy wool, made for cliff wind. Neither has been lifted
@@ -960,7 +960,7 @@ const ACTIONS = {
     `);
   },
   inspectHallStarCharts: () => {
-    playSfx('book-pages');
+    playSfx('book-open', 2.0);
     showOverlay(`
       <h2>The Star Charts</h2>
       <p>An open scroll laid out on a small stand — a wheel of
@@ -1004,7 +1004,7 @@ const ACTIONS = {
     refreshCurrentNode();
   },
   inspectLoftMirror: () => {
-    playSfx('interact-tap');
+    playSfx('written-letter');
     showOverlay(`
       <h2>Letters in the Mirror</h2>
       <p>Cards, notes, a pressed flower gone brittle — held in the
@@ -1016,7 +1016,7 @@ const ACTIONS = {
     `);
   },
   inspectLoftQuilt: () => {
-    playSfx('interact-tap');
+    playSfx('bed-sheets');
     showOverlay(`
       <h2>The Spiral Quilt</h2>
       <p>The same mark you have traced across the whole island —
@@ -1730,11 +1730,11 @@ const WORLD = {
         corners: [[1.54,3.35], [0.92,-3.36], [-1.02,-3.33], [-1.43,3.34]],
         label: 'a brass mechanism of gears', color: 0xffd27a },
       { to: 'cottageLoft', dir: [-0.69, -0.37, 0.61],
-        label: 'the left door', sfx: 'door-open', fadeMs: 1800 },
+        label: 'the left door', sfx: 'door-open', fadeMs: 3600 },
       { to: 'cottageTower', dir: [0.13, -0.37, -0.92],
-        label: 'the right door', sfx: 'door-open', fadeMs: 1800 },
+        label: 'the right door', sfx: 'door-open', fadeMs: 3600 },
       { to: 'keepersCottage', dir: [0.91, -0.39, 0.11],
-        label: 'back down the long hall', sfx: 'stone-footsteps', fadeMs: 1500 },
+        label: 'back down the long hall', sfx: 'stone-footsteps', fadeMs: 6500 },
     ],
   },
   cottageLoft: {
@@ -1758,7 +1758,7 @@ const WORLD = {
       { action: 'inspectLoftWindow', dir: [0.27, 0.14, 0.95],
         label: 'the window', color: 0xc0d0ff, shape: 'circle' },
       { to: 'cottageUpperHall', dir: [0.01, -0.06, -1],
-        label: 'back to the upper hall', sfx: 'door-open', fadeMs: 1500 },
+        label: 'back to the upper hall', sfx: 'door-open', fadeMs: 3600 },
     ],
   },
   cottageTower: {
@@ -1789,7 +1789,7 @@ const WORLD = {
         label: 'the telescope', color: 0x7affd2, shape: 'circle',
         hidden: () => !state.cottageTowerOrrerySet },
       { to: 'cottageUpperHall', dir: [0, 0, 1],
-        label: 'back to the upper hall', sfx: 'door-open', fadeMs: 1500 },
+        label: 'back to the upper hall', sfx: 'door-open', fadeMs: 3600 },
     ],
   },
 };
