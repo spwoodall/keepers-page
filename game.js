@@ -689,13 +689,15 @@ const ACTIONS = {
       <h2>The Familiar Distance</h2>
       <p>Below the cloud sea, something familiar — and something
       not.</p>
-      <p>The ship that brought you here, moored at the dock you
-      first walked. The observatory where you laid a hand on
-      brass, and the stone beneath you opened. The shore where
-      you read by lantern-light, and the lighthouse that turned
-      its beam at your asking.</p>
-      <p>Three journeys. One island. One moonlight. They were
-      not one place. Not until someone wrote them this way.</p>
+      <p>The dock where a ship still waits. The observatory where
+      brass once turned beneath your hand. A shore where you read
+      by lantern-light.</p>
+      <p>Three places. One island. One moonlight. The pieces a
+      dream keeps, set together as if they had always been one
+      place.</p>
+      <p>Someone has been dreaming.</p>
+      <p>Someone has been dreaming you here.</p>
+      <p>Or you have been dreaming yourself.</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -1462,9 +1464,8 @@ const WORLD = {
       { action: 'inspectBizarreCloudSea', dir: [-0.97, 0.05, -0.22], shape: 'quad',
         corners: [[7.94,2.5],[8.04,-2.28],[-8.03,-2.29],[-7.95,2.07]],
         label: 'the cloud sea', color: 0x90b8d8 },
-      { action: 'inspectBizarrePlateauEdge', dir: [0.67, -0.07, 0.74], shape: 'quad',
-        corners: [[7.16,0.96],[5.81,-2.49],[-7.29,-0.78],[-5.68,2.31]],
-        label: 'the edge of the plateau', color: 0xc4a878 },
+      { action: 'inspectBizarrePlateauEdge', dir: [0.53, -0.03, 0.85],
+        label: 'the edge of the plateau', color: 0xc4a878, shape: 'circle' },
       { action: 'inspectFamiliarDistance', dir: [-0.34, -0.14, 0.93], shape: 'quad',
         corners: [[2.16,0.66],[2.57,-0.66],[-2.57,-0.66],[-2.16,0.66]],
         label: 'something familiar in the distance', color: 0xffaa44 },
