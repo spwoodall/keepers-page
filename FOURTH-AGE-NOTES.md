@@ -384,3 +384,39 @@ While cleaning up the tree pano's odd book perspective, consider adding:
 
 5. **Cloud sea / sunset horizon glow** — visible if possible. Supports
    the (1) edge-of-the-page lore.
+
+## Constellation canon (settled 2026-06-09)
+
+The recurring **8-star constellation** is the visual signature R. was teaching
+Silas — the cottage tower logbook references *"the eighth star is where the
+pale moon sat,"* and the orrery instructions read *"when the second arm
+reaches the pale moon."* The constellation is a Keepers'-placed pattern, not
+background star-field. **Deliberate space around it is mandatory** so a keen
+eye can pick it out as intentional.
+
+**The 8th star is missing** — the cottage tower logbook shows only **7
+stars** drawn. The 8th position is **blank in the logbook on purpose** —
+R. couldn't draw what she couldn't include (the pale moon's seat). The
+8th position sits **adjacent-left of the leftmost star** in the
+constellation shape.
+
+Each location expresses the completed constellation differently:
+
+- **green-country-depths** — 7 stars + a **pearl** in the 8th position,
+  reflected in the still pool. Pearl = Keepers'-signature canon. Reads
+  as: *the Keepers marked this place by completing what R. left open.*
+  ✓ Landed well — deliberate spacing, reads as Keepers' work.
+- **observatory** (pre + activated) — 7 stars + a **brighter star** in
+  the 8th position, in cleared sky. Reads as: *the puzzle target, where
+  the orrery's second arm reaches.* Current pano has a dominant Milky
+  Way arc with diffuse stars; needs a regen/PS pass to pull the Milky
+  Way back and let the 7+1 pattern breathe. TODO.
+
+**Two visual languages, one canon:** Keepers' mark (pearl, in the green
+country) vs. puzzle target (brighter star, in the observatory). Both
+point at the moon's old seat. A careful player crosses the two and
+realizes the 8th star and the pale moon are the same place.
+
+Rule: where twin moons are absent from a composition, the 8-star can stand
+in as the Keepers' celestial mark. Where twin moons ARE present, the moons
+lead and the 8-star stays subtle/absent.

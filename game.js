@@ -439,7 +439,7 @@ const ACTIONS = {
   },
   inspectCottageSpiral: () => {
     state.cottageSpiralInspected = true;
-    playSfx('interact-tap');
+    playSfx('sweep-away');
     showOverlay(`
       <h2>The Keepers' Spiral</h2>
       <p>Carved into the stone, deep enough to last. The shape your
@@ -497,7 +497,7 @@ const ACTIONS = {
   },
   // ---- Dock door symbol puzzle ----
   inspectDoorTree: () => {
-    playSfx('sweep-away');
+    playSfx('interact-tap');
     showOverlay(`
       <h2>A Carved Panel</h2>
       <p>A tangle of intertwined branches and leaves, deep
@@ -508,7 +508,7 @@ const ACTIONS = {
     `);
   },
   inspectDoorWave: () => {
-    playSfx('sweep-away');
+    playSfx('interact-tap');
     showOverlay(`
       <h2>A Carved Panel</h2>
       <p>Concentric arcs roll outward, like waves on a calm sea.
@@ -533,7 +533,7 @@ const ACTIONS = {
     refreshCurrentNode();
   },
   inspectLockedDoor: () => {
-    playSfx('interact-tap');
+    playSfx('locked-door');
     showOverlay(`
       <h2>The Door</h2>
       <p>Brass and worn wood, set into the stone of the cliff.
@@ -618,7 +618,7 @@ const ACTIONS = {
   },
 
   inspectLibraryBooks: () => {
-    playSfx('book-pages');
+    playSfx('book-pull-open-and-close');
     showOverlay(`
       <h2>The Shelves</h2>
       <p>The shelves run deeper than any single life. Hundreds of
@@ -637,7 +637,7 @@ const ACTIONS = {
 
   // ---- Shore multi-room -----------------------------------------------
   inspectMonolithCarvings: () => {
-    playSfx('interact-tap');
+    playSfx('sweep-away');
     showOverlay(`
       <h2>The Wave Carvings</h2>
       <p>Sigils run along the base of the stone — the same
@@ -709,7 +709,7 @@ const ACTIONS = {
   },
   inspectTheTree: () => {
     state.bizarreTreeInspected = true;
-    playSfx('interact-tap');
+    playSfx('tree-rustle');
     showOverlay(`
       <h2>The Tree</h2>
       <p>From here it stands as it has always stood. Older than
@@ -723,7 +723,7 @@ const ACTIONS = {
   },
   inspectBizarreSpiralTrunk: () => {
     state.bizarreSpiralTrunkInspected = true;
-    playSfx('interact-tap');
+    playSfx('wood-tap');
     showOverlay(`
       <h2>The S, Cut into Bark</h2>
       <p>A spiral, scored deep into the trunk — the shape of
@@ -743,7 +743,7 @@ const ACTIONS = {
   },
   inspectBizarreScroll: () => {
     state.bizarreScrollInspected = true;
-    playSfx('book-open');
+    playSfx('written-letter');
     showOverlay(`
       <h2>A Scroll, Bound in Leather</h2>
       <p>The same leather that wraps the open book at the roots
@@ -773,7 +773,7 @@ const ACTIONS = {
   },
   inspectBizarreRennName: () => {
     state.bizarreRennNameInspected = true;
-    playSfx('interact-tap');
+    playSfx('wood-tap');
     showOverlay(`
       <h2>A Carved Name</h2>
       <p>A single name, scratched small into a root —
@@ -868,7 +868,7 @@ const ACTIONS = {
     `);
   },
   inspectChamberPortal: () => {
-    playSfx('interact-tap');
+    playSfx('sweep-away');
     showOverlay(`
       <h2>The Stone Aperture</h2>
       <p>A perfect circle cut through the rock — not broken through,
@@ -882,7 +882,7 @@ const ACTIONS = {
     `);
   },
   inspectChamberSpiral: () => {
-    playSfx('interact-tap');
+    playSfx('sweep-away');
     showOverlay(`
       <h2>The Concentric Rings</h2>
       <p>Circles within circles, each one scored with the same
@@ -938,7 +938,7 @@ const ACTIONS = {
 
   // ---- Green multi-room -----------------------------------------------
   inspectRootAltar: () => {
-    playSfx('interact-tap');
+    playSfx('sweep-away');
     showOverlay(`
       <h2>The Stone Altar</h2>
       <p>Cut stone, deliberately placed — not grown here. The
@@ -1066,7 +1066,7 @@ const ACTIONS = {
     refreshCurrentNode();
   },
   inspectRootGlyphs: () => {
-    playSfx('sweep-away');
+    playSfx('wood-tap');
     showOverlay(`
       <h2>A Carved Symbol</h2>
       <p>Something is carved into this root — a glyph, a
@@ -1100,7 +1100,7 @@ const ACTIONS = {
 
   // ---- Cottage multi-room ---------------------------------------------
   inspectNamePlaques: () => {
-    playSfx('interact-tap');
+    playSfx('wood-tap');
     showOverlay(`
       <h2>Two Names</h2>
       <p>One plaque is measured and level — each letter the same
@@ -1401,6 +1401,7 @@ const WORLD = {
     // Per-node ambient — water, gulls, wind. Loops while the player
     // is at the dock; crossfades out when they travel away.
     ambient: 'audio/sfx/dock-ambient.mp3',
+    ambientMix: 0.45,
     // Open framing — the player's first sight is the ship that brought them.
     startDir: [0.73, -0.15, 0.67],
     hotspots: () => [
@@ -1409,7 +1410,7 @@ const WORLD = {
       { action: 'readCaptainsLog', dir: [0.71, -0.26, 0.65], shape: 'quad',
         corners: [[4.23,0.85], [3.31,-0.85], [-3.31,-0.85], [-4.23,0.85]],
         label: "Captain Renn's ship", color: 0xffaa44,
-        sfx: 'key-lock-insert' },
+        sfx: 'key-lock-insert', sfxVolume: 2.0 },
       // Three door panels — only the spiral is the Keepers' mark.
       // Book-frame outlines match the tall narrow panel shapes.
       { action: 'inspectDoorTree', dir: [-0.83, 0.5, -0.29], w: 1.1, h: 2.1, roll: -0.08,
@@ -1484,6 +1485,7 @@ const WORLD = {
     name: 'The Ascension Chamber',
     pano: () => loadPano('panos/ascension.jpg'),
     ambient: 'audio/sfx/ascension-ambient.mp3',
+    ambientMix: 0.45,
     startDir: [-0.95, -0.3, -0.09],
     hotspots: () => [
       // The shore's linking book — blue leather, wave sigil.
@@ -1721,13 +1723,13 @@ const WORLD = {
     pano: () => loadPano(state.observatoryMechanismActive
       ? 'panos/observatory-activated.jpg'
       : 'panos/observatory.jpg'),
-    // Mechanism's gears loop once activated, including on return visits.
+    // Pre-activation: soft wind reaches the cliff-top observatory through stone.
+    // Post-activation: gears take over the room.
     ambient: () => state.observatoryMechanismActive
-      ? 'audio/sfx/running-gears.mp3'
-      : null,
-    // gears.mp3 is mastered quietly — push it well above the default 0.6
-    // environmental mix so the mechanism feels present in the room.
-    ambientMix: 1.5,
+      ? 'audio/sfx/rusty-gears.mp3'
+      : 'audio/sfx/soft-wind.mp3',
+    // Wind is half of normal; rusty-gears is mastered quietly and needs the boost.
+    ambientMix: () => state.observatoryMechanismActive ? 1.5 : 0.5,
     // Re-fire the mechanism whir on each return visit, so the player
     // hears the room come alive each time — not just the first.
     onEnter: () => {
@@ -2698,7 +2700,8 @@ function fadeAudioElement(el, target, duration = 1500) {
 
 function resolveAmbient(node) {
   const path = typeof node?.ambient === 'function' ? node.ambient() : node?.ambient;
-  return { path, mix: node?.ambientMix ?? NODE_AMBIENT_MIX };
+  const mix = typeof node?.ambientMix === 'function' ? node.ambientMix() : node?.ambientMix;
+  return { path, mix: mix ?? NODE_AMBIENT_MIX };
 }
 
 function setNodeAmbient(path, mix = NODE_AMBIENT_MIX) {
@@ -2733,13 +2736,13 @@ const sfxCache = new Map();
 // Preload every SFX at boot — without this, the first play of each
 // sound has a noticeable lag while the browser decodes the file.
 const PRELOAD_SFX = [
-  'ui-tick', 'book-pages', 'book-open', 'key-lock-insert',
+  'page-turn', 'book-pages', 'book-open', 'book-pull-open-and-close', 'key-lock-insert',
   'door-open', 'heavy-door-open', 'metallic-thud',
   'passage-open', 'interact-tap', 'brass-click', 'mechanical-gadget',
   'climbing-stairs', 'sigil-warp', 'linking-warp',
   'mechanism-whir', 'wave-crash', 'lighthouse', 'mystical-chime',
   'shell-fade', 'beam-sound', 'knock-on-window', 'ambient-peaceful-ray-light', 'fx-light',
-  'tree-rustle', 'sweep-away', 'footsteps-in-forest',
+  'tree-rustle', 'sweep-away', 'footsteps-in-forest', 'wood-tap', 'written-letter', 'locked-door',
 ];
 PRELOAD_SFX.forEach(name => {
   const sfx = new Audio(assetUrl(`audio/sfx/${name}.mp3`));
@@ -3025,7 +3028,7 @@ volSfx.addEventListener('input', () => {
   localStorage.setItem('mystVolSfx', audioPrefs.sfx);
   // Node ambient (environmental) lives on the SFX channel.
   if (nodeAmbientAudio) nodeAmbientAudio.volume = audioPrefs.sfx * currentAmbientMix;
-  playSfx('ui-tick');
+  playSfx('interact-tap');
 });
 muteMusicBtn.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -3038,7 +3041,7 @@ muteSfxBtn.addEventListener('click', (e) => {
   audioPrefs.sfxMuted = !audioPrefs.sfxMuted;
   localStorage.setItem('mystMuteSfx', audioPrefs.sfxMuted ? '1' : '0');
   applyMuteUI();
-  if (!audioPrefs.sfxMuted) playSfx('ui-tick');
+  if (!audioPrefs.sfxMuted) playSfx('interact-tap');
 });
 
 document.getElementById('replay-btn').addEventListener('click', () => {
