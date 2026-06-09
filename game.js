@@ -1747,7 +1747,7 @@ const WORLD = {
         color: 0xffaa44, shape: 'button',
         hidden: () => state.observatoryMechanismActive },
       // Slab descent — locked until the mechanism is activated.
-      { to: 'library', dir: [0.34, -0.56, 0.76],
+      { to: 'library', dir: [0.32, -0.57, 0.76],
         label: 'descend through the slab',
         sfx: 'heavy-door-open', fadeMs: 2400,
         hidden: () => !state.observatoryMechanismActive },
