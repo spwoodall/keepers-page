@@ -181,6 +181,12 @@ const state = {
   cottageTowerOrrerySet: false,
   cottageLoftSeen: false,
   cottageTowerSeen: false,
+  // Bizarre realm (Fourth Age)
+  bizarreTwinMoonsInspected: false,
+  bizarreCloudSeaInspected: false,
+  bizarrePlateauEdgeInspected: false,
+  bizarreFamiliarDistanceInspected: false,
+  bizarreTreeInspected: false,
 };
 
 // ---- Action handlers (run on click for non-travel hotspots) ---------
@@ -636,6 +642,77 @@ const ACTIONS = {
       being recorded here, it was not meant to be read quickly.</p>
       <div class="close">click to close</div>
     `);
+  },
+  inspectBizarreTwinMoons: () => {
+    state.bizarreTwinMoonsInspected = true;
+    playSfx('mystical-chime', 2.0);
+    showOverlay(`
+      <h2>The Twin Moons</h2>
+      <p>You have seen them before — once, from a beach at the
+      foot of a stone monolith. The arrangement is the same.
+      The angle is the same. They have not moved.</p>
+      <p>You have moved.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectBizarreCloudSea: () => {
+    state.bizarreCloudSeaInspected = true;
+    playSfx('interact-tap');
+    showOverlay(`
+      <h2>The Cloud Sea</h2>
+      <p>You think you are on a plateau. You are on a page.</p>
+      <p>Below the cloud is the margin. Below the margin is
+      whatever was here before the writing.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectBizarrePlateauEdge: () => {
+    state.bizarrePlateauEdgeInspected = true;
+    playSfx('interact-tap');
+    showOverlay(`
+      <h2>The Edge</h2>
+      <p>The stone of the plateau falls away in tiers, each
+      step shallower than the last, until there is nothing left
+      to stand on and only the cloud remains.</p>
+      <p>This is where the writing ran out. The Keepers stopped
+      here because their world stopped here.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectFamiliarDistance: () => {
+    state.bizarreFamiliarDistanceInspected = true;
+    playSfx('mystical-chime', 2.0);
+    showOverlay(`
+      <h2>The Familiar Distance</h2>
+      <p>Below the cloud sea, something familiar — and something
+      not.</p>
+      <p>The ship that brought you here, moored at the dock you
+      first walked. The observatory where you laid a hand on
+      brass, and the stone beneath you opened. The shore where
+      you read by lantern-light, and the lighthouse that turned
+      its beam at your asking.</p>
+      <p>Three journeys. One island. One moonlight. They were
+      not one place. Not until someone wrote them this way.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectTheTree: () => {
+    state.bizarreTreeInspected = true;
+    playSfx('interact-tap');
+    showOverlay(`
+      <h2>The Tree</h2>
+      <p>From here it stands as it has always stood. Older than
+      the writing. Older than the Keepers.</p>
+      <p>You count its rings without trying and stop counting
+      somewhere around a thousand. The tree did not arrive. The
+      tree was.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
   },
   readLighthouseLog: () => {
     state.shoreLighthouseLogRead = true;
@@ -1380,10 +1457,25 @@ const WORLD = {
     },
     startDir: [0.67, 0.49, -0.56],
     hotspots: () => [
+      { action: 'inspectBizarreTwinMoons', dir: [-0.31, 0.38, 0.87],
+        label: 'two moons above the plateau', color: 0xc8d4e8, shape: 'circle' },
+      { action: 'inspectBizarreCloudSea', dir: [-0.97, 0.05, -0.22], shape: 'quad',
+        corners: [[7.94,2.5],[8.04,-2.28],[-8.03,-2.29],[-7.95,2.07]],
+        label: 'the cloud sea', color: 0x90b8d8 },
+      { action: 'inspectBizarrePlateauEdge', dir: [0.67, -0.07, 0.74], shape: 'quad',
+        corners: [[7.16,0.96],[5.81,-2.49],[-7.29,-0.78],[-5.68,2.31]],
+        label: 'the edge of the plateau', color: 0xc4a878 },
+      { action: 'inspectFamiliarDistance', dir: [-0.34, -0.14, 0.93], shape: 'quad',
+        corners: [[2.16,0.66],[2.57,-0.66],[-2.57,-0.66],[-2.16,0.66]],
+        label: 'something familiar in the distance', color: 0xffaa44 },
+      { action: 'inspectTheTree', dir: [0.69, 0.64, -0.33],
+        label: 'the tree across the cloud', color: 0xa6826a, shape: 'circle' },
       { to: 'bizarreRealmTree', dir: [0.77, 0.47, -0.44],
-        label: 'toward the tree', sfx: 'stone-footsteps', fadeMs: 3500 },
-      { to: 'ascension', dir: [-0.29, -0.44, 0.85],
-        label: 'return to the chamber', sfx: 'sigil-warp', fadeMs: 3000 },
+        label: 'toward the tree', sfx: 'stone-footsteps', fadeMs: 3500,
+        hidden: () => !state.bizarreTreeInspected },
+      { to: 'ascension', dir: [0.6, -0.49, 0.63],
+        label: 'step onto the sigil', color: 0x7affd2,
+        sfx: 'sigil-warp', fadeMs: 3000 },
     ],
   },
 
@@ -1571,15 +1663,15 @@ const WORLD = {
     ambientMix: 1.8,
     startDir: [-0.8, 0.19, 0.58],
     hotspots: () => [
-      { action: 'inspectMonolithCarvings', dir: [0.96, -0.04, -0.27], shape: 'quad',
-        corners: [[0.65,0.87], [0.65,-0.87], [-0.65,-0.87], [-0.65,0.87]],
+      { action: 'inspectMonolithCarvings', dir: [-0.73, 0.03, -0.68], shape: 'quad',
+        corners: [[1.5,3.37],[1.52,-3.15],[-1.51,-2.29],[-1.51,2.07]],
         label: 'wave carvings on the stone', color: 0xa078ff },
       { to: 'shoreMonolithChamber', dir: [0.22, -0.03, -0.98],
         label: () => state.lighthouseBeamRedirected ? 'the chamber beyond' : 'the passage into the dark',
         sfx: 'leaving-walk', sfxVolume: 2.0, fadeMs: 4000 },
       { to: 'shoreLighthouse', dir: [0.94, 0.11, 0.32],
         label: 'the distant lighthouse', sfx: 'linking-warp', fadeMs: 3000 },
-      { to: 'reversedShore', dir: [0.22, -0.1, 0.97],
+      { to: 'reversedShore', dir: [0.7, -0.09, 0.71],
         label: 'back to the shore', sfx: 'wave-crash', fadeMs: 4000 },
     ],
   },

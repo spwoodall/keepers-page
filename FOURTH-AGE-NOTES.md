@@ -158,26 +158,30 @@ ending to be unmistakably *that Keeper's* worldview.
 
 ### (3) A "third path" the careful player can find
 
-Echoes Myst's white page beat. **The visual asset for this is already in
-the bizarre-realm-tree pano** (as of 2026-06-07) — a piece of paper
-tucked among the roots on the left side of the panorama. The asset is
-present whether or not v0.7.0 wires it up.
+Echoes Myst's white page beat. **The visual asset for this is in the
+bizarre-realm-tree pano** (as of 2026-06-07) — a **leather-bound scroll
+tucked among the roots on the left side of the panorama**. The leather
+binding matches Stephen's book closure for material continuity. The
+asset is present whether or not v0.7.0 wires it up.
 
 Touching it neither frees a Keeper nor refuses them — it does something
-else. Possible lore readings (pick one):
+else. Possible lore readings (pick one in v0.7.0):
 
-- **The blank page**: the player writes their own page here. The most
-  Myst-faithful (echoes Atrus's blank page that needs the player to make
-  a choice the Keepers didn't anticipate).
-- **A torn-out page from one of the Keepers' books**: holds context that
-  changes how the player reads S. and R. Reading it before touching a
-  book changes the ending.
-- **A letter from Captain Renn**: closes the Renn-as-Atrus loop. Renn
-  knew the Keepers; this is his final message to the player.
-- **The Captain's Log itself, here at the end**: the player has been
-  holding the *fourth book* the whole time. Touching it doesn't end the
-  Age the way the Keepers' books do — it returns the player to the
-  dock, knowing.
+- **Stephen's working scroll** (recommended): early experiments with
+  the Descriptive Art before he bound the bizarre realm proper book.
+  Stephen the amateur Writer figuring out how Rachel did it — drafts,
+  scratched-out lines, the moment the Art clicked for him. Strongest
+  lore fit and ties to Stephen's leather material continuity.
+- **A final scroll for Silas**: rolled and bound to *last*. Could be
+  in Rachel's careful hand, or jointly written. The explicitly
+  Myst-faithful "letter from a parent" beat. Touching it might unlock
+  the player-as-Silas reading.
+- **A scroll from Captain Renn**: closes the Renn-as-Atrus loop. He
+  knew the Keepers and left guidance for whoever followed. Most
+  narratively expansive.
+- **The blank scroll**: the player writes their own page here. The most
+  Myst-faithful in the abstract (echoes Atrus's blank page that needs
+  the player to make a choice the Keepers didn't anticipate).
 
 The "true" ending if the player has earned it via careful observation
 elsewhere in the run. Could be gated by inspecting specific items across
@@ -200,24 +204,127 @@ every spiral they've seen across the run.
 
 ---
 
-## Minimum plateau inspects to bring (3 ideas)
+## Plateau inspects to bring
 
-Pick at least 2 of these for v0.7.0:
+### Tier 1 (must-do)
 
-- **The Spiral** — the glowing floor carvings. Lore: same mark from the
-  cottage quilt, the dock door, the root altar. The Keepers' signature
-  carried to the end.
-- **The Cloud Sea** — what's *below* the plateau? See (1).
+- **The Cloud Sea** — what's *below* the plateau? See (1) in Top-priority
+  expansions. *"You think you are on a plateau. You are on a page. Below
+  the cloud is the margin, and below the margin is whatever was here
+  before the writing."*
 - **The Twin Moons** — last chance to land the recurring celestial marker.
+  (Smaller pale moon is its own inspect on the **tree pano** — see below.)
+- **The Familiar Distance** (revised 2026-06-08, replaces "Distant World
+  Below") — **already in the gen**: below the cloud sea, the dock and
+  observatory the player first arrived at (Renn's domain) and the
+  Reversed Shore are visible — *but merged into one impossible island*.
+  Not a callback. A **composite**. The bizarre realm is showing the
+  player a dreamlike conflation of familiar places.
 
-## Minimum tree inspects to bring (2 ideas)
+  **Canon thesis** (load-bearing): the Fourth Age is written *from
+  memory*. S. — the dreamer who never took up the Art before — wrote
+  his refuge using the only worlds he had: the places he had been with
+  R. He stitched dock and shore into one island because that is what he
+  remembered. This is why the realm is *bizarre*: it is a dream made
+  literal, the geography of a man who could only write what he had
+  lived. It is also why this Age is *the Fourth* — it can only exist
+  because the first three were lived.
 
-Before the book choice:
+  Lore draft: *"Below the cloud sea, something familiar — and
+  something not. A dock where you first arrived. An observatory you
+  have stood beneath. A shore where you read by lantern-light. They
+  sit together on one island, in one moonlight, as if they had always
+  been one place. They were not one place. Not until someone wrote
+  them this way."*
 
-- **The Tree** — *"Older than the writing. The Keepers came here because
-  the tree was here first."*
-- **The Roots** — *"They twine around both books. The tree grew around
-  the act, did not witness it."*
+  (The "someone" is unnamed in the overlay. The careful reader who
+  has read S.'s book and traced the looping hand will know.)
+
+- **Spirals on the plateau ground** — *ambient narrative, not
+  inspectable.* The glowing carved spirals across the plateau indicate
+  *the realm has acknowledged the player's arrival.* No click needed —
+  the glow speaks for itself. (The spiral motif gets its inspect on the
+  **tree trunk** instead — see tree pano below.)
+
+### Tier 2 (strongly recommended)
+
+- **The Plateau's Edge** — separate from the Cloud Sea inspect. The
+  literal *cliff drop* where the stone of the plateau ends and the cloud
+  begins. The point where the writing of the Ages ran out. Different
+  emphasis: not "what's down there" but "this is *the edge*."
+
+### Tier 3 (atmospheric, optional)
+
+- **An ambient sound beat** — a small one-shot sound that fires only on
+  the plateau (not as looped ambient, as a one-shot when the player
+  stands still for X seconds). A wind whisper, a distant chime, a felt
+  presence. Lo-fi Myst-style atmosphere trick.
+
+- **The Tree from the Plateau** (moved here from tree pano 2026-06-08
+  to avoid trunk clutter) — *separate from the travel hotspot.* Place
+  the inspect **above** the `to: bizarreRealmTree` travel hotspot so
+  the two don't collide. This inspect folds together what used to be
+  "The Tree" + "The Tree's Age" — present and antiquity in one beat
+  viewed from afar:
+
+  *"From here it stands as it has always stood. Older than the
+  writing. Older than the Keepers. You count its rings without trying
+  and stop counting somewhere around a thousand. The tree did not
+  arrive. The tree was."*
+
+  Doing this from the plateau also makes the player's eventual walk to
+  it feel earned — you have *seen* what you are walking toward.
+
+### Not inspects (existing travel hotspots, do not duplicate)
+
+- **The yellow sigil plate** — same as the Ascension Chamber. Already
+  wired as the `to: ascension` return-path hotspot. Not a new inspect.
+- **The travel hotspot toward the tree** — already wired as the `to:
+  bizarreRealmTree` travel hotspot. The new "Tree from the Plateau"
+  inspect (above) goes *above* this travel point, not on it.
+
+## Tree inspects to bring
+
+**Note (2026-06-08):** "The Tree" + "The Tree's Age" used to live here
+as two separate Tier 1/2 inspects. Both were collapsed into a single
+inspect *on the plateau pano* (placed above the travel hotspot, looking
+across at the tree from afar) — see Plateau Tier 3 / "The Tree from the
+Plateau." Rationale: avoids inspect collision on the trunk now that
+Renn's signature is in play, and lets the player's walk-to-the-tree
+feel earned by something they've already seen.
+
+**Note (2026-06-08, cont.):** "The Roots" inspect was also pulled —
+the books *sit in the roots* visually, so the "tree grew around the
+act" lore reads from composition without a click. Avoids hotspot
+crowding right where both book hotspots already live.
+
+### Tier 1 (must-do)
+
+- **The Spiral on the Trunk** — the carved/glowing glyph on the trunk
+  near the books. The Keepers' signature mark — same as the cottage
+  quilt, the dock door panel, the loft note margin. *"Same mark. Same
+  hand. Different bark."* (Supports (5) — Spiral as explicit
+  through-line.)
+- **The Scroll in the Roots** — the leather-bound scroll tucked among
+  the roots on the left side of the pano. Material continuity with
+  S.'s book (both wear leather closure). The "third path" / hidden
+  white-page beat. See (3) High-payoff expansions for the four
+  candidate lore readings; pick one in v0.7.0.
+- **The Smaller Pale Moon** (moved from plateau 2026-06-08) — its own
+  inspect, separate from "Twin Moons" (which lives on the plateau).
+  Lives here on the tree pano because the loft-note canon (*"when the
+  second arm reaches the pale moon"*) is intimate, observational,
+  journal-coded — and the tree is the Keepers' refuge, not the wide
+  vista. R. watched this single moon for *eleven years* per Book Two.
+  *"Smaller than its sister. Patient. R. watched it for eleven years."*
+
+- **Captain Renn's name carved on the tree** (promoted from optional to
+  Tier 1 on 2026-06-08 — committed for PS add). Renn was here. He
+  knew. He left a mark. Closes the Renn-as-Atrus parallel without yet
+  committing to whether Renn is one of the Keepers or a separate
+  trustee. Lore draft: *"R. — small initials, scratched into the bark
+  beside two others. R., S., and Renn. Three names, only one of whom
+  you have met."*
 
 ---
 
