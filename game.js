@@ -187,6 +187,11 @@ const state = {
   bizarrePlateauEdgeInspected: false,
   bizarreFamiliarDistanceInspected: false,
   bizarreTreeInspected: false,
+  bizarreSpiralTrunkInspected: false,
+  bizarreScrollInspected: false,
+  bizarreSmallerPaleMoonInspected: false,
+  bizarreRennNameInspected: false,
+  bizarreShellInspected: false,
 };
 
 // ---- Action handlers (run on click for non-travel hotspots) ---------
@@ -716,6 +721,86 @@ const ACTIONS = {
     `);
     refreshCurrentNode();
   },
+  inspectBizarreSpiralTrunk: () => {
+    state.bizarreSpiralTrunkInspected = true;
+    playSfx('interact-tap');
+    showOverlay(`
+      <h2>The S, Cut into Bark</h2>
+      <p>A spiral, scored deep into the trunk — the shape of
+      an S. The first letter of a name you have read in
+      journals and seen on a book's looping cover.</p>
+      <p>A pearl at its heart. You have seen pearls like it
+      before — in the dock door, in an open notebook, at the
+      center of every sigil that still answers, in green water
+      beneath a canopy, and in a dozen places besides.</p>
+      <p>The pearl is the Keepers' signature. They press it into
+      anything worth remembering.</p>
+      <p>An S, finally carved. Drawn around the one mark its
+      maker and another have always shared.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectBizarreScroll: () => {
+    state.bizarreScrollInspected = true;
+    playSfx('book-open');
+    showOverlay(`
+      <h2>A Scroll, Bound in Leather</h2>
+      <p>The same leather that wraps the open book at the roots
+      — soft, hand-wrapped, tied with a knot only its maker
+      would have made.</p>
+      <p>Untouched, in this version of things.</p>
+      <p>There are other endings. They begin here.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectBizarreSmallerPaleMoon: () => {
+    state.bizarreSmallerPaleMoonInspected = true;
+    playSfx('mystical-chime', 2.0);
+    showOverlay(`
+      <h2>The Pale Moon</h2>
+      <p>Smaller than its sister. Paler. Patient.</p>
+      <p>Someone watched this moon for eleven years. The journal
+      margins remember its arc. An orrery arm was set against
+      it. A son was taught its name in a language nobody else
+      used.</p>
+      <p>Here it hangs above her husband's writing, as if it
+      had agreed to come along.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectBizarreRennName: () => {
+    state.bizarreRennNameInspected = true;
+    playSfx('interact-tap');
+    showOverlay(`
+      <h2>A Carved Name</h2>
+      <p>A single name, scratched small into a root —
+      <em>Renn.</em></p>
+      <p>Old enough that the bark has begun to close around it.</p>
+      <p>The captain has been here. He did not write this place —
+      but he came, and he stayed long enough to leave his name
+      in it.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectBizarreShell: () => {
+    state.bizarreShellInspected = true;
+    playSfx('shell-fade');
+    showOverlay(`
+      <h2>A Purple Shell</h2>
+      <p>Deep purple. Warm to the touch. You have held one like
+      it on a shore, on a root, beside a cold hearth.</p>
+      <p>This one followed them as far as a shell can be
+      followed. It sits among the roots of a tree older than
+      the writing, untroubled by the moonlight.</p>
+      <p>Some things were too small to leave behind.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
   readLighthouseLog: () => {
     state.shoreLighthouseLogRead = true;
     playSfx('book-open');
@@ -1135,8 +1220,8 @@ const ACTIONS = {
     showOverlay(`
       <h2>A Half-Drawn Constellation</h2>
       <p>The same careful hand as the journals downstairs. Seven
-      stars placed across the spread, the eighth left undrawn.
-      In the margin:</p>
+      stars captured on the page, the eighth left undrawn. In
+      the margin:</p>
       <p><em>"R — the eighth star is where the pale moon sat last
       Midsummer. Work it backward from there."</em></p>
       <p>You have seen this constellation before, reflected in
@@ -1483,14 +1568,25 @@ const WORLD = {
   bizarreRealmTree: {
     name: 'The Fourth Age',
     pano: () => loadPano('panos/bizarre-realm-tree.jpg'),
-    startDir: [-0.07, -0.39, -0.92],
+    startDir: [0.45, 0.64, -0.63],
     hotspots: () => [
-      { action: 'touchKeeperOneBook', dir: [0.06, -0.71, -0.7],
+      { action: 'touchKeeperOneBook', dir: [0.25, -0.54, -0.8],
         label: 'an open book — looping hand', color: 0xffd27a, shape: 'quad',
-        corners: [[2,1.31],[2.9,-0.19],[-1.85,-1.5],[-3.06,0.38]] },
-      { action: 'touchKeeperTwoBook', dir: [0.35, -0.68, -0.64],
-        label: 'an open book — careful hand', color: 0xd4aaff, shape: 'quad',
-        corners: [[2.53,1.07],[2.44,-1.02],[-2.46,-0.74],[-2.51,0.68]] },
+        corners: [[4.56,1.07],[4,-1.7],[-4.84,-1.43],[-3.72,2.06]] },
+      { action: 'touchKeeperTwoBook', dir: [0.51, -0.68, -0.52],
+        label: 'a sealed book — careful hand', color: 0xd4aaff, shape: 'quad',
+        corners: [[3.54,1.07],[0.27,-2.22],[-3.42,-0.67],[-0.4,1.82]] },
+      { action: 'inspectBizarreSpiralTrunk', dir: [0.52, -0.06, -0.85], shape: 'quad',
+        corners: [[1.04,1.77],[1,-1.75],[-1.15,-1.87],[-0.9,1.85]],
+        label: 'an S, cut into the bark', color: 0xffd27a },
+      { action: 'inspectBizarreScroll', dir: [0.82, -0.56, 0.13],
+        label: 'a scroll among the roots', color: 0xffd27a, shape: 'circle' },
+      { action: 'inspectBizarreSmallerPaleMoon', dir: [-0.42, 0.09, 0.91],
+        label: 'the pale moon', color: 0xc8d4e8, shape: 'circle' },
+      { action: 'inspectBizarreRennName', dir: [0.69, -0.32, -0.65],
+        label: 'a name carved into a root', color: 0xb07835, shape: 'circle' },
+      { action: 'inspectBizarreShell', dir: [-0.12, -0.61, -0.78],
+        label: 'a small shell among the roots', color: 0xa078ff, shape: 'circle' },
       { to: 'bizarreRealm', dir: [0.24, -0.73, 0.64],
         label: 'back to the plateau', sfx: 'stone-footsteps', fadeMs: 3500 },
     ],
@@ -1884,7 +1980,7 @@ const WORLD = {
       { action: 'setOrreryArm1', dir: [0.61, 0.03, 0.79],
         label: 'the orrery — first arm', color: 0xffd27a, shape: 'circle',
         hidden: () => state.cottageTowerOrrerySet },
-      { action: 'setOrreryArm2', dir: [0.27, 0.04, 0.96],
+      { action: 'setOrreryArm2', dir: [0.27, 0.03, 0.968],
         label: 'the orrery — second arm', color: 0xffd27a, shape: 'circle',
         hidden: () => state.cottageTowerOrrerySet },
       { action: 'setOrreryArm3', dir: [0.39, 0.53, 0.75],
