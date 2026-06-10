@@ -211,6 +211,45 @@ const state = {
   bizarreShellInspected: false,
 };
 
+// ---- Save / restore (localStorage) ----------------------------------
+// Persists the player's progress under a versioned key so a schema bump
+// can be detected and discarded cleanly. Audio prefs are persisted
+// separately (mystVolMusic / mystVolSfx / mystMuteMusic / mystMuteSfx)
+// and intentionally NOT bundled here — they're settings, not progress.
+const SAVE_KEY = 'mystSave_v1';
+
+function saveProgress() {
+  // Skip saves while the title screen is up — the player hasn't
+  // really started yet, and the initial `travelTo('dock')` shouldn't
+  // overwrite an existing save before the user picks Continue / New Game.
+  if (titleScreenActive) return;
+  if (!currentNode) return;
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ state, currentNode }));
+  } catch (err) {
+    console.warn('[save]', err);
+  }
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== 'object') return null;
+    if (!data.state || typeof data.state !== 'object') return null;
+    if (!data.currentNode || !WORLD[data.currentNode]) return null;
+    return data;
+  } catch (err) {
+    console.warn('[save]', err);
+    return null;
+  }
+}
+
+function clearSave() {
+  try { localStorage.removeItem(SAVE_KEY); } catch (err) { /* ignore */ }
+}
+
 // ---- Action handlers (run on click for non-travel hotspots) ---------
 const ACTIONS = {
   readCaptainsLog: () => {
@@ -2189,6 +2228,7 @@ function refreshCurrentNode() {
   sphereMat.map = node.pano();
   sphereMat.needsUpdate = true;
   buildHotspots(node);
+  saveProgress();
 }
 
 // ---- Hotspots -------------------------------------------------------
@@ -2433,6 +2473,7 @@ async function travelTo(key, opts = {}) {
   // Per-node arrival hook — fires after fade clears so any one-shot sfx
   // lands while the player is fully in the room.
   if (typeof node.onEnter === 'function') node.onEnter();
+  saveProgress();
 }
 
 // ---- Dev mode: aim at a spot, press H to capture hotspot direction --
@@ -3268,15 +3309,26 @@ document.getElementById('track-prev').addEventListener('click', (e) => {
 // to gameplay. Class is removed when the title fades out.
 document.body.classList.add('title-active');
 
-// Start loading the dock behind the title card so it's ready when the
-// player dismisses the title.
+// If a save exists, hydrate `state` from it now so the world's
+// state-aware hotspots/panos are correct as soon as the saved node
+// loads. The actual `travelTo` to the saved node is deferred until
+// `beginExperience` (after the title fades and audio is unlocked),
+// so node `onEnter` hooks like bizarreRealm's music init aren't
+// silently swallowed by the browser autoplay gate.
+const savedProgress = loadProgress();
+if (savedProgress) Object.assign(state, savedProgress.state);
+
+// Always show the dock behind the title card — it's the natural
+// loading-screen pano and avoids the saved-node onEnter firing
+// before audio is unlocked.
 travelTo('dock');
 
 const titleCard = document.getElementById('titlecard');
 const beginBtn = document.getElementById('begin-btn');
+const newGameBtn = document.getElementById('new-game-btn');
 const preloadCard = document.getElementById('preload-card');
 
-// Begin button starts in loading state — gated on dock pano + title music ready.
+// Begin button starts in loading state — gated on pano + title music ready.
 beginBtn.classList.add('loading');
 beginBtn.textContent = 'Loading…';
 beginBtn.disabled = true;
@@ -3293,8 +3345,9 @@ const titleMusicReady = new Promise(resolve => {
 });
 Promise.all([dockReady, titleMusicReady]).then(() => {
   beginBtn.classList.remove('loading');
-  beginBtn.textContent = 'Begin';
+  beginBtn.textContent = savedProgress ? 'Continue' : 'Begin';
   beginBtn.disabled = false;
+  if (savedProgress) newGameBtn.hidden = false;
 });
 
 // First click anywhere on the preload card lifts the autoplay gate,
@@ -3320,13 +3373,46 @@ function beginExperience() {
       const { path, mix } = resolveAmbient(WORLD[currentNode]);
       if (path) setNodeAmbient(path, mix);
     }
-    setTimeout(() => showOverlay(CAPTAINS_LOG_HTML, startGameplayMusic), 400);
+    if (savedProgress) {
+      // Continue path: skip captain's log, travel to the saved node
+      // (now that titleScreenActive is false and audio is unlocked,
+      // so onEnter hooks like bizarreRealm's music init can run cleanly).
+      startGameplayMusic();
+      travelTo(savedProgress.currentNode, { fadeMs: 1200 });
+    } else {
+      setTimeout(() => showOverlay(CAPTAINS_LOG_HTML, startGameplayMusic), 400);
+    }
   }, 1500);
 }
 beginBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   playSfx('key-lock-insert', 2.0);
   beginExperience();
+});
+
+// New Game — two-step inline confirm, mirrors the in-menu reset-progress
+// flow. First click arms ("Confirm?"); second wipes the save and reloads
+// so the title comes back up in its no-save state.
+let newGameArmed = false;
+let newGameTimer = null;
+function disarmNewGame() {
+  newGameArmed = false;
+  newGameBtn.textContent = 'New Game';
+  newGameBtn.classList.remove('danger');
+  if (newGameTimer) { clearTimeout(newGameTimer); newGameTimer = null; }
+}
+newGameBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  playSfx('menu-click');
+  if (newGameArmed) {
+    clearSave();
+    location.reload();
+    return;
+  }
+  newGameArmed = true;
+  newGameBtn.textContent = 'Erase save?';
+  newGameBtn.classList.add('danger');
+  newGameTimer = setTimeout(disarmNewGame, 4000);
 });
 
 addEventListener('resize', () => {

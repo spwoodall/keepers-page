@@ -486,12 +486,14 @@ ul.changelog li::before {
   border-color: rgba(255,210,122,0.7);
   color: #ffd9a0;
 }
-#settings-panel .setting-btn.danger {
+#settings-panel .setting-btn.danger,
+#titlecard .howto-btn.danger {
   background: rgba(255,90,60,0.15);
   border-color: rgba(255,106,74,0.7);
   color: #ff8a6c;
 }
-#settings-panel .setting-btn.danger:hover {
+#settings-panel .setting-btn.danger:hover,
+#titlecard .howto-btn.danger:hover {
   background: rgba(255,90,60,0.28);
   border-color: #ff8a6c;
 }
