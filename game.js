@@ -1742,29 +1742,29 @@ const WORLD = {
     pano: () => loadPano('panos/green-country.jpg'),
     // Per-node ambient — woodland: distant birds, leaf-rustle, deep stillness.
     ambient: 'audio/sfx/green-ambient.mp3',
-    startDir: [-0.58, 0.37, 0.72],
+    startDir: [0.53, 0.19, -0.82],
     hotspots: () => [
       // The ancient trees — aimed up the trunks (distinct from the gap
       // between roots, which is the terminal target). Panel shape with
       // custom w/h to fit the trees' massive scale.
-      { action: 'inspectGreenTree', dir: [-0.42, 0.88, -0.21], shape: 'quad',
-        corners: [[1.2,4.65], [3.13,-4.65], [-3.29,-4.62], [-1.04,4.62]],
+      { action: 'inspectGreenTree', dir: [0.54, 0.82, 0.21], shape: 'quad',
+        corners: [[3.9,5.84], [7.79,-6.06], [-8.56,-5.64], [-3.13,5.87]],
         label: 'ancient trees, taller than mountains', color: 0x9aff7a,
         hidden: () => state.greenTreeInspected },
       // The root-woven basin holding a pool that reflects a wrong sky.
-      { action: 'inspectGreenBasin', dir: [0.43, -0.64, 0.64],
+      { action: 'inspectGreenBasin', dir: [-0.62, -0.67, -0.42],
         label: 'a basin of roots holding still water',
         color: 0xc0d0ff, shape: 'circle',
         hidden: () => state.greenBasinInspected },
       // A small purple shell resting on a root — cross-Age callback.
-      { action: 'inspectGreenShell', dir: [0.62, -0.76, -0.18],
+      { action: 'inspectGreenShell', dir: [-0.5, -0.76, 0.41],
         label: 'a small purple shell on the root',
         color: 0xc8a0ff, shape: 'circle',
         hidden: () => state.greenShellInspected },
       // Terminal exit — only appears once all three have been seen.
       // Passage shape so it reads as a true travel ring (the overlay runs
       // before the actual travel).
-      { action: 'stepIntoRoots', dir: [0.31, 0.08, -0.95],
+      { action: 'stepIntoRoots', dir: [0.09, 0.03, 1],
         label: 'step between the great roots',
         color: 0x7affd2, shape: 'passage',
         hidden: () => !(state.greenTreeInspected
