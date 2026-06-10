@@ -1712,23 +1712,24 @@ const WORLD = {
     // Per-node ambient — the Reversed Shore's signature soundscape.
     ambient: 'audio/sfx/shore-ambient.mp3',
     ambientMix: 1.8,
-    startDir: [0.39, 0.15, -0.91],
+    startDir: [-0.78, 0.15, 0.61],
     hotspots: () => [
-      { action: 'inspectShoreLighthouse', dir: [0.99, 0.04, -0.15],
+      { action: 'inspectShoreLighthouse', dir: [-0.88, 0.04, -0.48], shape: 'quad',
+        corners: [[0.43,0.87],[0.44,-0.87],[-0.44,-0.87],[-0.43,0.87]],
         label: 'the black lighthouse',
-        color: 0xffc26a, shape: 'book',
+        color: 0xffc26a,
         hidden: () => state.shoreLighthouseInspected },
-      { action: 'inspectShoreMoon', dir: [-0.95, 0.26, -0.18],
+      { action: 'inspectShoreMoon', dir: [0.65, 0.26, 0.72],
         label: 'the smaller moon',
         color: 0xc0d0ff, shape: 'circle',
         hidden: () => state.shoreMoonInspected },
-      { action: 'inspectShoreShell', dir: [0.42, -0.81, 0.42],
+      { action: 'inspectShoreShell', dir: [-0.07, -0.8, -0.59],
         label: 'a purple shell on the stones',
         color: 0xc8a0ff, shape: 'circle',
         hidden: () => state.shoreShellInspected },
       // Final exit — only appears once all three have been seen.
       // Passage shape so it reads as a true travel ring (overlay before travel).
-      { action: 'wadeToMonolith', dir: [-0.94, -0.16, 0.28],
+      { action: 'wadeToMonolith', dir: [0.91, -0.21, 0.35],
         label: 'walk into the tide',
         color: 0x7affd2, shape: 'passage',
         hidden: () => !(state.shoreLighthouseInspected
