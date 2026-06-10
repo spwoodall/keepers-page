@@ -548,7 +548,7 @@ const ACTIONS = {
     state.observatoryMechanismActive = true;
     // Steam-brass machinery starts up immediately, then the brass click
     // + slab grind follow once the mechanism has built momentum.
-    playSfx('mechanism-whir');
+    playSfx('mechanism-whir', 0.75);
     setTimeout(() => {
       playSfx('mechanical-gadget');
       playSfx('heavy-door-open');
@@ -663,7 +663,7 @@ const ACTIONS = {
   },
   inspectBizarreCloudSea: () => {
     state.bizarreCloudSeaInspected = true;
-    playSfx('interact-tap');
+    playSfx('floating-pad');
     showOverlay(`
       <h2>The Cloud Sea</h2>
       <p>You think you are on a plateau. You are on a page.</p>
@@ -675,7 +675,7 @@ const ACTIONS = {
   },
   inspectBizarrePlateauEdge: () => {
     state.bizarrePlateauEdgeInspected = true;
-    playSfx('interact-tap');
+    playSfx('exhale');
     showOverlay(`
       <h2>The Edge</h2>
       <p>The stone of the plateau falls away in tiers, each
@@ -689,7 +689,7 @@ const ACTIONS = {
   },
   inspectFamiliarDistance: () => {
     state.bizarreFamiliarDistanceInspected = true;
-    playSfx('mystical-chime', 2.0);
+    playSfx('floating-pad');
     showOverlay(`
       <h2>The Familiar Distance</h2>
       <p>Below the cloud sea, something familiar — and something
@@ -896,8 +896,12 @@ const ACTIONS = {
   },
   inspectFloorDiscs: () => {
     const activated = state.lighthouseBeamRedirected;
-    playSfx(activated ? 'mystical-chime' : 'water-drop', activated ? 2.0 : 1.0);
-    if (activated) state.chamberDiscsRead = true;
+    if (activated) {
+      playSfx('fx-light', 0.5);
+      state.chamberDiscsRead = true;
+    } else {
+      playSfx('water-drop');
+    }
     showOverlay(`
       <h2>The Floor Circles</h2>
       <p>Two discs of glass set flush into the sand — ringed
@@ -989,7 +993,11 @@ const ACTIONS = {
     `);
   },
   inspectWallDisc: () => {
-    playSfx(state.greenCanopyAligned ? 'mystical-chime' : 'knock-on-window');
+    if (state.greenCanopyAligned) {
+      playSfx('fx-light', 0.5);
+    } else {
+      playSfx('sweep-away');
+    }
     if (state.greenCanopyAligned) {
       showOverlay(`
         <h2>The Stone Disc</h2>
@@ -1022,7 +1030,7 @@ const ACTIONS = {
     `);
   },
   inspectCanopyView: () => {
-    playSfx('mystical-chime', 2.0);
+    playSfx('floating-pad');
     showOverlay(`
       <h2>The Forest</h2>
       <p>The canopy spreads to every horizon, broken in places by
@@ -1191,7 +1199,7 @@ const ACTIONS = {
     `);
   },
   inspectLoftWindow: () => {
-    playSfx('mystical-chime', 2.0);
+    playSfx('floating-pad');
     showOverlay(`
       <h2>The Window</h2>
       <p>A calm sea at golden hour. No twin moons. No reversed tide.
@@ -1265,6 +1273,16 @@ const ACTIONS = {
       two moons. The orrery hums and stills. The lens remains
       clouded.</p>
       <p><em>Not this one.</em></p>
+      <div class="close">click to close</div>
+    `);
+  },
+  inspectActivatedOrrery: () => {
+    playSfx('fx-light', 0.5);
+    showOverlay(`
+      <h2>The Orrery</h2>
+      <p>The brass has gone warm. The second arm holds against the
+      pale moon's mark, where it was always meant to stop. The
+      instrument is doing what it was made for.</p>
       <div class="close">click to close</div>
     `);
   },
@@ -1547,17 +1565,21 @@ const WORLD = {
     startDir: [0.67, 0.49, -0.56],
     hotspots: () => [
       { action: 'inspectBizarreTwinMoons', dir: [-0.31, 0.38, 0.87],
-        label: 'two moons above the plateau', color: 0xc8d4e8, shape: 'circle' },
+        label: 'two moons above the plateau', color: 0xc8d4e8, shape: 'circle',
+        hidden: () => state.bizarreTwinMoonsInspected },
       { action: 'inspectBizarreCloudSea', dir: [-0.97, 0.05, -0.22], shape: 'quad',
         corners: [[7.94,2.5],[8.04,-2.28],[-8.03,-2.29],[-7.95,2.07]],
-        label: 'the cloud sea', color: 0x90b8d8 },
+        label: 'the cloud sea', color: 0x90b8d8,
+        hidden: () => state.bizarreCloudSeaInspected },
       { action: 'inspectBizarrePlateauEdge', dir: [0.53, -0.03, 0.85],
-        label: 'the edge of the plateau', color: 0xc4a878, shape: 'circle' },
+        label: 'the edge of the plateau', color: 0xc4a878, shape: 'circle',
+        hidden: () => state.bizarrePlateauEdgeInspected },
       { action: 'inspectFamiliarDistance', dir: [-0.34, -0.14, 0.93], shape: 'quad',
         corners: [[2.16,0.66],[2.57,-0.66],[-2.57,-0.66],[-2.16,0.66]],
         label: 'something familiar in the distance', color: 0xffaa44 },
       { action: 'inspectTheTree', dir: [0.69, 0.64, -0.33],
-        label: 'the tree across the cloud', color: 0xa6826a, shape: 'circle' },
+        label: 'the tree across the cloud', color: 0xa6826a, shape: 'circle',
+        hidden: () => state.bizarreTreeInspected },
       { to: 'bizarreRealmTree', dir: [0.77, 0.47, -0.44],
         label: 'toward the tree', sfx: 'stone-footsteps', fadeMs: 3500,
         hidden: () => !state.bizarreTreeInspected },
@@ -1580,15 +1602,20 @@ const WORLD = {
         corners: [[3.54,1.07],[0.27,-2.22],[-3.42,-0.67],[-0.4,1.82]] },
       { action: 'inspectBizarreSpiralTrunk', dir: [0.52, -0.06, -0.85], shape: 'quad',
         corners: [[1.04,1.77],[1,-1.75],[-1.15,-1.87],[-0.9,1.85]],
-        label: 'an S, cut into the bark', color: 0xffd27a },
+        label: 'an S, cut into the bark', color: 0xffd27a,
+        hidden: () => state.bizarreSpiralTrunkInspected },
       { action: 'inspectBizarreScroll', dir: [0.82, -0.56, 0.13],
-        label: 'a scroll among the roots', color: 0xffd27a, shape: 'circle' },
+        label: 'a scroll among the roots', color: 0xffd27a, shape: 'circle',
+        hidden: () => state.bizarreScrollInspected },
       { action: 'inspectBizarreSmallerPaleMoon', dir: [-0.42, 0.09, 0.91],
-        label: 'the pale moon', color: 0xc8d4e8, shape: 'circle' },
+        label: 'the pale moon', color: 0xc8d4e8, shape: 'circle',
+        hidden: () => state.bizarreSmallerPaleMoonInspected },
       { action: 'inspectBizarreRennName', dir: [0.69, -0.32, -0.65],
-        label: 'a name carved into a root', color: 0xb07835, shape: 'circle' },
+        label: 'a name carved into a root', color: 0xb07835, shape: 'circle',
+        hidden: () => state.bizarreRennNameInspected },
       { action: 'inspectBizarreShell', dir: [-0.12, -0.61, -0.78],
-        label: 'a small shell among the roots', color: 0xa078ff, shape: 'circle' },
+        label: 'a small shell among the roots', color: 0xa078ff, shape: 'circle',
+        hidden: () => state.bizarreShellInspected },
       { to: 'bizarreRealm', dir: [0.24, -0.73, 0.64],
         label: 'back to the plateau', sfx: 'stone-footsteps', fadeMs: 3500 },
     ],
@@ -1606,7 +1633,7 @@ const WORLD = {
         label: 'the black lighthouse',
         color: 0xffc26a, shape: 'book',
         hidden: () => state.shoreLighthouseInspected },
-      { action: 'inspectShoreMoon', dir: [-0.6, 0.26, -0.76],
+      { action: 'inspectShoreMoon', dir: [-0.95, 0.26, -0.18],
         label: 'the smaller moon',
         color: 0xc0d0ff, shape: 'circle',
         hidden: () => state.shoreMoonInspected },
@@ -1733,7 +1760,7 @@ const WORLD = {
     // Re-fire the mechanism whir on each return visit, so the player
     // hears the room come alive each time — not just the first.
     onEnter: () => {
-      if (state.observatoryMechanismActive) playSfx('mechanism-whir');
+      if (state.observatoryMechanismActive) playSfx('mechanism-whir', 0.75);
     },
     // Open framing — sea of clouds and constellations. Mechanism is
     // discovered by turning, not handed to the player on arrival.
@@ -1880,13 +1907,13 @@ const WORLD = {
   greenCanopy: {
     name: 'The Canopy',
     pano: () => loadPano(state.greenCanopyAligned ? 'panos/green-country-canopy-activated.jpg' : 'panos/green-country-canopy.jpg'),
-    ambient: 'audio/sfx/rustling-wind.mp3',
-    ambientMix: 2.0,
+    ambient: 'audio/sfx/green-canopy-ambient.mp3',
+    ambientMix: 2.5,
     startDir: [-0.84, 0.14, -0.52],
     hotspots: () => [
-      { action: 'inspectCanopyView', dir: [0.78, -0.07, -0.63],
+      { action: 'inspectCanopyView', dir: [0.93, -0.1, -0.35],
         label: 'the endless forest below', color: 0x9aff7a, shape: 'quad',
-        corners: [[9.64,1.06], [10.95,-0.44], [-11.05,-1.39], [-9.54,0.77]] },
+        corners: [[9.43,1.31], [9.32,-1.31], [-9.32,-1.31], [-9.43,1.31]] },
       { action: 'inspectWallDisc', dir: [-0.68, -0.01, 0.74],
         label: 'a carved stone disc — a pearl at its center', color: 0xffaa44, shape: 'circle' },
       { action: 'alignDiskTree', dir: [-0.74, -0.65, -0.18],
@@ -1988,6 +2015,10 @@ const WORLD = {
       { action: 'setOrreryArm3', dir: [0.39, 0.53, 0.75],
         label: 'the orrery — third arm', color: 0xffd27a, shape: 'circle',
         hidden: () => state.cottageTowerOrrerySet },
+      // Post-puzzle inspect — the orrery's quiet acknowledgement.
+      { action: 'inspectActivatedOrrery', dir: [0.27, 0.03, 0.968],
+        label: 'the orrery — at rest', color: 0xffd27a, shape: 'circle',
+        hidden: () => !state.cottageTowerOrrerySet },
       // Age terminal — only unlocked once orrery is correctly set.
       { action: 'useTelescope', dir: [-0.54, 0.43, -0.73],
         label: 'the telescope', color: 0x7affd2, shape: 'circle',
@@ -2742,7 +2773,7 @@ const PRELOAD_SFX = [
   'climbing-stairs', 'sigil-warp', 'linking-warp',
   'mechanism-whir', 'wave-crash', 'lighthouse', 'mystical-chime',
   'shell-fade', 'beam-sound', 'knock-on-window', 'ambient-peaceful-ray-light', 'fx-light',
-  'tree-rustle', 'sweep-away', 'footsteps-in-forest', 'wood-tap', 'written-letter', 'locked-door',
+  'tree-rustle', 'sweep-away', 'footsteps-in-forest', 'wood-tap', 'written-letter', 'locked-door', 'exhale', 'floating-pad',
 ];
 PRELOAD_SFX.forEach(name => {
   const sfx = new Audio(assetUrl(`audio/sfx/${name}.mp3`));
