@@ -2304,6 +2304,11 @@ addEventListener('click', (e) => {
   // epilogue bubbles to here and the raycast can re-hit the Age-terminal
   // hotspot underneath, re-firing triggerAgeReturn.
   if (e.target.closest('#age-transition')) return;
+  // Endscreen too — once the dedication/credits fade is rolling, the
+  // raycast must not hit the bizarre-tree hotspots underneath. (Bug:
+  // a player who knew where the second book was could trigger BOTH
+  // endings by clicking through the fade.)
+  if (e.target.closest('#endscreen')) return;
   if (titleScreenActive) return;
   if (rectCaptureMode) { captureRectCorner(e.clientX, e.clientY); return; }
   pointer.x = (e.clientX / innerWidth) * 2 - 1;
@@ -2870,7 +2875,7 @@ const PRELOAD_SFX = [
   'climbing-stairs', 'sigil-warp', 'linking-warp',
   'mechanism-whir', 'wave-crash', 'lighthouse', 'mystical-chime',
   'shell-fade', 'beam-sound', 'knock-on-window', 'peaceful-ray', 'fx-light',
-  'tree-rustle', 'sweep-away', 'footsteps-in-forest', 'wood-tap', 'written-letter', 'locked-door', 'exhale', 'floating-pad',
+  'tree-rustle', 'sweep-away', 'footsteps-in-forest', 'wood-tap', 'written-letter', 'locked-door', 'exhale', 'floating-pad', 'button-forward', 'button-back',
 ];
 PRELOAD_SFX.forEach(name => {
   const sfx = new Audio(assetUrl(`audio/sfx/${name}.mp3`));
@@ -2972,12 +2977,18 @@ function openSettings(tab) {
 
 menuBtn.addEventListener('click', (e) => {
   e.stopPropagation();
-  if (settingsPanel.classList.contains('active')) closeAllPanels();
-  else openSettings();
+  if (settingsPanel.classList.contains('active')) {
+    playSfx('button-back');
+    closeAllPanels();
+  } else {
+    playSfx('button-forward');
+    openSettings();
+  }
 });
 settingsPanel.querySelectorAll('.tab').forEach((btn) => {
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
+    playSfx('button-forward');
     switchTab(btn.dataset.tab);
   });
 });
@@ -3136,11 +3147,18 @@ document.getElementById('version-tag').addEventListener('click', (e) => {
 
 document.getElementById('howto-btn').addEventListener('click', (e) => {
   e.stopPropagation();
+  playSfx('button-forward');
   openSettings('howto');
 });
 settingsPanel.addEventListener('click', (e) => e.stopPropagation());
-document.getElementById('settings-close').addEventListener('click', closeAllPanels);
-panelBackdrop.addEventListener('click', closeAllPanels);
+document.getElementById('settings-close').addEventListener('click', () => {
+  playSfx('button-back');
+  closeAllPanels();
+});
+panelBackdrop.addEventListener('click', () => {
+  playSfx('button-back');
+  closeAllPanels();
+});
 addEventListener('click', closeAllPanels);
 
 volMusic.addEventListener('input', () => {
@@ -3251,6 +3269,7 @@ function beginExperience() {
 }
 beginBtn.addEventListener('click', (e) => {
   e.stopPropagation();
+  playSfx('button-forward');
   beginExperience();
 });
 
