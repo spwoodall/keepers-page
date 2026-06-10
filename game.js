@@ -2374,6 +2374,7 @@ function showOverlay(html, onClose) {
   overlayCloseCallback = onClose || null;
 }
 overlayEl.addEventListener('click', () => {
+  playSfx('menu-click');
   overlayEl.classList.remove('active');
   const hadCallback = !!overlayCloseCallback;
   if (overlayCloseCallback) {
@@ -2875,7 +2876,7 @@ const PRELOAD_SFX = [
   'climbing-stairs', 'sigil-warp', 'linking-warp',
   'mechanism-whir', 'wave-crash', 'lighthouse', 'mystical-chime',
   'shell-fade', 'beam-sound', 'knock-on-window', 'peaceful-ray', 'fx-light',
-  'tree-rustle', 'sweep-away', 'footsteps-in-forest', 'wood-tap', 'written-letter', 'locked-door', 'exhale', 'floating-pad', 'button-forward', 'button-back',
+  'tree-rustle', 'sweep-away', 'footsteps-in-forest', 'wood-tap', 'written-letter', 'locked-door', 'exhale', 'floating-pad', 'button-forward', 'button-back', 'menu-click',
 ];
 PRELOAD_SFX.forEach(name => {
   const sfx = new Audio(assetUrl(`audio/sfx/${name}.mp3`));
@@ -2951,16 +2952,23 @@ function switchTab(tab) {
   });
 }
 
-function closeAllPanels() {
+function closeAllPanels({ silent = false } = {}) {
   // Note: do NOT close the captain's-log overlay here. It has its own
   // click-to-close handler, and document-level clicks that re-open the
   // overlay (e.g. clicking an interactive hotspot) also fire this handler
   // by bubbling. openSettings() explicitly dismisses the overlay when
   // needed so the two don't stack visually.
+  const wasOpen = settingsPanel.classList.contains('active');
   settingsPanel.classList.remove('active');
   menuBtn.classList.remove('active');
   panelBackdrop.classList.remove('active');
   if (typeof disarmReset === 'function') disarmReset();
+  // Play the back sound here so every caller (backdrop click, window
+  // bubble click, settings-close button, menu-btn toggle, etc.) gets it
+  // consistently — but only if a panel was actually open AND the caller
+  // isn't going to play its own sound (e.g. show-changelog plays
+  // menu-click and doesn't want a back-sound layered on top).
+  if (wasOpen && !silent) playSfx('button-back');
 }
 
 function openSettings(tab) {
@@ -2978,8 +2986,7 @@ function openSettings(tab) {
 menuBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   if (settingsPanel.classList.contains('active')) {
-    playSfx('button-back');
-    closeAllPanels();
+    closeAllPanels();  // plays button-back internally
   } else {
     playSfx('button-forward');
     openSettings();
@@ -2988,12 +2995,13 @@ menuBtn.addEventListener('click', (e) => {
 settingsPanel.querySelectorAll('.tab').forEach((btn) => {
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
-    playSfx('button-forward');
+    playSfx('menu-click');
     switchTab(btn.dataset.tab);
   });
 });
 document.getElementById('settings-fullscreen').addEventListener('click', (e) => {
   e.stopPropagation();
+  playSfx('menu-click');
   toggleFullscreen();
 });
 
@@ -3024,6 +3032,7 @@ function applyInvertUI() {
 applyInvertUI();
 invertToggle.addEventListener('click', (e) => {
   e.stopPropagation();
+  playSfx('menu-click');
   lookPrefs.invert = !lookPrefs.invert;
   localStorage.setItem('mystInvertDrag', lookPrefs.invert ? '1' : '0');
   applyInvertUI();
@@ -3052,8 +3061,9 @@ const RESET_FAREWELL_HTML = `
 `;
 resetBtn.addEventListener('click', (e) => {
   e.stopPropagation();
+  playSfx('menu-click');
   if (resetArmed) {
-    closeAllPanels();
+    closeAllPanels({ silent: true });
     showOverlay(RESET_FAREWELL_HTML, () => {
       // Wait one frame so the browser registers the overlay's display:none
       // before we trigger the fade's opacity transition — otherwise the
@@ -3136,12 +3146,14 @@ async function showChangelog() {
   showOverlay(await getChangelogHtml());
 }
 document.getElementById('show-changelog').addEventListener('click', (e) => {
+  playSfx('menu-click');
   e.stopPropagation();
-  closeAllPanels();
+  closeAllPanels({ silent: true });
   showChangelog();
 });
 document.getElementById('version-tag').addEventListener('click', (e) => {
   e.stopPropagation();
+  playSfx('button-forward');
   showChangelog();
 });
 
@@ -3151,14 +3163,8 @@ document.getElementById('howto-btn').addEventListener('click', (e) => {
   openSettings('howto');
 });
 settingsPanel.addEventListener('click', (e) => e.stopPropagation());
-document.getElementById('settings-close').addEventListener('click', () => {
-  playSfx('button-back');
-  closeAllPanels();
-});
-panelBackdrop.addEventListener('click', () => {
-  playSfx('button-back');
-  closeAllPanels();
-});
+document.getElementById('settings-close').addEventListener('click', closeAllPanels);
+panelBackdrop.addEventListener('click', closeAllPanels);
 addEventListener('click', closeAllPanels);
 
 volMusic.addEventListener('input', () => {
@@ -3178,6 +3184,7 @@ volSfx.addEventListener('input', () => {
 });
 muteMusicBtn.addEventListener('click', (e) => {
   e.stopPropagation();
+  playSfx('menu-click');
   audioPrefs.musicMuted = !audioPrefs.musicMuted;
   localStorage.setItem('mystMuteMusic', audioPrefs.musicMuted ? '1' : '0');
   applyMuteUI();
@@ -3187,7 +3194,7 @@ muteSfxBtn.addEventListener('click', (e) => {
   audioPrefs.sfxMuted = !audioPrefs.sfxMuted;
   localStorage.setItem('mystMuteSfx', audioPrefs.sfxMuted ? '1' : '0');
   applyMuteUI();
-  if (!audioPrefs.sfxMuted) playSfx('interact-tap');
+  if (!audioPrefs.sfxMuted) playSfx('menu-click');
 });
 
 document.getElementById('replay-btn').addEventListener('click', () => {
@@ -3195,10 +3202,12 @@ document.getElementById('replay-btn').addEventListener('click', () => {
 });
 document.getElementById('track-next').addEventListener('click', (e) => {
   e.stopPropagation();
+  playSfx('menu-click');
   skipNext();
 });
 document.getElementById('track-prev').addEventListener('click', (e) => {
   e.stopPropagation();
+  playSfx('menu-click');
   skipPrev();
 });
 
@@ -3269,7 +3278,7 @@ function beginExperience() {
 }
 beginBtn.addEventListener('click', (e) => {
   e.stopPropagation();
-  playSfx('button-forward');
+  playSfx('key-lock-insert', 2.0);
   beginExperience();
 });
 
