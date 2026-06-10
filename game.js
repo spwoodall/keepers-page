@@ -1014,7 +1014,7 @@ const ACTIONS = {
     playSfx('brass-click');
     showOverlay(`
       <h2>The Tree</h2>
-      <p>You turn the stone until the tree symbol centers. A shaft
+      <p>You turn the wood until the tree symbol centers. A shaft
       of light descends through the hollow trunk — not sunlight,
       something older and more patient. It knows exactly where it
       is going.</p>
@@ -1028,7 +1028,7 @@ const ACTIONS = {
     playSfx('sweep-away');
     showOverlay(`
       <h2>The Wave</h2>
-      <p>You turn the stone to the wave symbol. The hollow below
+      <p>You turn the wood to the wave symbol. The hollow below
       stays dark. The wave belongs to another shore — it has
       nothing to say here among the roots.</p>
       <p><em>Not this one.</em></p>
@@ -1039,7 +1039,7 @@ const ACTIONS = {
     playSfx('sweep-away');
     showOverlay(`
       <h2>The Spiral</h2>
-      <p>You turn the stone to the Keepers' mark. The hollow
+      <p>You turn the wood to the Keepers' mark. The hollow
       flickers — almost — then settles back to dark. The spiral
       opens other doors. Not this one.</p>
       <p><em>Not this one.</em></p>
@@ -1055,26 +1055,27 @@ const ACTIONS = {
     if (state.greenCanopyAligned) {
       showOverlay(`
         <h2>The Stone Disc</h2>
-        <p>The sphere has answered. Something inside it glows now —
-        a warm light from a place that is not this one, refracted
-        through pale stone.</p>
+        <p>The pearl has answered. Something inside it glows now — a
+        warm light from a place that is not this one, refracted
+        through the gilded roots that cradle it.</p>
         <p>It found what it was waiting for.</p>
         <div class="close">click to close</div>
       `);
     } else {
       showOverlay(`
         <h2>The Stone Disc</h2>
-        <p>A cross-section of the tree itself, or something shaped to
-        resemble one. The knotwork carved into it is old — older than
-        the platform, older than the staircase. At its center, a small
-        sphere of pale stone, suspended in a shallow socket.</p>
-        <p>It does not move. It is waiting for something.</p>
+        <p>A great stone roundel set into the trunk, bearing a gilded
+        tree carved in deep relief. Its branches reach toward the rim;
+        its roots gather around a pearl at the base, held in a shallow
+        socket.</p>
+        <p>The work is old — older than the platform, older than the
+        staircase. It does not move. It is waiting for something.</p>
         <div class="close">click to close</div>
       `);
     }
   },
   inspectAlignedDisk: () => {
-    playSfx('interact-tap');
+    playSfx('wood-tap');
     showOverlay(`
       <h2>The Aligned Disk</h2>
       <p>The tree symbol faces the center. The shaft of light you
@@ -2005,19 +2006,19 @@ const WORLD = {
         label: 'the endless forest below', color: 0x9aff7a, shape: 'quad',
         corners: [[9.43,1.31], [9.32,-1.31], [-9.32,-1.31], [-9.43,1.31]],
         hidden: () => state.greenCanopyViewInspected },
-      { action: 'inspectWallDisc', dir: [-0.68, -0.01, 0.74],
-        label: 'a carved stone disc — a pearl at its center', color: 0xffaa44, shape: 'circle' },
+      { action: 'inspectWallDisc', dir: [-0.62, -0.38, 0.69],
+        label: 'a gilded tree, a pearl at its root', color: 0xffaa44, shape: 'circle' },
       { action: 'alignDiskTree', dir: [-0.74, -0.65, -0.18],
-        label: 'a tree carved into the stone', color: 0x9aff7a, shape: 'circle',
+        label: 'a tree carved into the wood', color: 0x9aff7a, shape: 'circle',
         hidden: () => state.greenCanopyAligned },
       { action: 'alignDiskWave', dir: [-0.71, -0.66, 0.25],
-        label: 'a wave carved into the stone', color: 0xa078ff, shape: 'circle',
+        label: 'a wave carved into the wood', color: 0xa078ff, shape: 'circle',
         hidden: () => state.greenCanopyAligned },
       { action: 'alignDiskSpiral', dir: [-0.62, -0.78, 0.02],
-        label: 'a spiral carved into the stone', color: 0xffd27a, shape: 'circle',
+        label: 'a spiral carved into the wood', color: 0xffd27a, shape: 'circle',
         hidden: () => state.greenCanopyAligned },
       { action: 'inspectAlignedDisk', dir: [-0.74, -0.65, -0.18],
-        label: 'the disk — aligned', color: 0x7affd2,
+        label: 'the disk — aligned', color: 0x7affd2, shape: 'circle',
         hidden: () => !state.greenCanopyAligned },
       { to: 'greenRootHollow', dir: [0.66, -0.57, 0.5],
         label: 'back down the hollow trunk', sfx: 'stone-footsteps', fadeMs: 3500 },
