@@ -420,3 +420,48 @@ realizes the 8th star and the pale moon are the same place.
 Rule: where twin moons are absent from a composition, the 8-star can stand
 in as the Keepers' celestial mark. Where twin moons ARE present, the moons
 lead and the 8-star stays subtle/absent.
+
+## Hotspot persistence philosophy (settled 2026-06-10)
+
+Hotspots fall into two categories. Choose deliberately at wire-up time.
+
+### Spent (one-time discoveries) — HIDE after click
+Atmospheric / lore / object discoveries that exist to be found once. After
+the player reads them, they should disappear so the world stays clean.
+
+Examples already wired this way:
+- Bizarre realm: purple shell, Renn's name, scroll, smaller pale moon,
+  spiral trunk, twin moons, cloud sea, plateau edge, the tree
+- Shore: shore moon, shore shell, lighthouse log, porthole
+- Cottage: cottage spiral, name plaques, hall coats, journals
+- Library: empty slot (after the book is found)
+
+**Gate via:** `hidden: () => state.<flag>Inspected` after the action sets
+the flag.
+
+### Recurring (state-aware) — KEEP visible, vary the overlay
+Puzzle elements and key objects that change state mid-game. The same
+hotspot reveals a *different* beat after the puzzle resolves. The label
+stays identity-only so the change is not telegraphed — keen observers
+who click again discover the second layer.
+
+Examples:
+- Puzzle pieces with pano-swap state: orrery, wall disc, floor discs
+- The Familiar Distance (thesis re-read — exception to the spent rule
+  because the dream-mesh thesis is dense and rewards a second pass)
+
+**Implement via:** action handler that branches on `state.<flag>` —
+different SFX + different overlay copy — and a fixed label like "the
+orrery" or "a carved stone disc — a pearl at its center."
+
+### Pattern decision rule
+- New element appears *only* post-puzzle (e.g., the redirected beam)
+  → separate hotspot, its own label, no pre-state version
+- Element exists pre and post (e.g., orrery, wallDisc, floor discs)
+  → single hotspot, state-aware overlay, fixed label
+- Atmospheric one-and-done (e.g., the porthole, twin moons inspect)
+  → single hotspot, hide after first click
+
+The label is **identity**, not state. The pano + the description +
+the SFX carry the state. This is the Myst grammar: the world doesn't
+announce its changes — the player has to look, listen, click again.

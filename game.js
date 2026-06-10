@@ -155,6 +155,10 @@ const state = {
   greenReturned: false,
   dockDoorUnlocked: false,
   shoreLighthouseInspected: false,
+  shorePortholeInspected: false,
+  shoreMonolithCarvingsInspected: false,
+  shoreChamberPortalInspected: false,
+  shoreChamberSpiralInspected: false,
   shoreMoonInspected: false,
   shoreShellInspected: false,
   greenTreeInspected: false,
@@ -176,11 +180,24 @@ const state = {
   greenCanopyAligned: false,
   greenRootDepthsSolved: false,
   greenDepthsPearlsInspected: false,
+  greenRootAltarInspected: false,
+  greenDepthsPoolInspected: false,
+  greenRootGlyphsInspected: false,
+  greenCanopyViewInspected: false,
   // Cottage multi-room
   cottageLoftNoteRead: false,
   cottageTowerOrrerySet: false,
   cottageLoftSeen: false,
   cottageTowerSeen: false,
+  cottageNamePlaquesInspected: false,
+  cottageHallCoatsInspected: false,
+  cottageHallStarChartsInspected: false,
+  cottageHallAntikytheraInspected: false,
+  cottageLoftMirrorInspected: false,
+  cottageLoftQuiltInspected: false,
+  cottageLoftWindowInspected: false,
+  libraryBooksInspected: false,
+  libraryWindowInspected: false,
   // Bizarre realm (Fourth Age)
   bizarreTwinMoonsInspected: false,
   bizarreCloudSeaInspected: false,
@@ -603,6 +620,7 @@ const ACTIONS = {
   },
 
   inspectLibraryWindow: () => {
+    state.libraryWindowInspected = true;
     playSfx('knock-on-window');
     showOverlay(`
       <h2>The Window</h2>
@@ -618,6 +636,7 @@ const ACTIONS = {
   },
 
   inspectLibraryBooks: () => {
+    state.libraryBooksInspected = true;
     playSfx('book-pull-open-and-close');
     showOverlay(`
       <h2>The Shelves</h2>
@@ -637,6 +656,7 @@ const ACTIONS = {
 
   // ---- Shore multi-room -----------------------------------------------
   inspectMonolithCarvings: () => {
+    state.shoreMonolithCarvingsInspected = true;
     playSfx('sweep-away');
     showOverlay(`
       <h2>The Wave Carvings</h2>
@@ -818,6 +838,21 @@ const ACTIONS = {
       <div class="close">click to close</div>
     `);
   },
+  inspectShorePorthole: () => {
+    state.shorePortholeInspected = true;
+    playSfx('knock-on-window');
+    showOverlay(`
+      <h2>The Porthole</h2>
+      <p>A round of glass thick with salt. Through it, the night
+      sea — black sand, the tide running backward, the monolith
+      dark at the far edge of the beach.</p>
+      <p>The larger moon sits directly behind the monolith, a
+      halo around the stone; the smaller moon hangs farther off.
+      The arrangement has not moved since you arrived. As if it
+      has been waiting for you to look back.</p>
+      <div class="close">click to close</div>
+    `);
+  },
   setDialSky: () => {
     playSfx('interact-tap');
     showOverlay(`
@@ -868,6 +903,7 @@ const ACTIONS = {
     `);
   },
   inspectChamberPortal: () => {
+    state.shoreChamberPortalInspected = true;
     playSfx('sweep-away');
     showOverlay(`
       <h2>The Stone Aperture</h2>
@@ -882,6 +918,7 @@ const ACTIONS = {
     `);
   },
   inspectChamberSpiral: () => {
+    state.shoreChamberSpiralInspected = true;
     playSfx('sweep-away');
     showOverlay(`
       <h2>The Concentric Rings</h2>
@@ -942,6 +979,7 @@ const ACTIONS = {
 
   // ---- Green multi-room -----------------------------------------------
   inspectRootAltar: () => {
+    state.greenRootAltarInspected = true;
     playSfx('sweep-away');
     showOverlay(`
       <h2>The Stone Altar</h2>
@@ -1030,6 +1068,7 @@ const ACTIONS = {
     `);
   },
   inspectCanopyView: () => {
+    state.greenCanopyViewInspected = true;
     playSfx('floating-pad');
     showOverlay(`
       <h2>The Forest</h2>
@@ -1046,6 +1085,7 @@ const ACTIONS = {
     `);
   },
   inspectDepthsPool: () => {
+    state.greenDepthsPoolInspected = true;
     playSfx('water-drop');
     showOverlay(`
       <h2>The Underground Pool</h2>
@@ -1074,6 +1114,7 @@ const ACTIONS = {
     refreshCurrentNode();
   },
   inspectRootGlyphs: () => {
+    state.greenRootGlyphsInspected = true;
     playSfx('wood-tap');
     showOverlay(`
       <h2>A Carved Symbol</h2>
@@ -1108,6 +1149,7 @@ const ACTIONS = {
 
   // ---- Cottage multi-room ---------------------------------------------
   inspectNamePlaques: () => {
+    state.cottageNamePlaquesInspected = true;
     playSfx('wood-tap');
     showOverlay(`
       <h2>Two Names</h2>
@@ -1121,6 +1163,7 @@ const ACTIONS = {
     `);
   },
   inspectHallCoats: () => {
+    state.cottageHallCoatsInspected = true;
     playSfx('bed-sheets');
     showOverlay(`
       <h2>Two Coats</h2>
@@ -1132,6 +1175,7 @@ const ACTIONS = {
     `);
   },
   inspectHallStarCharts: () => {
+    state.cottageHallStarChartsInspected = true;
     playSfx('book-open', 2.0);
     showOverlay(`
       <h2>The Star Charts</h2>
@@ -1147,6 +1191,7 @@ const ACTIONS = {
     `);
   },
   inspectHallAntikythera: () => {
+    state.cottageHallAntikytheraInspected = true;
     playSfx('brass-click');
     showOverlay(`
       <h2>The Mechanism</h2>
@@ -1176,6 +1221,7 @@ const ACTIONS = {
     refreshCurrentNode();
   },
   inspectLoftMirror: () => {
+    state.cottageLoftMirrorInspected = true;
     playSfx('written-letter');
     showOverlay(`
       <h2>Letters in the Mirror</h2>
@@ -1188,6 +1234,7 @@ const ACTIONS = {
     `);
   },
   inspectLoftQuilt: () => {
+    state.cottageLoftQuiltInspected = true;
     playSfx('bed-sheets');
     showOverlay(`
       <h2>The Spiral Quilt</h2>
@@ -1199,6 +1246,7 @@ const ACTIONS = {
     `);
   },
   inspectLoftWindow: () => {
+    state.cottageLoftWindowInspected = true;
     playSfx('floating-pad');
     showOverlay(`
       <h2>The Window</h2>
@@ -1276,15 +1324,26 @@ const ACTIONS = {
       <div class="close">click to close</div>
     `);
   },
-  inspectActivatedOrrery: () => {
-    playSfx('fx-light', 0.5);
-    showOverlay(`
-      <h2>The Orrery</h2>
-      <p>The brass has gone warm. The second arm holds against the
-      pale moon's mark, where it was always meant to stop. The
-      instrument is doing what it was made for.</p>
-      <div class="close">click to close</div>
-    `);
+  inspectOrrery: () => {
+    if (state.cottageTowerOrrerySet) {
+      playSfx('fx-light', 0.5);
+      showOverlay(`
+        <h2>The Orrery</h2>
+        <p>The brass has gone warm. The second arm holds against the
+        pale moon's mark, where it was always meant to stop. The
+        instrument is doing what it was made for.</p>
+        <div class="close">click to close</div>
+      `);
+    } else {
+      playSfx('interact-tap');
+      showOverlay(`
+        <h2>The Orrery</h2>
+        <p>An orrery of brass and silver — three arms, three discs,
+        a pearl at the center. It has not turned for a long time.
+        The parts move easily, waiting for a careful hand.</p>
+        <div class="close">click to close</div>
+      `);
+    }
   },
   useTelescope: () => {
     playSfx('sigil-warp');
@@ -1482,12 +1541,14 @@ const WORLD = {
       // Window behind the lectern — vista inspect. Future: room or outside space.
       { action: 'inspectLibraryWindow', dir: [0.86, 0.17, 0.48],
         label: 'a tall window', color: 0xa078ff, shape: 'quad',
-        corners: [[1.44,3.04], [1.53,-3.04], [-1.53,-3.04], [-1.44,3.04]] },
+        corners: [[1.44,3.04], [1.53,-3.04], [-1.53,-3.04], [-1.44,3.04]],
+        hidden: () => state.libraryWindowInspected },
       // The shelves themselves — flavor inspect on the Keepers' patience.
       // Wide quad spans the far wall of bindings.
       { action: 'inspectLibraryBooks', dir: [-0.32, 0.12, -0.94], shape: 'quad',
         corners: [[10.4,3.63], [10.75,-3.77], [-10.83,-4.29], [-10.32,4.43]],
-        label: 'the long rows of books', color: 0xffaa44 },
+        label: 'the long rows of books', color: 0xffaa44,
+        hidden: () => state.libraryBooksInspected },
       // Spiral staircase — main exit, always visible.
       { to: 'observatory', dir: [0.52, -0.2, -0.83], label: 'climb the spiral staircase',
         sfx: 'climbing-stairs', sfxDelay: 500, fadeMs: 6500 },
@@ -1791,7 +1852,8 @@ const WORLD = {
     hotspots: () => [
       { action: 'inspectMonolithCarvings', dir: [-0.73, 0.03, -0.68], shape: 'quad',
         corners: [[1.5,3.37],[1.52,-3.15],[-1.51,-2.29],[-1.51,2.07]],
-        label: 'wave carvings on the stone', color: 0xa078ff },
+        label: 'wave carvings on the stone', color: 0xa078ff,
+        hidden: () => state.shoreMonolithCarvingsInspected },
       { to: 'shoreMonolithChamber', dir: [0.22, -0.03, -0.98],
         label: () => state.lighthouseBeamRedirected ? 'the chamber beyond' : 'the passage into the dark',
         sfx: 'leaving-walk', sfxVolume: 2.0, fadeMs: 4000 },
@@ -1808,10 +1870,12 @@ const WORLD = {
     startDir: [-0.65, 0.11, -0.75],
     hotspots: () => [
       { action: 'inspectChamberPortal', dir: [-0.69, 0.09, 0.72],
-        label: 'a stone aperture in the arch', color: 0xa078ff, shape: 'circle' },
+        label: 'a stone aperture in the arch', color: 0xa078ff, shape: 'circle',
+        hidden: () => state.shoreChamberPortalInspected },
       { action: 'inspectChamberSpiral', dir: [0.44, 0.03, -0.9],
         label: 'a spiral carving', color: 0xa078ff, shape: 'quad',
-        corners: [[1.99,7.25], [1.62,-6.86], [-1.93,-7.66], [-1.67,7.27]] },
+        corners: [[1.99,7.25], [1.62,-6.86], [-1.93,-7.66], [-1.67,7.27]],
+        hidden: () => state.shoreChamberSpiralInspected },
       { action: 'inspectFloorDiscs', dir: [-0.11, -0.65, 0.75],
         label: 'two circles in the floor', color: 0xa078ff, shape: 'circle',
         hidden: () => state.lighthouseBeamRedirected },
@@ -1834,6 +1898,9 @@ const WORLD = {
       { action: 'readLighthouseLog', dir: [-0.3, -0.24, -0.92],
         label: 'a rusted logbook', color: 0xffaa44, shape: 'quad',
         corners: [[3.19,0.87], [3.14,-0.44], [-3.14,-0.87], [-3.19,0.44]] },
+      { action: 'inspectShorePorthole', dir: [-0.97, -0.01, -0.24],
+        label: 'a porthole into the night', color: 0xc8d4e8, shape: 'circle',
+        hidden: () => state.shorePortholeInspected },
       // Three dial positions — puzzle origin. Depths is correct.
       // All three dirs need H-key capture once pano is in.
       { action: 'setDialSky', dir: [0.59, 0.65, -0.48],
@@ -1863,7 +1930,8 @@ const WORLD = {
     hotspots: () => [
       { action: 'inspectRootAltar', dir: [-0.49, -0.05, -0.87],
         label: 'a carved stone altar', color: 0xffaa44, shape: 'quad',
-        corners: [[2.37,0.74], [2.39,-0.63], [-2.4,-0.77], [-2.36,0.67]] },
+        corners: [[2.37,0.74], [2.39,-0.63], [-2.4,-0.77], [-2.36,0.67]],
+        hidden: () => state.greenRootAltarInspected },
 
       { to: 'greenRootDepths', dir: [-0.38, -0.34, 0.86],
         label: 'a passage descending into the roots', sfx: 'footsteps-in-forest', fadeMs: 3500 },
@@ -1884,19 +1952,17 @@ const WORLD = {
     startDir: [0.94, -0.2, 0.29],
     hotspots: () => [
       { action: 'inspectDepthsPool', dir: [0.73, -0.64, 0.24],
-        label: 'the underground pool', color: 0xc0d0ff, shape: 'circle' },
+        label: 'the underground pool', color: 0xc0d0ff, shape: 'circle',
+        hidden: () => state.greenDepthsPoolInspected },
       // Pearls — only visible in the dark/unaligned state. Once the canopy
       // pours light into the chamber, they're no longer the only bright
       // things in the room and the player's eye moves to the lit root.
       { action: 'inspectDepthsPearls', dir: [-0.06, -0.84, -0.54], shape: 'circle',
         label: 'small pearls in the water', color: 0xffd27a,
         hidden: () => state.greenCanopyAligned || state.greenDepthsPearlsInspected },
-      { action: 'inspectRootGlyphs', dir: [0.47, -0.45, -0.75],
-        label: 'a carved symbol in shadow', color: 0xa078ff, shape: 'circle' },
-      { action: 'inspectRootGlyphs', dir: [0.15, -0.34, 0.93],
-        label: 'a carved symbol in shadow', color: 0xa078ff, shape: 'circle' },
       { action: 'inspectRootGlyphs', dir: [-0.71, -0.27, -0.65],
-        label: 'markings hidden among the roots', color: 0xa078ff, shape: 'circle' },
+        label: 'markings hidden among the roots', color: 0xa078ff, shape: 'circle',
+        hidden: () => state.greenRootGlyphsInspected },
       { action: 'touchLitRoot', dir: [-0.64, -0.49, 0.59],
         label: 'the root lit from above', color: 0x7affd2, shape: 'circle',
         hidden: () => !state.greenCanopyAligned || state.greenRootDepthsSolved },
@@ -1913,7 +1979,8 @@ const WORLD = {
     hotspots: () => [
       { action: 'inspectCanopyView', dir: [0.93, -0.1, -0.35],
         label: 'the endless forest below', color: 0x9aff7a, shape: 'quad',
-        corners: [[9.43,1.31], [9.32,-1.31], [-9.32,-1.31], [-9.43,1.31]] },
+        corners: [[9.43,1.31], [9.32,-1.31], [-9.32,-1.31], [-9.43,1.31]],
+        hidden: () => state.greenCanopyViewInspected },
       { action: 'inspectWallDisc', dir: [-0.68, -0.01, 0.74],
         label: 'a carved stone disc — a pearl at its center', color: 0xffaa44, shape: 'circle' },
       { action: 'alignDiskTree', dir: [-0.74, -0.65, -0.18],
@@ -1943,17 +2010,21 @@ const WORLD = {
     hotspots: () => [
       { action: 'inspectNamePlaques', dir: [-0.83, -0.31, -0.46], shape: 'quad',
         corners: [[2.71,2.83], [2.44,-2.79], [-2.42,-2.87], [-2.72,2.83]],
-        label: 'two name plaques on the wall', color: 0xffaa44 },
+        label: 'two name plaques on the wall', color: 0xffaa44,
+        hidden: () => state.cottageNamePlaquesInspected },
       { action: 'inspectHallCoats', dir: [0.44, -0.03, 0.9],
-        label: 'two coats on the rack', color: 0xa078ff },
+        label: 'two coats on the rack', color: 0xa078ff,
+        hidden: () => state.cottageHallCoatsInspected },
       // Star chart stand — Keepers' sky obsession, foreshadows the tower.
       { action: 'inspectHallStarCharts', dir: [-0.06, -0.57, 0.82], shape: 'quad',
         corners: [[2.52,4.67], [1.88,-4.69], [-1.83,-4.66], [-2.57,4.69]],
-        label: 'an open star chart on a stand', color: 0xffd27a },
+        label: 'an open star chart on a stand', color: 0xffd27a,
+        hidden: () => state.cottageHallStarChartsInspected },
       // Antikythera-style brass mechanism — ancient astronomical computer.
       { action: 'inspectHallAntikythera', dir: [0.52, -0.79, -0.32], shape: 'quad',
         corners: [[1.54,3.35], [0.92,-3.36], [-1.02,-3.33], [-1.43,3.34]],
-        label: 'a brass mechanism of gears', color: 0xffd27a },
+        label: 'a brass mechanism of gears', color: 0xffd27a,
+        hidden: () => state.cottageHallAntikytheraInspected },
       { to: 'cottageLoft', dir: [-0.69, -0.37, 0.61],
         label: 'the left door', sfx: 'door-open', fadeMs: 3600 },
       { to: 'cottageTower', dir: [0.13, -0.37, -0.92],
@@ -1976,12 +2047,15 @@ const WORLD = {
         label: 'a folded note on the desk', color: 0xffaa44,
         hidden: () => state.cottageLoftNoteRead },
       { action: 'inspectLoftMirror', dir: [-0.99, 0.16, 0.03],
-        label: 'letters tucked in the mirror frame', color: 0xffaa44 },
+        label: 'letters tucked in the mirror frame', color: 0xffaa44,
+        hidden: () => state.cottageLoftMirrorInspected },
       { action: 'inspectLoftQuilt', dir: [-0.89, -0.44, 0.12], shape: 'quad',
         corners: [[7.79,2.05], [5.59,-4.35], [-8.7,-1.38], [-4.68,3.68]],
-        label: 'the spiral quilt on the bed', color: 0xffd27a },
+        label: 'the spiral quilt on the bed', color: 0xffd27a,
+        hidden: () => state.cottageLoftQuiltInspected },
       { action: 'inspectLoftWindow', dir: [0.27, 0.14, 0.95],
-        label: 'the window', color: 0xc0d0ff, shape: 'circle' },
+        label: 'the window', color: 0xc0d0ff, shape: 'circle',
+        hidden: () => state.cottageLoftWindowInspected },
       { to: 'cottageUpperHall', dir: [0.01, -0.06, -1],
         label: 'back to the upper hall', sfx: 'door-open', fadeMs: 3600 },
     ],
@@ -2015,10 +2089,9 @@ const WORLD = {
       { action: 'setOrreryArm3', dir: [0.39, 0.53, 0.75],
         label: 'the orrery — third arm', color: 0xffd27a, shape: 'circle',
         hidden: () => state.cottageTowerOrrerySet },
-      // Post-puzzle inspect — the orrery's quiet acknowledgement.
-      { action: 'inspectActivatedOrrery', dir: [0.27, 0.03, 0.968],
-        label: 'the orrery — at rest', color: 0xffd27a, shape: 'circle',
-        hidden: () => !state.cottageTowerOrrerySet },
+      // Always-on whole-orrery inspect — copy + SFX adapt to state.
+      { action: 'inspectOrrery', dir: [0.44, 0.24, 0.86],
+        label: 'the orrery', color: 0xffd27a, shape: 'circle' },
       // Age terminal — only unlocked once orrery is correctly set.
       { action: 'useTelescope', dir: [-0.54, 0.43, -0.73],
         label: 'the telescope', color: 0x7affd2, shape: 'circle',
