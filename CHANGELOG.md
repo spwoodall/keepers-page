@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.7.0 — 2026-06-10
+
+**New**
+
+- The Fourth Age, fully inhabited — the plateau and the tree below now hold the things a careful walker is meant to find: twin moons that have not moved, a cloud sea that is also a margin, the edge of the writing itself, and at the heart of it all, a familiar distance through which three places you have been and one you have not have somehow settled into the same view
+- The Tree — older than the writing, older than the Keepers. Two books rest at its roots: one open, one sealed
+- The Spiral and the Pearl — an S finally carved into bark, a small mark its makers always shared
+- A carved name on a root — *Renn* — old enough that the bark has begun to close around it
+- A scroll bound in leather, an unfamiliar pale moon, a purple shell that traveled as far as a shell can be followed
+- The Lighthouse's porthole — a salt-thick round of glass looking back the way you came. The arrangement has not moved since you arrived
+- The 8-star constellation, completed by absence — drawn with one star missing in a logbook upstairs, completed in a pool of still water beneath the roots and again above the brass mechanism in the tower
+
+**Enhanced**
+
+- The world remembers what you have found. Once-discovered things step quietly aside; puzzle-objects keep their place and answer differently after they have answered once
+- A complete sound grammar — moonlight has a voice, glow has a voice, the shape of a vista has a voice, and the carved hand of the Keepers has a voice. The Begin button now opens with the same small turn-of-the-key as Captain Renn's ship
+- A consistent menu language — a heavier tone for entering, a lighter tone for settling on a choice within, a definite tone for closing the room behind you
+- A breath in the middle of the Fourth Age — the music steps aside for a moment when the Familiar Distance is read, and returns once the thought has landed
+- The Observatory now carries soft wind before the brass mechanism wakes — and the gears, when they wake, do not erase that wind so much as drown it
+- The Lighthouse interior finally has the air of its own room
+- Ambient layers softened across the run so the inspect beats sit on top of the world, not under it
+- Tree, stone, brass, paper, fabric — each material now confirms its own touch
+- The bizarre realm music stays continuous as you cross between the plateau and the tree
+
+**Fixed**
+
+- The two endings of the Fourth Age are now properly exclusive — a determined player can no longer click through the dedication and trigger both
+
+---
+
 ## v0.6.0 — 2026-06-07
 
 **New**

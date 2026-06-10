@@ -155,6 +155,10 @@ const state = {
   greenReturned: false,
   dockDoorUnlocked: false,
   shoreLighthouseInspected: false,
+  shorePortholeInspected: false,
+  shoreMonolithCarvingsInspected: false,
+  shoreChamberPortalInspected: false,
+  shoreChamberSpiralInspected: false,
   shoreMoonInspected: false,
   shoreShellInspected: false,
   greenTreeInspected: false,
@@ -176,11 +180,35 @@ const state = {
   greenCanopyAligned: false,
   greenRootDepthsSolved: false,
   greenDepthsPearlsInspected: false,
+  greenRootAltarInspected: false,
+  greenDepthsPoolInspected: false,
+  greenRootGlyphsInspected: false,
+  greenCanopyViewInspected: false,
   // Cottage multi-room
   cottageLoftNoteRead: false,
   cottageTowerOrrerySet: false,
   cottageLoftSeen: false,
   cottageTowerSeen: false,
+  cottageNamePlaquesInspected: false,
+  cottageHallCoatsInspected: false,
+  cottageHallStarChartsInspected: false,
+  cottageHallAntikytheraInspected: false,
+  cottageLoftMirrorInspected: false,
+  cottageLoftQuiltInspected: false,
+  cottageLoftWindowInspected: false,
+  libraryBooksInspected: false,
+  libraryWindowInspected: false,
+  // Bizarre realm (Fourth Age)
+  bizarreTwinMoonsInspected: false,
+  bizarreCloudSeaInspected: false,
+  bizarrePlateauEdgeInspected: false,
+  bizarreFamiliarDistanceInspected: false,
+  bizarreTreeInspected: false,
+  bizarreSpiralTrunkInspected: false,
+  bizarreScrollInspected: false,
+  bizarreSmallerPaleMoonInspected: false,
+  bizarreRennNameInspected: false,
+  bizarreShellInspected: false,
 };
 
 // ---- Action handlers (run on click for non-travel hotspots) ---------
@@ -391,7 +419,7 @@ const ACTIONS = {
       <p>The page is pristine — kept so carefully it might be a textbook.
       Every line measured, every margin even. They wrote about the work:
       the brass, the books, the sigils that wanted careful drawing. They
-      wrote about the sea outside their window. They wrote about her.</p>
+      wrote about the sea outside their window. They wrote about him.</p>
       <p><em>They were not afraid when they wrote this.</em></p>
       <div class="close">click to close</div>
     `);
@@ -428,7 +456,7 @@ const ACTIONS = {
   },
   inspectCottageSpiral: () => {
     state.cottageSpiralInspected = true;
-    playSfx('interact-tap');
+    playSfx('sweep-away');
     showOverlay(`
       <h2>The Keepers' Spiral</h2>
       <p>Carved into the stone, deep enough to last. The shape your
@@ -441,7 +469,7 @@ const ACTIONS = {
   },
   inspectCottageCompass: () => {
     state.cottageCompassInspected = true;
-    playSfx('drop-item', 2.0);
+    playSfx('metallic-thud');
     showOverlay(`
       <h2>A Brass Compass</h2>
       <p>Pocket-sized, brass-bezeled, cool in your palm. The needle
@@ -486,7 +514,7 @@ const ACTIONS = {
   },
   // ---- Dock door symbol puzzle ----
   inspectDoorTree: () => {
-    playSfx('sweep-away');
+    playSfx('interact-tap');
     showOverlay(`
       <h2>A Carved Panel</h2>
       <p>A tangle of intertwined branches and leaves, deep
@@ -497,7 +525,7 @@ const ACTIONS = {
     `);
   },
   inspectDoorWave: () => {
-    playSfx('sweep-away');
+    playSfx('interact-tap');
     showOverlay(`
       <h2>A Carved Panel</h2>
       <p>Concentric arcs roll outward, like waves on a calm sea.
@@ -522,7 +550,7 @@ const ACTIONS = {
     refreshCurrentNode();
   },
   inspectLockedDoor: () => {
-    playSfx('interact-tap');
+    playSfx('locked-door');
     showOverlay(`
       <h2>The Door</h2>
       <p>Brass and worn wood, set into the stone of the cliff.
@@ -537,7 +565,7 @@ const ACTIONS = {
     state.observatoryMechanismActive = true;
     // Steam-brass machinery starts up immediately, then the brass click
     // + slab grind follow once the mechanism has built momentum.
-    playSfx('mechanism-whir');
+    playSfx('mechanism-whir', 0.75);
     setTimeout(() => {
       playSfx('mechanical-gadget');
       playSfx('heavy-door-open');
@@ -592,6 +620,7 @@ const ACTIONS = {
   },
 
   inspectLibraryWindow: () => {
+    state.libraryWindowInspected = true;
     playSfx('knock-on-window');
     showOverlay(`
       <h2>The Window</h2>
@@ -607,7 +636,8 @@ const ACTIONS = {
   },
 
   inspectLibraryBooks: () => {
-    playSfx('book-pages');
+    state.libraryBooksInspected = true;
+    playSfx('book-pull-open-and-close');
     showOverlay(`
       <h2>The Shelves</h2>
       <p>The shelves run deeper than any single life. Hundreds of
@@ -626,7 +656,8 @@ const ACTIONS = {
 
   // ---- Shore multi-room -----------------------------------------------
   inspectMonolithCarvings: () => {
-    playSfx('interact-tap');
+    state.shoreMonolithCarvingsInspected = true;
+    playSfx('sweep-away');
     showOverlay(`
       <h2>The Wave Carvings</h2>
       <p>Sigils run along the base of the stone — the same
@@ -636,6 +667,175 @@ const ACTIONS = {
       being recorded here, it was not meant to be read quickly.</p>
       <div class="close">click to close</div>
     `);
+  },
+  inspectBizarreTwinMoons: () => {
+    state.bizarreTwinMoonsInspected = true;
+    playSfx('mystical-chime', 2.0);
+    showOverlay(`
+      <h2>The Twin Moons</h2>
+      <p>You have seen them before — once, from a beach at the
+      foot of a stone monolith. The arrangement is the same.
+      The angle is the same. They have not moved.</p>
+      <p>You have moved.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectBizarreCloudSea: () => {
+    state.bizarreCloudSeaInspected = true;
+    playSfx('floating-pad');
+    showOverlay(`
+      <h2>The Cloud Sea</h2>
+      <p>You think you are on a plateau. You are on a page.</p>
+      <p>Below the cloud is the margin. Below the margin is
+      whatever was here before the writing.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectBizarrePlateauEdge: () => {
+    state.bizarrePlateauEdgeInspected = true;
+    playSfx('exhale');
+    showOverlay(`
+      <h2>The Edge</h2>
+      <p>The stone of the plateau falls away in tiers, each
+      step shallower than the last, until there is nothing left
+      to stand on and only the cloud remains.</p>
+      <p>This is where the writing ran out. The Keepers stopped
+      here because their world stopped here.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectFamiliarDistance: () => {
+    state.bizarreFamiliarDistanceInspected = true;
+    // Cut the bizarre-realm music so peaceful-ray can breathe — then
+    // restart the music when the sound finishes (the world exhales,
+    // the thesis lands, the world resumes). Respects mute state.
+    const wasMusicPlaying = bizarreRealmMusicActive && !audioPrefs.musicMuted;
+    if (!audioPrefs.sfxMuted && wasMusicPlaying) {
+      fadeAudioElement(ambientAudio, 0, 250);
+      const sfx = playSfx('peaceful-ray');
+      if (sfx) {
+        sfx.addEventListener('ended', () => {
+          if (bizarreRealmMusicActive && !audioPrefs.musicMuted) {
+            fadeAudioElement(ambientAudio, audioPrefs.music, 1500);
+          }
+        }, { once: true });
+      }
+    } else {
+      playSfx('peaceful-ray');
+    }
+    showOverlay(`
+      <h2>The Familiar Distance</h2>
+      <p>Below the cloud sea, something familiar — and something
+      not.</p>
+      <p>The dock where a ship still waits. The observatory where
+      brass once turned beneath your hand. A shore where you read
+      by lantern-light.</p>
+      <p>Three places. One island. One moonlight. The pieces a
+      dream keeps, set together as if they had always been one
+      place.</p>
+      <p>Someone has been dreaming.</p>
+      <p>Someone has been dreaming you here.</p>
+      <p>Or you have been dreaming yourself.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectTheTree: () => {
+    state.bizarreTreeInspected = true;
+    playSfx('tree-rustle', 2.0);
+    showOverlay(`
+      <h2>The Tree</h2>
+      <p>From here it stands as it has always stood. Older than
+      the writing. Older than the Keepers.</p>
+      <p>You count its rings without trying and stop counting
+      somewhere around a thousand. The tree did not arrive. The
+      tree was.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectBizarreSpiralTrunk: () => {
+    state.bizarreSpiralTrunkInspected = true;
+    playSfx('wood-tap');
+    showOverlay(`
+      <h2>The S, Cut into Bark</h2>
+      <p>A spiral, scored deep into the trunk — the shape of
+      an S. The first letter of a name you have read in
+      journals and seen on a book's looping cover.</p>
+      <p>A pearl at its heart. You have seen pearls like it
+      before — in the dock door, in an open notebook, at the
+      center of every sigil that still answers, in green water
+      beneath a canopy, and in a dozen places besides.</p>
+      <p>The pearl is the Keepers' signature. They press it into
+      anything worth remembering.</p>
+      <p>An S, finally carved. Drawn around the one mark its
+      maker and another have always shared.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectBizarreScroll: () => {
+    state.bizarreScrollInspected = true;
+    playSfx('written-letter');
+    showOverlay(`
+      <h2>A Scroll, Bound in Leather</h2>
+      <p>The same leather that wraps the open book at the roots
+      — soft, hand-wrapped, tied with a knot only its maker
+      would have made.</p>
+      <p>Untouched, in this version of things.</p>
+      <p>There are other endings. They begin here.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectBizarreSmallerPaleMoon: () => {
+    state.bizarreSmallerPaleMoonInspected = true;
+    playSfx('mystical-chime', 2.0);
+    showOverlay(`
+      <h2>The Pale Moon</h2>
+      <p>Smaller than its sister. Paler. Patient.</p>
+      <p>Someone watched this moon for eleven years. The journal
+      margins remember its arc. An orrery arm was set against
+      it. A son was taught its name in a language nobody else
+      used.</p>
+      <p>Here it hangs above her husband's writing, as if it
+      had agreed to come along.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectBizarreRennName: () => {
+    state.bizarreRennNameInspected = true;
+    playSfx('wood-tap');
+    showOverlay(`
+      <h2>A Carved Name</h2>
+      <p>A single name, scratched small into a root —
+      <em>Renn.</em></p>
+      <p>Old enough that the bark has begun to close around it.</p>
+      <p>The captain has been here. He did not write this place —
+      but he came, and he stayed long enough to leave his name
+      in it.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
+  },
+  inspectBizarreShell: () => {
+    state.bizarreShellInspected = true;
+    playSfx('shell-fade');
+    showOverlay(`
+      <h2>A Purple Shell</h2>
+      <p>Deep purple. Warm to the touch. You have held one like
+      it on a shore, on a root, beside a cold hearth.</p>
+      <p>This one followed them as far as a shell can be
+      followed. It sits among the roots of a tree older than
+      the writing, untroubled by the moonlight.</p>
+      <p>Some things were too small to leave behind.</p>
+      <div class="close">click to close</div>
+    `);
+    refreshCurrentNode();
   },
   readLighthouseLog: () => {
     state.shoreLighthouseLogRead = true;
@@ -651,6 +851,21 @@ const ACTIONS = {
       I have not yet been brave enough to set the dial. I am
       afraid that they were right. I am more afraid of what
       answers if they are."</em></p>
+      <div class="close">click to close</div>
+    `);
+  },
+  inspectShorePorthole: () => {
+    state.shorePortholeInspected = true;
+    playSfx('knock-on-window');
+    showOverlay(`
+      <h2>The Porthole</h2>
+      <p>A round of glass thick with salt. Through it, the night
+      sea — black sand, the tide running backward, the monolith
+      dark at the far edge of the beach.</p>
+      <p>The larger moon sits directly behind the monolith, a
+      halo around the stone; the smaller moon hangs farther off.
+      The arrangement has not moved since you arrived. As if it
+      has been waiting for you to look back.</p>
       <div class="close">click to close</div>
     `);
   },
@@ -704,7 +919,8 @@ const ACTIONS = {
     `);
   },
   inspectChamberPortal: () => {
-    playSfx('interact-tap');
+    state.shoreChamberPortalInspected = true;
+    playSfx('sweep-away');
     showOverlay(`
       <h2>The Stone Aperture</h2>
       <p>A perfect circle cut through the rock — not broken through,
@@ -718,7 +934,8 @@ const ACTIONS = {
     `);
   },
   inspectChamberSpiral: () => {
-    playSfx('interact-tap');
+    state.shoreChamberSpiralInspected = true;
+    playSfx('sweep-away');
     showOverlay(`
       <h2>The Concentric Rings</h2>
       <p>Circles within circles, each one scored with the same
@@ -732,8 +949,12 @@ const ACTIONS = {
   },
   inspectFloorDiscs: () => {
     const activated = state.lighthouseBeamRedirected;
-    playSfx(activated ? 'mystical-chime' : 'water-drop', activated ? 2.0 : 1.0);
-    if (activated) state.chamberDiscsRead = true;
+    if (activated) {
+      playSfx('fx-light', 0.5);
+      state.chamberDiscsRead = true;
+    } else {
+      playSfx('water-drop');
+    }
     showOverlay(`
       <h2>The Floor Circles</h2>
       <p>Two discs of glass set flush into the sand — ringed
@@ -774,7 +995,8 @@ const ACTIONS = {
 
   // ---- Green multi-room -----------------------------------------------
   inspectRootAltar: () => {
-    playSfx('interact-tap');
+    state.greenRootAltarInspected = true;
+    playSfx('sweep-away');
     showOverlay(`
       <h2>The Stone Altar</h2>
       <p>Cut stone, deliberately placed — not grown here. The
@@ -825,7 +1047,11 @@ const ACTIONS = {
     `);
   },
   inspectWallDisc: () => {
-    playSfx(state.greenCanopyAligned ? 'mystical-chime' : 'knock-on-window');
+    if (state.greenCanopyAligned) {
+      playSfx('fx-light', 0.5);
+    } else {
+      playSfx('sweep-away');
+    }
     if (state.greenCanopyAligned) {
       showOverlay(`
         <h2>The Stone Disc</h2>
@@ -858,7 +1084,8 @@ const ACTIONS = {
     `);
   },
   inspectCanopyView: () => {
-    playSfx('mystical-chime', 2.0);
+    state.greenCanopyViewInspected = true;
+    playSfx('floating-pad');
     showOverlay(`
       <h2>The Forest</h2>
       <p>The canopy spreads to every horizon, broken in places by
@@ -874,6 +1101,7 @@ const ACTIONS = {
     `);
   },
   inspectDepthsPool: () => {
+    state.greenDepthsPoolInspected = true;
     playSfx('water-drop');
     showOverlay(`
       <h2>The Underground Pool</h2>
@@ -902,7 +1130,8 @@ const ACTIONS = {
     refreshCurrentNode();
   },
   inspectRootGlyphs: () => {
-    playSfx('sweep-away');
+    state.greenRootGlyphsInspected = true;
+    playSfx('wood-tap');
     showOverlay(`
       <h2>A Carved Symbol</h2>
       <p>Something is carved into this root — a glyph, a
@@ -936,7 +1165,8 @@ const ACTIONS = {
 
   // ---- Cottage multi-room ---------------------------------------------
   inspectNamePlaques: () => {
-    playSfx('interact-tap');
+    state.cottageNamePlaquesInspected = true;
+    playSfx('wood-tap');
     showOverlay(`
       <h2>Two Names</h2>
       <p>One plaque is measured and level — each letter the same
@@ -949,6 +1179,7 @@ const ACTIONS = {
     `);
   },
   inspectHallCoats: () => {
+    state.cottageHallCoatsInspected = true;
     playSfx('bed-sheets');
     showOverlay(`
       <h2>Two Coats</h2>
@@ -960,6 +1191,7 @@ const ACTIONS = {
     `);
   },
   inspectHallStarCharts: () => {
+    state.cottageHallStarChartsInspected = true;
     playSfx('book-open', 2.0);
     showOverlay(`
       <h2>The Star Charts</h2>
@@ -975,6 +1207,7 @@ const ACTIONS = {
     `);
   },
   inspectHallAntikythera: () => {
+    state.cottageHallAntikytheraInspected = true;
     playSfx('brass-click');
     showOverlay(`
       <h2>The Mechanism</h2>
@@ -1004,6 +1237,7 @@ const ACTIONS = {
     refreshCurrentNode();
   },
   inspectLoftMirror: () => {
+    state.cottageLoftMirrorInspected = true;
     playSfx('written-letter');
     showOverlay(`
       <h2>Letters in the Mirror</h2>
@@ -1016,6 +1250,7 @@ const ACTIONS = {
     `);
   },
   inspectLoftQuilt: () => {
+    state.cottageLoftQuiltInspected = true;
     playSfx('bed-sheets');
     showOverlay(`
       <h2>The Spiral Quilt</h2>
@@ -1027,7 +1262,8 @@ const ACTIONS = {
     `);
   },
   inspectLoftWindow: () => {
-    playSfx('mystical-chime', 2.0);
+    state.cottageLoftWindowInspected = true;
+    playSfx('floating-pad');
     showOverlay(`
       <h2>The Window</h2>
       <p>A calm sea at golden hour. No twin moons. No reversed tide.
@@ -1056,8 +1292,8 @@ const ACTIONS = {
     showOverlay(`
       <h2>A Half-Drawn Constellation</h2>
       <p>The same careful hand as the journals downstairs. Seven
-      stars placed across the spread, the eighth left undrawn.
-      In the margin:</p>
+      stars captured on the page, the eighth left undrawn. In
+      the margin:</p>
       <p><em>"R — the eighth star is where the pale moon sat last
       Midsummer. Work it backward from there."</em></p>
       <p>You have seen this constellation before, reflected in
@@ -1103,6 +1339,27 @@ const ACTIONS = {
       <p><em>Not this one.</em></p>
       <div class="close">click to close</div>
     `);
+  },
+  inspectOrrery: () => {
+    if (state.cottageTowerOrrerySet) {
+      playSfx('fx-light', 0.5);
+      showOverlay(`
+        <h2>The Orrery</h2>
+        <p>The brass has gone warm. The second arm holds against the
+        pale moon's mark, where it was always meant to stop. The
+        instrument is doing what it was made for.</p>
+        <div class="close">click to close</div>
+      `);
+    } else {
+      playSfx('interact-tap');
+      showOverlay(`
+        <h2>The Orrery</h2>
+        <p>An orrery of brass and silver — three arms, three discs,
+        a pearl at the center. It has not turned for a long time.
+        The parts move easily, waiting for a careful hand.</p>
+        <div class="close">click to close</div>
+      `);
+    }
   },
   useTelescope: () => {
     playSfx('sigil-warp');
@@ -1237,6 +1494,7 @@ const WORLD = {
     // Per-node ambient — water, gulls, wind. Loops while the player
     // is at the dock; crossfades out when they travel away.
     ambient: 'audio/sfx/dock-ambient.mp3',
+    ambientMix: 0.45,
     // Open framing — the player's first sight is the ship that brought them.
     startDir: [0.73, -0.15, 0.67],
     hotspots: () => [
@@ -1245,7 +1503,7 @@ const WORLD = {
       { action: 'readCaptainsLog', dir: [0.71, -0.26, 0.65], shape: 'quad',
         corners: [[4.23,0.85], [3.31,-0.85], [-3.31,-0.85], [-4.23,0.85]],
         label: "Captain Renn's ship", color: 0xffaa44,
-        sfx: 'key-lock-insert' },
+        sfx: 'key-lock-insert', sfxVolume: 2.0 },
       // Three door panels — only the spiral is the Keepers' mark.
       // Book-frame outlines match the tall narrow panel shapes.
       { action: 'inspectDoorTree', dir: [-0.83, 0.5, -0.29], w: 1.1, h: 2.1, roll: -0.08,
@@ -1299,12 +1557,14 @@ const WORLD = {
       // Window behind the lectern — vista inspect. Future: room or outside space.
       { action: 'inspectLibraryWindow', dir: [0.86, 0.17, 0.48],
         label: 'a tall window', color: 0xa078ff, shape: 'quad',
-        corners: [[1.44,3.04], [1.53,-3.04], [-1.53,-3.04], [-1.44,3.04]] },
+        corners: [[1.44,3.04], [1.53,-3.04], [-1.53,-3.04], [-1.44,3.04]],
+        hidden: () => state.libraryWindowInspected },
       // The shelves themselves — flavor inspect on the Keepers' patience.
       // Wide quad spans the far wall of bindings.
       { action: 'inspectLibraryBooks', dir: [-0.32, 0.12, -0.94], shape: 'quad',
         corners: [[10.4,3.63], [10.75,-3.77], [-10.83,-4.29], [-10.32,4.43]],
-        label: 'the long rows of books', color: 0xffaa44 },
+        label: 'the long rows of books', color: 0xffaa44,
+        hidden: () => state.libraryBooksInspected },
       // Spiral staircase — main exit, always visible.
       { to: 'observatory', dir: [0.52, -0.2, -0.83], label: 'climb the spiral staircase',
         sfx: 'climbing-stairs', sfxDelay: 500, fadeMs: 6500 },
@@ -1320,6 +1580,7 @@ const WORLD = {
     name: 'The Ascension Chamber',
     pano: () => loadPano('panos/ascension.jpg'),
     ambient: 'audio/sfx/ascension-ambient.mp3',
+    ambientMix: 0.45,
     startDir: [-0.95, -0.3, -0.09],
     hotspots: () => [
       // The shore's linking book — blue leather, wave sigil.
@@ -1354,7 +1615,7 @@ const WORLD = {
       // Bizarre realm orrery — unlocks when all 3 Ages are returned from.
       { to: 'bizarreRealm', dir: [0.71, 0.11, -0.7],
         label: 'the armillary sphere — it holds something new', color: 0xd4aaff,
-        sfx: 'ambient-peaceful-ray-light', sfxVolume: 1.5, fadeMs: 4000,
+        sfx: 'peaceful-ray', sfxVolume: 1.5, fadeMs: 4000,
         hidden: () => !(state.shoreReturned && state.greenReturned && state.cottageReturned) },
     ],
   },
@@ -1363,11 +1624,18 @@ const WORLD = {
     name: 'The Fourth Age',
     pano: () => loadPano('panos/bizarre-realm.jpg'),
     onEnter: () => {
-      // Swap to the locked bizarre realm track and fade UP from silence.
-      // Earlier version did `fadeAudio(0, 3000)` then jammed volume in a
+      // First-time entry: start the bizarre realm track and fade UP from
+      // silence. Return entry from bizarreRealmTree (which shares this
+      // track): music is already mid-playback — don't reset src or restart
+      // playback. Just refresh the label and let the song continue.
+      // (Earlier version did `fadeAudio(0, 3000)` then jammed volume in a
       // setTimeout — the in-flight fade kept stomping the new volume back
       // down to 0, so the track played silently until the next travel
-      // re-fade brought it back up.
+      // re-fade brought it back up.)
+      if (bizarreRealmMusicActive) {
+        updateTrackLabel();
+        return;
+      }
       bizarreRealmMusicActive = true;
       ambientAudio.loop = true;
       ambientAudio.src = assetUrl(BIZARRE_REALM_TRACK.url);
@@ -1380,24 +1648,58 @@ const WORLD = {
     },
     startDir: [0.67, 0.49, -0.56],
     hotspots: () => [
+      { action: 'inspectBizarreTwinMoons', dir: [-0.31, 0.38, 0.87],
+        label: 'two moons above the plateau', color: 0xc8d4e8, shape: 'circle',
+        hidden: () => state.bizarreTwinMoonsInspected },
+      { action: 'inspectBizarreCloudSea', dir: [-0.97, 0.05, -0.22], shape: 'quad',
+        corners: [[7.94,2.5],[8.04,-2.28],[-8.03,-2.29],[-7.95,2.07]],
+        label: 'the cloud sea', color: 0x90b8d8,
+        hidden: () => state.bizarreCloudSeaInspected },
+      { action: 'inspectBizarrePlateauEdge', dir: [0.53, -0.03, 0.85],
+        label: 'the edge of the plateau', color: 0xc4a878, shape: 'circle',
+        hidden: () => state.bizarrePlateauEdgeInspected },
+      { action: 'inspectFamiliarDistance', dir: [-0.34, -0.14, 0.93], shape: 'quad',
+        corners: [[2.16,0.66],[2.57,-0.66],[-2.57,-0.66],[-2.16,0.66]],
+        label: 'something familiar in the distance', color: 0xffaa44 },
+      { action: 'inspectTheTree', dir: [0.69, 0.64, -0.33],
+        label: 'the tree across the cloud', color: 0xa6826a, shape: 'circle',
+        hidden: () => state.bizarreTreeInspected },
       { to: 'bizarreRealmTree', dir: [0.77, 0.47, -0.44],
-        label: 'toward the tree', sfx: 'stone-footsteps', fadeMs: 3500 },
-      { to: 'ascension', dir: [-0.29, -0.44, 0.85],
-        label: 'return to the chamber', sfx: 'sigil-warp', fadeMs: 3000 },
+        label: 'toward the tree', sfx: 'stone-footsteps', fadeMs: 3500,
+        hidden: () => !state.bizarreTreeInspected },
+      { to: 'ascension', dir: [0.6, -0.49, 0.63],
+        label: 'step onto the sigil', color: 0x7affd2,
+        sfx: 'sigil-warp', fadeMs: 3000 },
     ],
   },
 
   bizarreRealmTree: {
     name: 'The Fourth Age',
     pano: () => loadPano('panos/bizarre-realm-tree.jpg'),
-    startDir: [-0.07, -0.39, -0.92],
+    startDir: [0.45, 0.64, -0.63],
     hotspots: () => [
-      { action: 'touchKeeperOneBook', dir: [0.06, -0.71, -0.7],
+      { action: 'touchKeeperOneBook', dir: [0.25, -0.54, -0.8],
         label: 'an open book — looping hand', color: 0xffd27a, shape: 'quad',
-        corners: [[2,1.31],[2.9,-0.19],[-1.85,-1.5],[-3.06,0.38]] },
-      { action: 'touchKeeperTwoBook', dir: [0.35, -0.68, -0.64],
-        label: 'an open book — careful hand', color: 0xd4aaff, shape: 'quad',
-        corners: [[2.53,1.07],[2.44,-1.02],[-2.46,-0.74],[-2.51,0.68]] },
+        corners: [[4.56,1.07],[4,-1.7],[-4.84,-1.43],[-3.72,2.06]] },
+      { action: 'touchKeeperTwoBook', dir: [0.51, -0.68, -0.52],
+        label: 'a sealed book — careful hand', color: 0xd4aaff, shape: 'quad',
+        corners: [[3.54,1.07],[0.27,-2.22],[-3.42,-0.67],[-0.4,1.82]] },
+      { action: 'inspectBizarreSpiralTrunk', dir: [0.52, -0.06, -0.85], shape: 'quad',
+        corners: [[1.04,1.77],[1,-1.75],[-1.15,-1.87],[-0.9,1.85]],
+        label: 'an S, cut into the bark', color: 0xffd27a,
+        hidden: () => state.bizarreSpiralTrunkInspected },
+      { action: 'inspectBizarreScroll', dir: [0.82, -0.56, 0.13],
+        label: 'a scroll among the roots', color: 0xffd27a, shape: 'circle',
+        hidden: () => state.bizarreScrollInspected },
+      { action: 'inspectBizarreSmallerPaleMoon', dir: [-0.42, 0.09, 0.91],
+        label: 'the pale moon', color: 0xc8d4e8, shape: 'circle',
+        hidden: () => state.bizarreSmallerPaleMoonInspected },
+      { action: 'inspectBizarreRennName', dir: [0.69, -0.32, -0.65],
+        label: 'a name carved into a root', color: 0xb07835, shape: 'circle',
+        hidden: () => state.bizarreRennNameInspected },
+      { action: 'inspectBizarreShell', dir: [-0.12, -0.61, -0.78],
+        label: 'a small shell among the roots', color: 0xa078ff, shape: 'circle',
+        hidden: () => state.bizarreShellInspected },
       { to: 'bizarreRealm', dir: [0.24, -0.73, 0.64],
         label: 'back to the plateau', sfx: 'stone-footsteps', fadeMs: 3500 },
     ],
@@ -1415,7 +1717,7 @@ const WORLD = {
         label: 'the black lighthouse',
         color: 0xffc26a, shape: 'book',
         hidden: () => state.shoreLighthouseInspected },
-      { action: 'inspectShoreMoon', dir: [-0.6, 0.26, -0.76],
+      { action: 'inspectShoreMoon', dir: [-0.95, 0.26, -0.18],
         label: 'the smaller moon',
         color: 0xc0d0ff, shape: 'circle',
         hidden: () => state.shoreMoonInspected },
@@ -1532,17 +1834,17 @@ const WORLD = {
     pano: () => loadPano(state.observatoryMechanismActive
       ? 'panos/observatory-activated.jpg'
       : 'panos/observatory.jpg'),
-    // Mechanism's gears loop once activated, including on return visits.
+    // Pre-activation: soft wind reaches the cliff-top observatory through stone.
+    // Post-activation: gears take over the room.
     ambient: () => state.observatoryMechanismActive
-      ? 'audio/sfx/running-gears.mp3'
-      : null,
-    // gears.mp3 is mastered quietly — push it well above the default 0.6
-    // environmental mix so the mechanism feels present in the room.
-    ambientMix: 1.5,
+      ? 'audio/sfx/rusty-gears.mp3'
+      : 'audio/sfx/soft-wind.mp3',
+    // Wind is half of normal; rusty-gears is mastered quietly and needs the boost.
+    ambientMix: () => state.observatoryMechanismActive ? 1.5 : 0.5,
     // Re-fire the mechanism whir on each return visit, so the player
     // hears the room come alive each time — not just the first.
     onEnter: () => {
-      if (state.observatoryMechanismActive) playSfx('mechanism-whir');
+      if (state.observatoryMechanismActive) playSfx('mechanism-whir', 0.75);
     },
     // Open framing — sea of clouds and constellations. Mechanism is
     // discovered by turning, not handed to the player on arrival.
@@ -1556,7 +1858,7 @@ const WORLD = {
         color: 0xffaa44, shape: 'button',
         hidden: () => state.observatoryMechanismActive },
       // Slab descent — locked until the mechanism is activated.
-      { to: 'library', dir: [0.34, -0.56, 0.76],
+      { to: 'library', dir: [0.32, -0.57, 0.76],
         label: 'descend through the slab',
         sfx: 'heavy-door-open', fadeMs: 2400,
         hidden: () => !state.observatoryMechanismActive },
@@ -1571,15 +1873,16 @@ const WORLD = {
     ambientMix: 1.8,
     startDir: [-0.8, 0.19, 0.58],
     hotspots: () => [
-      { action: 'inspectMonolithCarvings', dir: [0.96, -0.04, -0.27], shape: 'quad',
-        corners: [[0.65,0.87], [0.65,-0.87], [-0.65,-0.87], [-0.65,0.87]],
-        label: 'wave carvings on the stone', color: 0xa078ff },
+      { action: 'inspectMonolithCarvings', dir: [-0.73, 0.03, -0.68], shape: 'quad',
+        corners: [[1.5,3.37],[1.52,-3.15],[-1.51,-2.29],[-1.51,2.07]],
+        label: 'wave carvings on the stone', color: 0xa078ff,
+        hidden: () => state.shoreMonolithCarvingsInspected },
       { to: 'shoreMonolithChamber', dir: [0.22, -0.03, -0.98],
         label: () => state.lighthouseBeamRedirected ? 'the chamber beyond' : 'the passage into the dark',
         sfx: 'leaving-walk', sfxVolume: 2.0, fadeMs: 4000 },
       { to: 'shoreLighthouse', dir: [0.94, 0.11, 0.32],
         label: 'the distant lighthouse', sfx: 'linking-warp', fadeMs: 3000 },
-      { to: 'reversedShore', dir: [0.22, -0.1, 0.97],
+      { to: 'reversedShore', dir: [0.7, -0.09, 0.71],
         label: 'back to the shore', sfx: 'wave-crash', fadeMs: 4000 },
     ],
   },
@@ -1590,10 +1893,12 @@ const WORLD = {
     startDir: [-0.65, 0.11, -0.75],
     hotspots: () => [
       { action: 'inspectChamberPortal', dir: [-0.69, 0.09, 0.72],
-        label: 'a stone aperture in the arch', color: 0xa078ff, shape: 'circle' },
+        label: 'a stone aperture in the arch', color: 0xa078ff, shape: 'circle',
+        hidden: () => state.shoreChamberPortalInspected },
       { action: 'inspectChamberSpiral', dir: [0.44, 0.03, -0.9],
         label: 'a spiral carving', color: 0xa078ff, shape: 'quad',
-        corners: [[1.99,7.25], [1.62,-6.86], [-1.93,-7.66], [-1.67,7.27]] },
+        corners: [[1.99,7.25], [1.62,-6.86], [-1.93,-7.66], [-1.67,7.27]],
+        hidden: () => state.shoreChamberSpiralInspected },
       { action: 'inspectFloorDiscs', dir: [-0.11, -0.65, 0.75],
         label: 'two circles in the floor', color: 0xa078ff, shape: 'circle',
         hidden: () => state.lighthouseBeamRedirected },
@@ -1611,11 +1916,15 @@ const WORLD = {
   shoreLighthouse: {
     name: 'The Lighthouse',
     pano: () => loadPano(state.lighthouseBeamRedirected ? 'panos/shore-lighthouse-activated.jpg' : 'panos/shore-lighthouse.jpg'),
+    ambient: 'audio/sfx/lighthouse-ambient.mp3',
     startDir: [0.4, -0.1, 0.91],
     hotspots: () => [
       { action: 'readLighthouseLog', dir: [-0.3, -0.24, -0.92],
         label: 'a rusted logbook', color: 0xffaa44, shape: 'quad',
         corners: [[3.19,0.87], [3.14,-0.44], [-3.14,-0.87], [-3.19,0.44]] },
+      { action: 'inspectShorePorthole', dir: [-0.97, -0.01, -0.24],
+        label: 'a porthole into the night', color: 0xc8d4e8, shape: 'circle',
+        hidden: () => state.shorePortholeInspected },
       // Three dial positions — puzzle origin. Depths is correct.
       // All three dirs need H-key capture once pano is in.
       { action: 'setDialSky', dir: [0.59, 0.65, -0.48],
@@ -1645,7 +1954,8 @@ const WORLD = {
     hotspots: () => [
       { action: 'inspectRootAltar', dir: [-0.49, -0.05, -0.87],
         label: 'a carved stone altar', color: 0xffaa44, shape: 'quad',
-        corners: [[2.37,0.74], [2.39,-0.63], [-2.4,-0.77], [-2.36,0.67]] },
+        corners: [[2.37,0.74], [2.39,-0.63], [-2.4,-0.77], [-2.36,0.67]],
+        hidden: () => state.greenRootAltarInspected },
 
       { to: 'greenRootDepths', dir: [-0.38, -0.34, 0.86],
         label: 'a passage descending into the roots', sfx: 'footsteps-in-forest', fadeMs: 3500 },
@@ -1666,19 +1976,17 @@ const WORLD = {
     startDir: [0.94, -0.2, 0.29],
     hotspots: () => [
       { action: 'inspectDepthsPool', dir: [0.73, -0.64, 0.24],
-        label: 'the underground pool', color: 0xc0d0ff, shape: 'circle' },
+        label: 'the underground pool', color: 0xc0d0ff, shape: 'circle',
+        hidden: () => state.greenDepthsPoolInspected },
       // Pearls — only visible in the dark/unaligned state. Once the canopy
       // pours light into the chamber, they're no longer the only bright
       // things in the room and the player's eye moves to the lit root.
       { action: 'inspectDepthsPearls', dir: [-0.06, -0.84, -0.54], shape: 'circle',
         label: 'small pearls in the water', color: 0xffd27a,
         hidden: () => state.greenCanopyAligned || state.greenDepthsPearlsInspected },
-      { action: 'inspectRootGlyphs', dir: [0.47, -0.45, -0.75],
-        label: 'a carved symbol in shadow', color: 0xa078ff, shape: 'circle' },
-      { action: 'inspectRootGlyphs', dir: [0.15, -0.34, 0.93],
-        label: 'a carved symbol in shadow', color: 0xa078ff, shape: 'circle' },
       { action: 'inspectRootGlyphs', dir: [-0.71, -0.27, -0.65],
-        label: 'markings hidden among the roots', color: 0xa078ff, shape: 'circle' },
+        label: 'markings hidden among the roots', color: 0xa078ff, shape: 'circle',
+        hidden: () => state.greenRootGlyphsInspected },
       { action: 'touchLitRoot', dir: [-0.64, -0.49, 0.59],
         label: 'the root lit from above', color: 0x7affd2, shape: 'circle',
         hidden: () => !state.greenCanopyAligned || state.greenRootDepthsSolved },
@@ -1689,13 +1997,14 @@ const WORLD = {
   greenCanopy: {
     name: 'The Canopy',
     pano: () => loadPano(state.greenCanopyAligned ? 'panos/green-country-canopy-activated.jpg' : 'panos/green-country-canopy.jpg'),
-    ambient: 'audio/sfx/rustling-wind.mp3',
-    ambientMix: 2.0,
+    ambient: 'audio/sfx/green-canopy-ambient.mp3',
+    ambientMix: 2.5,
     startDir: [-0.84, 0.14, -0.52],
     hotspots: () => [
-      { action: 'inspectCanopyView', dir: [0.78, -0.07, -0.63],
+      { action: 'inspectCanopyView', dir: [0.93, -0.1, -0.35],
         label: 'the endless forest below', color: 0x9aff7a, shape: 'quad',
-        corners: [[9.64,1.06], [10.95,-0.44], [-11.05,-1.39], [-9.54,0.77]] },
+        corners: [[9.43,1.31], [9.32,-1.31], [-9.32,-1.31], [-9.43,1.31]],
+        hidden: () => state.greenCanopyViewInspected },
       { action: 'inspectWallDisc', dir: [-0.68, -0.01, 0.74],
         label: 'a carved stone disc — a pearl at its center', color: 0xffaa44, shape: 'circle' },
       { action: 'alignDiskTree', dir: [-0.74, -0.65, -0.18],
@@ -1725,17 +2034,21 @@ const WORLD = {
     hotspots: () => [
       { action: 'inspectNamePlaques', dir: [-0.83, -0.31, -0.46], shape: 'quad',
         corners: [[2.71,2.83], [2.44,-2.79], [-2.42,-2.87], [-2.72,2.83]],
-        label: 'two name plaques on the wall', color: 0xffaa44 },
+        label: 'two name plaques on the wall', color: 0xffaa44,
+        hidden: () => state.cottageNamePlaquesInspected },
       { action: 'inspectHallCoats', dir: [0.44, -0.03, 0.9],
-        label: 'two coats on the rack', color: 0xa078ff },
+        label: 'two coats on the rack', color: 0xa078ff,
+        hidden: () => state.cottageHallCoatsInspected },
       // Star chart stand — Keepers' sky obsession, foreshadows the tower.
       { action: 'inspectHallStarCharts', dir: [-0.06, -0.57, 0.82], shape: 'quad',
         corners: [[2.52,4.67], [1.88,-4.69], [-1.83,-4.66], [-2.57,4.69]],
-        label: 'an open star chart on a stand', color: 0xffd27a },
+        label: 'an open star chart on a stand', color: 0xffd27a,
+        hidden: () => state.cottageHallStarChartsInspected },
       // Antikythera-style brass mechanism — ancient astronomical computer.
       { action: 'inspectHallAntikythera', dir: [0.52, -0.79, -0.32], shape: 'quad',
         corners: [[1.54,3.35], [0.92,-3.36], [-1.02,-3.33], [-1.43,3.34]],
-        label: 'a brass mechanism of gears', color: 0xffd27a },
+        label: 'a brass mechanism of gears', color: 0xffd27a,
+        hidden: () => state.cottageHallAntikytheraInspected },
       { to: 'cottageLoft', dir: [-0.69, -0.37, 0.61],
         label: 'the left door', sfx: 'door-open', fadeMs: 3600 },
       { to: 'cottageTower', dir: [0.13, -0.37, -0.92],
@@ -1758,12 +2071,15 @@ const WORLD = {
         label: 'a folded note on the desk', color: 0xffaa44,
         hidden: () => state.cottageLoftNoteRead },
       { action: 'inspectLoftMirror', dir: [-0.99, 0.16, 0.03],
-        label: 'letters tucked in the mirror frame', color: 0xffaa44 },
+        label: 'letters tucked in the mirror frame', color: 0xffaa44,
+        hidden: () => state.cottageLoftMirrorInspected },
       { action: 'inspectLoftQuilt', dir: [-0.89, -0.44, 0.12], shape: 'quad',
         corners: [[7.79,2.05], [5.59,-4.35], [-8.7,-1.38], [-4.68,3.68]],
-        label: 'the spiral quilt on the bed', color: 0xffd27a },
+        label: 'the spiral quilt on the bed', color: 0xffd27a,
+        hidden: () => state.cottageLoftQuiltInspected },
       { action: 'inspectLoftWindow', dir: [0.27, 0.14, 0.95],
-        label: 'the window', color: 0xc0d0ff, shape: 'circle' },
+        label: 'the window', color: 0xc0d0ff, shape: 'circle',
+        hidden: () => state.cottageLoftWindowInspected },
       { to: 'cottageUpperHall', dir: [0.01, -0.06, -1],
         label: 'back to the upper hall', sfx: 'door-open', fadeMs: 3600 },
     ],
@@ -1791,16 +2107,19 @@ const WORLD = {
       { action: 'setOrreryArm1', dir: [0.61, 0.03, 0.79],
         label: 'the orrery — first arm', color: 0xffd27a, shape: 'circle',
         hidden: () => state.cottageTowerOrrerySet },
-      { action: 'setOrreryArm2', dir: [0.27, 0.04, 0.96],
+      { action: 'setOrreryArm2', dir: [0.27, 0.03, 0.968],
         label: 'the orrery — second arm', color: 0xffd27a, shape: 'circle',
         hidden: () => state.cottageTowerOrrerySet },
       { action: 'setOrreryArm3', dir: [0.39, 0.53, 0.75],
         label: 'the orrery — third arm', color: 0xffd27a, shape: 'circle',
         hidden: () => state.cottageTowerOrrerySet },
+      // Always-on whole-orrery inspect — copy + SFX adapt to state.
+      { action: 'inspectOrrery', dir: [0.44, 0.24, 0.86],
+        label: 'the orrery', color: 0xffd27a, shape: 'circle' },
       // Age terminal — only unlocked once orrery is correctly set.
       { action: 'useTelescope', dir: [-0.54, 0.43, -0.73],
         label: 'the telescope', color: 0x7affd2, shape: 'circle',
-        hidden: () => !state.cottageTowerOrrerySet },
+        hidden: () => !state.cottageTowerOrrerySet || state.cottageReturned },
       { to: 'cottageUpperHall', dir: [0.88, -0.01, -0.48],
         label: 'back to the upper hall', sfx: 'door-open', fadeMs: 3600 },
     ],
@@ -1981,6 +2300,15 @@ const nodeNameEl = document.getElementById('node-name');
 addEventListener('click', (e) => {
   // Don't capture clicks on the overlay — let it close itself.
   if (e.target.closest('#overlay')) return;
+  // Same for the age-transition epilogue — without this, dismissing the
+  // epilogue bubbles to here and the raycast can re-hit the Age-terminal
+  // hotspot underneath, re-firing triggerAgeReturn.
+  if (e.target.closest('#age-transition')) return;
+  // Endscreen too — once the dedication/credits fade is rolling, the
+  // raycast must not hit the bizarre-tree hotspots underneath. (Bug:
+  // a player who knew where the second book was could trigger BOTH
+  // endings by clicking through the fade.)
+  if (e.target.closest('#endscreen')) return;
   if (titleScreenActive) return;
   if (rectCaptureMode) { captureRectCorner(e.clientX, e.clientY); return; }
   pointer.x = (e.clientX / innerWidth) * 2 - 1;
@@ -2046,6 +2374,7 @@ function showOverlay(html, onClose) {
   overlayCloseCallback = onClose || null;
 }
 overlayEl.addEventListener('click', () => {
+  playSfx('menu-click');
   overlayEl.classList.remove('active');
   const hadCallback = !!overlayCloseCallback;
   if (overlayCloseCallback) {
@@ -2505,7 +2834,8 @@ function fadeAudioElement(el, target, duration = 1500) {
 
 function resolveAmbient(node) {
   const path = typeof node?.ambient === 'function' ? node.ambient() : node?.ambient;
-  return { path, mix: node?.ambientMix ?? NODE_AMBIENT_MIX };
+  const mix = typeof node?.ambientMix === 'function' ? node.ambientMix() : node?.ambientMix;
+  return { path, mix: mix ?? NODE_AMBIENT_MIX };
 }
 
 function setNodeAmbient(path, mix = NODE_AMBIENT_MIX) {
@@ -2540,13 +2870,13 @@ const sfxCache = new Map();
 // Preload every SFX at boot — without this, the first play of each
 // sound has a noticeable lag while the browser decodes the file.
 const PRELOAD_SFX = [
-  'ui-tick', 'book-pages', 'book-open', 'key-lock-insert',
+  'page-turn', 'book-pages', 'book-open', 'book-pull-open-and-close', 'key-lock-insert',
   'door-open', 'heavy-door-open', 'metallic-thud',
   'passage-open', 'interact-tap', 'brass-click', 'mechanical-gadget',
   'climbing-stairs', 'sigil-warp', 'linking-warp',
   'mechanism-whir', 'wave-crash', 'lighthouse', 'mystical-chime',
-  'shell-fade', 'beam-sound', 'knock-on-window', 'ambient-peaceful-ray-light', 'fx-light',
-  'tree-rustle', 'sweep-away', 'footsteps-in-forest',
+  'shell-fade', 'beam-sound', 'knock-on-window', 'peaceful-ray', 'fx-light',
+  'tree-rustle', 'sweep-away', 'footsteps-in-forest', 'wood-tap', 'written-letter', 'locked-door', 'exhale', 'floating-pad', 'button-forward', 'button-back', 'menu-click',
 ];
 PRELOAD_SFX.forEach(name => {
   const sfx = new Audio(assetUrl(`audio/sfx/${name}.mp3`));
@@ -2622,16 +2952,23 @@ function switchTab(tab) {
   });
 }
 
-function closeAllPanels() {
+function closeAllPanels({ silent = false } = {}) {
   // Note: do NOT close the captain's-log overlay here. It has its own
   // click-to-close handler, and document-level clicks that re-open the
   // overlay (e.g. clicking an interactive hotspot) also fire this handler
   // by bubbling. openSettings() explicitly dismisses the overlay when
   // needed so the two don't stack visually.
+  const wasOpen = settingsPanel.classList.contains('active');
   settingsPanel.classList.remove('active');
   menuBtn.classList.remove('active');
   panelBackdrop.classList.remove('active');
   if (typeof disarmReset === 'function') disarmReset();
+  // Play the back sound here so every caller (backdrop click, window
+  // bubble click, settings-close button, menu-btn toggle, etc.) gets it
+  // consistently — but only if a panel was actually open AND the caller
+  // isn't going to play its own sound (e.g. show-changelog plays
+  // menu-click and doesn't want a back-sound layered on top).
+  if (wasOpen && !silent) playSfx('button-back');
 }
 
 function openSettings(tab) {
@@ -2648,17 +2985,23 @@ function openSettings(tab) {
 
 menuBtn.addEventListener('click', (e) => {
   e.stopPropagation();
-  if (settingsPanel.classList.contains('active')) closeAllPanels();
-  else openSettings();
+  if (settingsPanel.classList.contains('active')) {
+    closeAllPanels();  // plays button-back internally
+  } else {
+    playSfx('button-forward');
+    openSettings();
+  }
 });
 settingsPanel.querySelectorAll('.tab').forEach((btn) => {
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
+    playSfx('menu-click');
     switchTab(btn.dataset.tab);
   });
 });
 document.getElementById('settings-fullscreen').addEventListener('click', (e) => {
   e.stopPropagation();
+  playSfx('menu-click');
   toggleFullscreen();
 });
 
@@ -2689,6 +3032,7 @@ function applyInvertUI() {
 applyInvertUI();
 invertToggle.addEventListener('click', (e) => {
   e.stopPropagation();
+  playSfx('menu-click');
   lookPrefs.invert = !lookPrefs.invert;
   localStorage.setItem('mystInvertDrag', lookPrefs.invert ? '1' : '0');
   applyInvertUI();
@@ -2717,8 +3061,9 @@ const RESET_FAREWELL_HTML = `
 `;
 resetBtn.addEventListener('click', (e) => {
   e.stopPropagation();
+  playSfx('menu-click');
   if (resetArmed) {
-    closeAllPanels();
+    closeAllPanels({ silent: true });
     showOverlay(RESET_FAREWELL_HTML, () => {
       // Wait one frame so the browser registers the overlay's display:none
       // before we trigger the fade's opacity transition — otherwise the
@@ -2801,17 +3146,20 @@ async function showChangelog() {
   showOverlay(await getChangelogHtml());
 }
 document.getElementById('show-changelog').addEventListener('click', (e) => {
+  playSfx('menu-click');
   e.stopPropagation();
-  closeAllPanels();
+  closeAllPanels({ silent: true });
   showChangelog();
 });
 document.getElementById('version-tag').addEventListener('click', (e) => {
   e.stopPropagation();
+  playSfx('button-forward');
   showChangelog();
 });
 
 document.getElementById('howto-btn').addEventListener('click', (e) => {
   e.stopPropagation();
+  playSfx('button-forward');
   openSettings('howto');
 });
 settingsPanel.addEventListener('click', (e) => e.stopPropagation());
@@ -2832,10 +3180,11 @@ volSfx.addEventListener('input', () => {
   localStorage.setItem('mystVolSfx', audioPrefs.sfx);
   // Node ambient (environmental) lives on the SFX channel.
   if (nodeAmbientAudio) nodeAmbientAudio.volume = audioPrefs.sfx * currentAmbientMix;
-  playSfx('ui-tick');
+  playSfx('interact-tap');
 });
 muteMusicBtn.addEventListener('click', (e) => {
   e.stopPropagation();
+  playSfx('menu-click');
   audioPrefs.musicMuted = !audioPrefs.musicMuted;
   localStorage.setItem('mystMuteMusic', audioPrefs.musicMuted ? '1' : '0');
   applyMuteUI();
@@ -2845,7 +3194,7 @@ muteSfxBtn.addEventListener('click', (e) => {
   audioPrefs.sfxMuted = !audioPrefs.sfxMuted;
   localStorage.setItem('mystMuteSfx', audioPrefs.sfxMuted ? '1' : '0');
   applyMuteUI();
-  if (!audioPrefs.sfxMuted) playSfx('ui-tick');
+  if (!audioPrefs.sfxMuted) playSfx('menu-click');
 });
 
 document.getElementById('replay-btn').addEventListener('click', () => {
@@ -2853,10 +3202,12 @@ document.getElementById('replay-btn').addEventListener('click', () => {
 });
 document.getElementById('track-next').addEventListener('click', (e) => {
   e.stopPropagation();
+  playSfx('menu-click');
   skipNext();
 });
 document.getElementById('track-prev').addEventListener('click', (e) => {
   e.stopPropagation();
+  playSfx('menu-click');
   skipPrev();
 });
 
@@ -2927,6 +3278,7 @@ function beginExperience() {
 }
 beginBtn.addEventListener('click', (e) => {
   e.stopPropagation();
+  playSfx('key-lock-insert', 2.0);
   beginExperience();
 });
 
