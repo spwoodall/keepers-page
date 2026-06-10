@@ -469,7 +469,7 @@ const ACTIONS = {
   },
   inspectCottageCompass: () => {
     state.cottageCompassInspected = true;
-    playSfx('drop-item', 2.0);
+    playSfx('metallic-thud');
     showOverlay(`
       <h2>A Brass Compass</h2>
       <p>Pocket-sized, brass-bezeled, cool in your palm. The needle
@@ -709,7 +709,23 @@ const ACTIONS = {
   },
   inspectFamiliarDistance: () => {
     state.bizarreFamiliarDistanceInspected = true;
-    playSfx('floating-pad');
+    // Cut the bizarre-realm music so peaceful-ray can breathe — then
+    // restart the music when the sound finishes (the world exhales,
+    // the thesis lands, the world resumes). Respects mute state.
+    const wasMusicPlaying = bizarreRealmMusicActive && !audioPrefs.musicMuted;
+    if (!audioPrefs.sfxMuted && wasMusicPlaying) {
+      fadeAudioElement(ambientAudio, 0, 250);
+      const sfx = playSfx('peaceful-ray');
+      if (sfx) {
+        sfx.addEventListener('ended', () => {
+          if (bizarreRealmMusicActive && !audioPrefs.musicMuted) {
+            fadeAudioElement(ambientAudio, audioPrefs.music, 1500);
+          }
+        }, { once: true });
+      }
+    } else {
+      playSfx('peaceful-ray');
+    }
     showOverlay(`
       <h2>The Familiar Distance</h2>
       <p>Below the cloud sea, something familiar — and something
@@ -729,7 +745,7 @@ const ACTIONS = {
   },
   inspectTheTree: () => {
     state.bizarreTreeInspected = true;
-    playSfx('tree-rustle');
+    playSfx('tree-rustle', 2.0);
     showOverlay(`
       <h2>The Tree</h2>
       <p>From here it stands as it has always stood. Older than
@@ -1599,7 +1615,7 @@ const WORLD = {
       // Bizarre realm orrery — unlocks when all 3 Ages are returned from.
       { to: 'bizarreRealm', dir: [0.71, 0.11, -0.7],
         label: 'the armillary sphere — it holds something new', color: 0xd4aaff,
-        sfx: 'ambient-peaceful-ray-light', sfxVolume: 1.5, fadeMs: 4000,
+        sfx: 'peaceful-ray', sfxVolume: 1.5, fadeMs: 4000,
         hidden: () => !(state.shoreReturned && state.greenReturned && state.cottageReturned) },
     ],
   },
@@ -1608,11 +1624,18 @@ const WORLD = {
     name: 'The Fourth Age',
     pano: () => loadPano('panos/bizarre-realm.jpg'),
     onEnter: () => {
-      // Swap to the locked bizarre realm track and fade UP from silence.
-      // Earlier version did `fadeAudio(0, 3000)` then jammed volume in a
+      // First-time entry: start the bizarre realm track and fade UP from
+      // silence. Return entry from bizarreRealmTree (which shares this
+      // track): music is already mid-playback — don't reset src or restart
+      // playback. Just refresh the label and let the song continue.
+      // (Earlier version did `fadeAudio(0, 3000)` then jammed volume in a
       // setTimeout — the in-flight fade kept stomping the new volume back
       // down to 0, so the track played silently until the next travel
-      // re-fade brought it back up.
+      // re-fade brought it back up.)
+      if (bizarreRealmMusicActive) {
+        updateTrackLabel();
+        return;
+      }
       bizarreRealmMusicActive = true;
       ambientAudio.loop = true;
       ambientAudio.src = assetUrl(BIZARRE_REALM_TRACK.url);
@@ -1893,6 +1916,7 @@ const WORLD = {
   shoreLighthouse: {
     name: 'The Lighthouse',
     pano: () => loadPano(state.lighthouseBeamRedirected ? 'panos/shore-lighthouse-activated.jpg' : 'panos/shore-lighthouse.jpg'),
+    ambient: 'audio/sfx/lighthouse-ambient.mp3',
     startDir: [0.4, -0.1, 0.91],
     hotspots: () => [
       { action: 'readLighthouseLog', dir: [-0.3, -0.24, -0.92],
@@ -2845,7 +2869,7 @@ const PRELOAD_SFX = [
   'passage-open', 'interact-tap', 'brass-click', 'mechanical-gadget',
   'climbing-stairs', 'sigil-warp', 'linking-warp',
   'mechanism-whir', 'wave-crash', 'lighthouse', 'mystical-chime',
-  'shell-fade', 'beam-sound', 'knock-on-window', 'ambient-peaceful-ray-light', 'fx-light',
+  'shell-fade', 'beam-sound', 'knock-on-window', 'peaceful-ray', 'fx-light',
   'tree-rustle', 'sweep-away', 'footsteps-in-forest', 'wood-tap', 'written-letter', 'locked-door', 'exhale', 'floating-pad',
 ];
 PRELOAD_SFX.forEach(name => {
