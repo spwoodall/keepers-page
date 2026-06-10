@@ -1582,39 +1582,39 @@ const WORLD = {
     pano: () => loadPano('panos/ascension.jpg'),
     ambient: 'audio/sfx/ascension-ambient.mp3',
     ambientMix: 0.45,
-    startDir: [-0.95, -0.3, -0.09],
+    startDir: [0.2, -0.06, 0.98],
     hotspots: () => [
       // The shore's linking book — blue leather, wave sigil.
       { action: 'touchLinkingBook',
-        dir: [0.06, -0.34, -0.94], shape: 'quad',
-        corners: [[1.29,2.93], [1.14,-3.58], [-1.15,-2.72], [-1.28,3.36]],
+        dir: [-0.57, -0.36, -0.74], shape: 'quad',
+        corners: [[0.85,2.5], [0.76,-3.15], [-0.77,-2.29], [-0.85,2.93]],
         label: 'a glowing book — touch the page', color: 0x5a9aff,
         hidden: () => state.shoreCompleted },
       // The green country's linking book — green leather, tree sigil.
       { action: 'touchGreenBook',
-        dir: [-0.13, -0.35, -0.93], shape: 'quad',
-        corners: [[1.41,2.82], [1.22,-4.12], [-1.04,-2.39], [-1.58,3.68]],
+        dir: [-0.71, -0.36, -0.61], shape: 'quad',
+        corners: [[0.84,2.07], [0.74,-3.14], [-0.78,-1.85], [-1.15,2.85]],
         label: 'a glowing book — touch the page', color: 0x9aff7a,
         hidden: () => state.greenCompleted },
       // The Keepers' red book — third linking book, the cottage Age.
       { action: 'touchKeepersBook',
-        dir: [0.26, -0.37, -0.89], shape: 'quad',
-        corners: [[0.85,2.29], [0.76,-2.93], [-0.76,-2.5], [-0.85,3.15]],
+        dir: [-0.39, -0.37, -0.84], shape: 'quad',
+        corners: [[0.44,1.76], [0.44,-2.66], [-0.67,-2.5], [-0.74,2.39]],
         label: 'a glowing book — touch the page', color: 0xff5a4a,
         hidden: () => state.cottageCompleted },
       // The Keepers' open notebook — lore + dedication easter egg.
       { action: 'inspectOpenBook',
-        dir: [0.09, -0.65, -0.76], shape: 'quad',
-        corners: [[4.7,3.22], [6.42,-2.58], [-5.82,-3.3], [-5.29,2.66]],
+        dir: [-0.43, -0.64, -0.63], shape: 'quad',
+        corners: [[4.63,2.61], [5.99,-2.17], [-5.69,-2.99], [-4.93,2.55]],
         label: 'an open notebook, mid-thought', color: 0xffaa44,
         hidden: () => state.shoreReturned && state.greenReturned && state.cottageReturned },
       // Step onto the sigil-plate — escape valve back to library.
-      { to: 'library', dir: [-0.85, -0.45, 0.25], label: 'step onto the sigil',
+      { to: 'library', dir: [-0.48, -0.41, 0.78], label: 'step onto the sigil',
         color: 0x7affd2,
         sfx: 'sigil-warp', fadeMs: 1800,
         hidden: () => state.shoreReturned && state.greenReturned && state.cottageReturned },
       // Bizarre realm orrery — unlocks when all 3 Ages are returned from.
-      { to: 'bizarreRealm', dir: [0.71, 0.11, -0.7],
+      { to: 'bizarreRealm', dir: [0.07, 0.11, -0.99],
         label: 'the armillary sphere — it holds something new', color: 0xd4aaff,
         sfx: 'peaceful-ray', sfxVolume: 1.5, fadeMs: 4000,
         hidden: () => !(state.shoreReturned && state.greenReturned && state.cottageReturned) },
@@ -2312,6 +2312,7 @@ addEventListener('click', (e) => {
   if (e.target.closest('#endscreen')) return;
   if (titleScreenActive) return;
   if (rectCaptureMode) { captureRectCorner(e.clientX, e.clientY); return; }
+  if (pointPickMode) { capturePointPickHere(e.clientX, e.clientY); return; }
   pointer.x = (e.clientX / innerWidth) * 2 - 1;
   pointer.y = -(e.clientY / innerHeight) * 2 + 1;
   raycaster.setFromCamera(pointer, camera);
@@ -2505,7 +2506,7 @@ const devTravelGrid = document.getElementById('dev-travel-grid');
 function refreshDevHud() {
   const gridLabel = devGridVisible ? '<b>G</b> grid ✓' : '<b>G</b> grid';
   devHudInfo.innerHTML = `
-    <div class="hint">DEV MODE — <b>H</b> point &nbsp;·&nbsp; <b>R</b> rect &nbsp;·&nbsp; ${gridLabel}</div>
+    <div class="hint">DEV MODE — <b>H</b> point &nbsp;·&nbsp; <b>R</b> rect &nbsp;·&nbsp; <b>P</b> pick &nbsp;·&nbsp; ${gridLabel}</div>
     <div>node: <b>${currentNode}</b> &nbsp;·&nbsp; <b>D</b> exit &nbsp;·&nbsp; <b>X</b> clear &nbsp;·&nbsp; <b>T</b> travel</div>
   `;
 }
@@ -2561,6 +2562,49 @@ function captureHotspotHere() {
 
 let rectCaptureMode = false;
 let rectCorners = [];
+let pointPickMode = false;
+
+function setPointPickMode(on) {
+  pointPickMode = on;
+  document.body.classList.toggle('rect-capture', on);
+  if (on) {
+    devHudInfo.innerHTML = `
+      <div class="hint">POINT PICK — click anywhere to capture &nbsp;·&nbsp; <b>P</b> exit &nbsp;·&nbsp; <b>X</b> clear</div>
+      <div>node: <b>${currentNode}</b></div>
+    `;
+  } else {
+    refreshDevHud();
+  }
+}
+
+function capturePointPickHere(clientX, clientY) {
+  const px = (clientX / innerWidth) * 2 - 1;
+  const py = -(clientY / innerHeight) * 2 + 1;
+  const rc = new THREE.Raycaster();
+  rc.setFromCamera(new THREE.Vector2(px, py), camera);
+  const hit = rc.intersectObject(sphere)[0];
+  if (!hit) return;
+
+  const r = (n) => Math.round(n * 100) / 100;
+  const dir = hit.point.clone().normalize();
+  const dirArr = [r(dir.x), r(dir.y), r(dir.z)];
+
+  const dot = new THREE.Mesh(
+    new THREE.CircleGeometry(0.25, 16),
+    new THREE.MeshBasicMaterial({ color: 0x7affd2, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false })
+  );
+  dot.position.copy(dir.clone().multiplyScalar(20));
+  dot.lookAt(0, 0, 0);
+  previewRingGroup.add(dot);
+
+  const snippet = `dir: [${dirArr.join(', ')}]`;
+  devHudInfo.innerHTML = `
+    <div class="hint">POINT PICK — click anywhere to capture &nbsp;·&nbsp; <b>P</b> exit &nbsp;·&nbsp; <b>X</b> clear</div>
+    <div>node: <b>${currentNode}</b></div>
+    <div class="snippet">${snippet}</div>
+  `;
+  console.log('[point-pick]', snippet);
+}
 
 const RECT_CORNER_LABELS = ['top-right', 'bottom-right', 'bottom-left', 'top-left'];
 
@@ -2673,6 +2717,7 @@ addEventListener('keydown', (e) => {
   else if (devMode && (e.key === 'x' || e.key === 'X')) previewRingGroup.clear();
   else if (devMode && (e.key === 't' || e.key === 'T')) devTravelPanel.classList.toggle('active');
   else if (devMode && (e.key === 'r' || e.key === 'R')) setRectCaptureMode(!rectCaptureMode);
+  else if (devMode && (e.key === 'p' || e.key === 'P')) setPointPickMode(!pointPickMode);
   else if (devMode && (e.key === 'g' || e.key === 'G')) toggleDevGrid();
   else if (e.key === 'f' || e.key === 'F') toggleFullscreen();
 });
