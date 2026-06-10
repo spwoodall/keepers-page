@@ -1025,7 +1025,7 @@ const ACTIONS = {
     refreshCurrentNode();
   },
   alignDiskWave: () => {
-    playSfx('sweep-away');
+    playSfx('wood-tap');
     showOverlay(`
       <h2>The Wave</h2>
       <p>You turn the wood to the wave symbol. The hollow below
@@ -1036,7 +1036,7 @@ const ACTIONS = {
     `);
   },
   alignDiskSpiral: () => {
-    playSfx('sweep-away');
+    playSfx('wood-tap');
     showOverlay(`
       <h2>The Spiral</h2>
       <p>You turn the wood to the Keepers' mark. The hollow
