@@ -76,6 +76,11 @@
 
   <div id="panel-backdrop"></div>
 
+  <div id="save-toast" aria-live="polite">
+    <span class="toast-glyph" aria-hidden="true"></span>
+    <span class="toast-text">Saving</span>
+  </div>
+
   <button id="menu-btn" aria-label="Menu" title="Menu">
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none"
       stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
@@ -133,7 +138,12 @@
         <button type="button" class="setting-btn" id="show-changelog">View</button>
       </div>
       <div class="setting-row">
-        <span class="setting-label">Reset Progress</span>
+        <span class="setting-label">Default Settings</span>
+        <button type="button" class="setting-btn" id="restore-settings">Restore</button>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Saved Progress</span>
+        <span class="saved-where" id="saved-where">&mdash;</span>
         <button type="button" class="setting-btn" id="reset-progress">Clear</button>
       </div>
     </div>

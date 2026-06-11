@@ -500,6 +500,63 @@ ul.changelog li::before {
 #settings-panel .setting-row input[type=range] {
   flex: 1; min-width: 120px;
 }
+#settings-panel .saved-where {
+  flex: 1;
+  min-width: 0;
+  color: #c0a878;
+  font: 11px monospace; letter-spacing: 1.5px;
+  text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Save toast — quiet auto-save indicator, top-left of the viewport.
+   Translucent box + warm-gold hairline border reads against any pano
+   (text-shadow alone fought too hard against bright panorama spots).
+   Width is stabilized so the Saving → Saved swap (different word length,
+   ring → dot glyph) doesn't jitter the box. */
+#save-toast {
+  position: fixed;
+  top: 20px; left: 24px;
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 13px;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,210,122,0.32);
+  border-radius: 3px;
+  color: rgba(255, 217, 160, 0.85);
+  font: 10px monospace; letter-spacing: 2px; text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 600ms ease;
+  pointer-events: none;
+  z-index: 50;
+}
+#save-toast.show { opacity: 1; }
+body.title-active #save-toast { display: none; }
+#save-toast .toast-text {
+  /* Holds "SAVING" (the longer word) so "SAVED" doesn't collapse the box. */
+  min-width: 56px;
+}
+#save-toast .toast-glyph {
+  flex-shrink: 0;
+  width: 12px; height: 12px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  box-sizing: border-box;
+  transform-origin: 50% 50%;
+}
+#save-toast.saving .toast-glyph {
+  animation: save-toast-spin 650ms linear infinite;
+}
+#save-toast.saved .toast-glyph {
+  /* Same 12px footprint — fill the ring instead of resizing the glyph. */
+  border-color: currentColor;
+  background: currentColor;
+  box-shadow: 0 0 5px currentColor;
+}
+@keyframes save-toast-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
 
 #settings-panel .close {
   padding: 14px 32px;

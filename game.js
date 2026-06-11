@@ -101,17 +101,39 @@ function makePano({ skyTop, skyBottom, ground, accent, stars = false, sun = null
 // hard-refreshes.
 const textureLoader = new THREE.TextureLoader();
 const panoCache = new Map();
+// Track image-data readiness per pano. textureLoader.load() returns a
+// texture immediately, but its image data arrives asynchronously — a
+// not-yet-loaded texture renders black. Continue-from-save uses this to
+// hold a black curtain in place until the destination pano is decoded.
+const panoTexReady = new WeakMap(); // texture -> ready promise
 // Patched to renderer.capabilities.getMaxAnisotropy() after the renderer
 // is created. Sharpens panos at grazing viewing angles on the sphere.
 let maxAnisotropy = 1;
 function loadPano(url) {
   if (!panoCache.has(url)) {
-    const tex = textureLoader.load(assetUrl(url));
+    let resolveReady;
+    const ready = new Promise(r => { resolveReady = r; });
+    const tex = textureLoader.load(
+      assetUrl(url),
+      () => resolveReady(),
+      undefined,
+      () => resolveReady(), // resolve on error too so callers don't hang
+    );
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = maxAnisotropy;
     panoCache.set(url, tex);
+    panoTexReady.set(tex, ready);
   }
   return panoCache.get(url);
+}
+// Returns a promise that resolves once the saved node's pano texture has
+// image data. Calling pano() also kicks off the network request if it
+// hasn't started yet, so this doubles as a preload trigger.
+function panoReadyFor(nodeKey) {
+  const node = WORLD[nodeKey];
+  if (!node || typeof node.pano !== 'function') return Promise.resolve();
+  const tex = node.pano();
+  return (tex && panoTexReady.get(tex)) || Promise.resolve();
 }
 // Preload alternate state panoramas so puzzle-swaps are instant.
 // Ascension is also preloaded here — it's the only non-dock pano on the
@@ -218,14 +240,56 @@ const state = {
 // and intentionally NOT bundled here — they're settings, not progress.
 const SAVE_KEY = 'mystSave_v1';
 
-function saveProgress() {
+// 250ms trailing debounce — in-room state changes can fire
+// refreshCurrentNode several times in quick succession (overlay → action
+// → refresh). Coalescing them into one write keeps the toast from
+// strobing and trims unnecessary localStorage churn.
+const SAVE_DEBOUNCE_MS = 250;
+let saveDebounceTimer = null;
+// Sticky "show the toast on the next write" flag. Set by travelTo so the
+// UI surface only appears at room transitions — quiet during in-room
+// puzzle/inspect mutations where the player is already getting narrative
+// feedback (overlay text, sfx, world changes) and the toast would
+// compete for attention.
+let pendingSaveSurface = false;
+
+function saveProgress(opts = {}) {
   // Skip saves while the title screen is up — the player hasn't
   // really started yet, and the initial `travelTo('dock')` shouldn't
   // overwrite an existing save before the user picks Continue / New Game.
   if (titleScreenActive) return;
   if (!currentNode) return;
+  if (opts.surface) pendingSaveSurface = true;
+  if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+  saveDebounceTimer = setTimeout(performSave, SAVE_DEBOUNCE_MS);
+}
+
+function performSave() {
+  saveDebounceTimer = null;
+  const surface = pendingSaveSurface;
+  pendingSaveSurface = false;
+  // Re-check the gate — titleScreenActive may have flipped during the
+  // debounce window (e.g. a New Game reload in flight).
+  if (titleScreenActive) return;
+  if (!currentNode) return;
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ state, currentNode }));
+    // Capture the player's current view direction so Continue lands
+    // them looking at what they were last looking at, not the node's
+    // default startDir.
+    const dir = new THREE.Vector3();
+    camera.getWorldDirection(dir);
+    const camDir = [
+      Number(dir.x.toFixed(4)),
+      Number(dir.y.toFixed(4)),
+      Number(dir.z.toFixed(4)),
+    ];
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      state,
+      currentNode,
+      camDir,
+      savedAt: Date.now(),
+    }));
+    if (surface) flashSaveToast();
   } catch (err) {
     console.warn('[save]', err);
   }
@@ -239,6 +303,25 @@ function loadProgress() {
     if (!data || typeof data !== 'object') return null;
     if (!data.state || typeof data.state !== 'object') return null;
     if (!data.currentNode || !WORLD[data.currentNode]) return null;
+    // Migration policy (single-path 15-min game):
+    //   Pure-discard at incompatible schema bumps. When the save shape
+    //   changes in a breaking way, bump SAVE_KEY (e.g. mystSave_v1 →
+    //   mystSave_v2); the v1 key lingers harmlessly and the player's
+    //   next play starts fresh.
+    //   For ADDITIVE changes (new optional field), do NOT bump — keep
+    //   the key, validate the new field as optional below, and let
+    //   pre-bump saves continue to load. camDir and savedAt were both
+    //   added this way; both are tolerated as undefined on read.
+    if (data.camDir !== undefined) {
+      const ok = Array.isArray(data.camDir)
+        && data.camDir.length === 3
+        && data.camDir.every(n => typeof n === 'number' && Number.isFinite(n));
+      if (!ok) delete data.camDir;
+    }
+    if (data.savedAt !== undefined
+        && !(typeof data.savedAt === 'number' && Number.isFinite(data.savedAt))) {
+      delete data.savedAt;
+    }
     return data;
   } catch (err) {
     console.warn('[save]', err);
@@ -1663,29 +1746,7 @@ const WORLD = {
   bizarreRealm: {
     name: 'The Fourth Age',
     pano: () => loadPano('panos/bizarre-realm.jpg'),
-    onEnter: () => {
-      // First-time entry: start the bizarre realm track and fade UP from
-      // silence. Return entry from bizarreRealmTree (which shares this
-      // track): music is already mid-playback — don't reset src or restart
-      // playback. Just refresh the label and let the song continue.
-      // (Earlier version did `fadeAudio(0, 3000)` then jammed volume in a
-      // setTimeout — the in-flight fade kept stomping the new volume back
-      // down to 0, so the track played silently until the next travel
-      // re-fade brought it back up.)
-      if (bizarreRealmMusicActive) {
-        updateTrackLabel();
-        return;
-      }
-      bizarreRealmMusicActive = true;
-      ambientAudio.loop = true;
-      ambientAudio.src = assetUrl(BIZARRE_REALM_TRACK.url);
-      ambientAudio.volume = 0;
-      ambientAudio.play().catch(err => console.warn('[bizarre]', err));
-      if (!audioPrefs.musicMuted) {
-        fadeAudioElement(ambientAudio, audioPrefs.music, 2000);
-      }
-      updateTrackLabel();
-    },
+    onEnter: () => startBizarreRealmMusic(),
     startDir: [-0.5, 0.46, 0.74],
     hotspots: () => [
       { action: 'inspectBizarreTwinMoons', dir: [0.06, 0.38, -0.92],
@@ -1716,6 +1777,11 @@ const WORLD = {
   bizarreRealmTree: {
     name: 'The Fourth Age',
     pano: () => loadPano('panos/bizarre-realm-tree.jpg'),
+    // Idempotent — normal traversal from bizarreRealm already has the
+    // track playing and this no-ops. Earns its keep when the player
+    // Continues a save taken at the tree: bizarreRealm.onEnter never
+    // fires, so the music would otherwise stay silent.
+    onEnter: () => startBizarreRealmMusic(),
     startDir: [0.45, 0.64, -0.63],
     hotspots: () => [
       { action: 'touchKeeperOneBook', dir: [0.25, -0.54, -0.8],
@@ -2473,7 +2539,10 @@ async function travelTo(key, opts = {}) {
   // Per-node arrival hook — fires after fade clears so any one-shot sfx
   // lands while the player is fully in the room.
   if (typeof node.onEnter === 'function') node.onEnter();
-  saveProgress();
+  // Room transition is the moment the player's brain is already
+  // context-switching, so the toast surface here doesn't compete with
+  // in-room narrative beats (overlays, transforms, sfx).
+  saveProgress({ surface: true });
 }
 
 // ---- Dev mode: aim at a spot, press H to capture hotspot direction --
@@ -2790,6 +2859,25 @@ const BIZARRE_REALM_TRACK = {
 };
 let bizarreRealmMusicActive = false;
 
+// Idempotent — both bizarreRealm.onEnter (first arrival) and
+// bizarreRealmTree.onEnter (covers the Continue-into-tree case)
+// call this. If the track is already playing, just refresh the label.
+function startBizarreRealmMusic() {
+  if (bizarreRealmMusicActive) {
+    updateTrackLabel();
+    return;
+  }
+  bizarreRealmMusicActive = true;
+  ambientAudio.loop = true;
+  ambientAudio.src = assetUrl(BIZARRE_REALM_TRACK.url);
+  ambientAudio.volume = 0;
+  ambientAudio.play().catch(err => console.warn('[bizarre]', err));
+  if (!audioPrefs.musicMuted) {
+    fadeAudioElement(ambientAudio, audioPrefs.music, 2000);
+  }
+  updateTrackLabel();
+}
+
 const GAMEPLAY_PLAYLIST = [
   { url: 'audio/atlasaudio-ambient-astronomy-511860.mp3',
     label: 'Astronomy' },
@@ -2863,6 +2951,22 @@ function startGameplayMusic() {
     .then(() => fadeAudioElement(ambientAudio, audioPrefs.music, 3000))
     .catch(err => console.warn('[ambient] play failed', err));
   updateTrackLabel();
+}
+// Continue-path entry point. For a normal saved node, equivalent to
+// startGameplayMusic. For a save inside the Fourth Age, we skip the
+// Landscapes init — the destination's onEnter calls startBizarreRealmMusic,
+// and we don't want to briefly hear the wrong track during the fade-to-black.
+// We still fade out the title music and mark gameplayMusicStarted so the
+// post-age-transition fade-up logic in travelTo behaves correctly.
+function startGameplayMusicFor(nodeKey) {
+  if (gameplayMusicStarted) return;
+  if (nodeKey === 'bizarreRealm' || nodeKey === 'bizarreRealmTree') {
+    gameplayMusicStarted = true;
+    fadeAudioElement(titleMusicAudio, 0, 2000);
+    setTimeout(() => titleMusicAudio.pause(), 2100);
+    return;
+  }
+  startGameplayMusic();
 }
 // When a gameplay track ends, advance to the next one in order.
 ambientAudio.addEventListener('ended', () => {
@@ -3051,6 +3155,7 @@ function closeAllPanels({ silent = false } = {}) {
   menuBtn.classList.remove('active');
   panelBackdrop.classList.remove('active');
   if (typeof disarmReset === 'function') disarmReset();
+  if (typeof disarmRestore === 'function') disarmRestore();
   // Play the back sound here so every caller (backdrop click, window
   // bubble click, settings-close button, menu-btn toggle, etc.) gets it
   // consistently — but only if a panel was actually open AND the caller
@@ -3069,6 +3174,60 @@ function openSettings(tab) {
   settingsPanel.classList.add('active');
   menuBtn.classList.add('active');
   panelBackdrop.classList.add('active');
+  refreshSavedRow();
+}
+
+// Save toast — quiet auto-save indicator. Two-stage: spinner while
+// "Saving" for a moment, then a filled dot for "Saved", then fades.
+// Pure cosmetic — localStorage.setItem is synchronous and instant —
+// but the brief motion gives the save a felt sense of weight.
+const saveToast = document.getElementById('save-toast');
+const saveToastText = saveToast ? saveToast.querySelector('.toast-text') : null;
+const saveToastTimers = { settled: null, hidden: null };
+function flashSaveToast() {
+  if (!saveToast || !saveToastText) return;
+  if (saveToastTimers.settled) clearTimeout(saveToastTimers.settled);
+  if (saveToastTimers.hidden) clearTimeout(saveToastTimers.hidden);
+  saveToast.classList.remove('saved');
+  saveToast.classList.add('show', 'saving');
+  saveToastText.textContent = 'Saving';
+  // Saving phase is long enough to outlast the 600ms fade-in transition
+  // AND show at least one full 650ms rotation at full opacity — anything
+  // shorter and the spin reads as "did it even animate?"
+  saveToastTimers.settled = setTimeout(() => {
+    saveToast.classList.remove('saving');
+    saveToast.classList.add('saved');
+    saveToastText.textContent = 'Saved';
+  }, 900);
+  saveToastTimers.hidden = setTimeout(() => {
+    saveToast.classList.remove('show');
+  }, 2100);
+}
+
+// Saved-progress row — reflects the current localStorage state, refreshed
+// every time the menu opens (no in-menu auto-save needs to push to it).
+const savedWhereEl = document.getElementById('saved-where');
+function formatSavedAt(ts) {
+  const sec = Math.floor((Date.now() - ts) / 1000);
+  if (sec < 45) return 'just now';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  return `${Math.floor(hr / 24)}d ago`;
+}
+function refreshSavedRow() {
+  if (!savedWhereEl) return;
+  const data = loadProgress();
+  if (!data) {
+    savedWhereEl.textContent = '—';
+    return;
+  }
+  const node = WORLD[data.currentNode];
+  const where = node ? node.name : '—';
+  savedWhereEl.textContent = data.savedAt
+    ? `${where} · ${formatSavedAt(data.savedAt)}`
+    : where;
 }
 
 menuBtn.addEventListener('click', (e) => {
@@ -3127,6 +3286,39 @@ invertToggle.addEventListener('click', (e) => {
   applyRotateSpeed();
 });
 
+// Restore Default Settings — wipes only the preference keys (brightness,
+// sensitivity, invert-drag, audio volumes + mutes). Saved progress is
+// untouched. Two-step confirm mirrors the Clear button's UX vocabulary.
+// On confirm, reload so all `localStorage.getItem(...) ?? <default>` reads
+// at boot pick up the cleared values without scattering reset code across
+// every setting handler.
+const SETTINGS_KEYS = [
+  'mystBrightness', 'mystSensitivity', 'mystInvertDrag',
+  'mystVolMusic', 'mystVolSfx', 'mystMuteMusic', 'mystMuteSfx',
+];
+const restoreBtn = document.getElementById('restore-settings');
+let restoreArmed = false;
+let restoreTimer = null;
+function disarmRestore() {
+  restoreArmed = false;
+  restoreBtn.textContent = 'Restore';
+  restoreBtn.classList.remove('danger');
+  if (restoreTimer) { clearTimeout(restoreTimer); restoreTimer = null; }
+}
+restoreBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  playSfx('menu-click');
+  if (restoreArmed) {
+    for (const key of SETTINGS_KEYS) localStorage.removeItem(key);
+    location.reload();
+    return;
+  }
+  restoreArmed = true;
+  restoreBtn.textContent = 'Confirm?';
+  restoreBtn.classList.add('danger');
+  restoreTimer = setTimeout(disarmRestore, 4000);
+});
+
 // Reset progress — two-step inline confirm (click arms; second click clears).
 const resetBtn = document.getElementById('reset-progress');
 let resetArmed = false;
@@ -3160,8 +3352,11 @@ resetBtn.addEventListener('click', (e) => {
         requestAnimationFrame(() => fadeEl.classList.add('active'));
       });
       // 600ms fade + ~600ms hold at black before the reload cuts in.
+      // Only the save key is cleared — audio prefs, brightness, sensitivity,
+      // and invert-drag are settings, not progress, and survive a reset.
+      // (Mirrors the title-screen New Game path, which also calls clearSave.)
       setTimeout(() => {
-        localStorage.clear();
+        clearSave();
         location.reload();
       }, 1400);
     });
@@ -3323,6 +3518,11 @@ if (savedProgress) Object.assign(state, savedProgress.state);
 // before audio is unlocked.
 travelTo('dock');
 
+// If there's a save, eagerly kick off the saved-node pano load so the
+// Continue path's black curtain can lift the moment the image is ready
+// (often instantly, since the network request started here at boot).
+if (savedProgress) panoReadyFor(savedProgress.currentNode);
+
 const titleCard = document.getElementById('titlecard');
 const beginBtn = document.getElementById('begin-btn');
 const newGameBtn = document.getElementById('new-game-btn');
@@ -3363,6 +3563,33 @@ function beginExperience() {
   // Explicit play call here too — guarantees audio attempt even if
   // a parent's stopPropagation swallowed the capture-phase listener.
   startAmbient();
+
+  if (savedProgress) {
+    // Continue path — drop a black curtain BEFORE the title fades.
+    // fadeEl sits at z-index 35, titlecard at z-index 30, so the curtain
+    // covers both the title art and the dock pano behind it. The player
+    // never sees the dock on a Continue. We hold the curtain until the
+    // saved-node pano image data is decoded, then hand off to travelTo
+    // with fadeMs:0 — the curtain is already in place, all that's left
+    // is travelTo's fade-back-from-black to reveal the new pano.
+    fadeEl.classList.add('active');
+    Promise.all([
+      new Promise(r => setTimeout(r, 650)), // curtain fully opaque
+      panoReadyFor(savedProgress.currentNode), // image actually decoded
+    ]).then(() => {
+      titleCard.classList.add('gone');
+      titleScreenActive = false;
+      document.body.classList.remove('title-active');
+      startGameplayMusicFor(savedProgress.currentNode);
+      travelTo(savedProgress.currentNode, {
+        fadeMs: 0,
+        startDir: savedProgress.camDir,
+      });
+    });
+    return;
+  }
+
+  // Begin path — title card fades to reveal the dock, then captain's log.
   titleCard.classList.add('fading');
   setTimeout(() => {
     titleCard.classList.add('gone');
@@ -3373,15 +3600,7 @@ function beginExperience() {
       const { path, mix } = resolveAmbient(WORLD[currentNode]);
       if (path) setNodeAmbient(path, mix);
     }
-    if (savedProgress) {
-      // Continue path: skip captain's log, travel to the saved node
-      // (now that titleScreenActive is false and audio is unlocked,
-      // so onEnter hooks like bizarreRealm's music init can run cleanly).
-      startGameplayMusic();
-      travelTo(savedProgress.currentNode, { fadeMs: 1200 });
-    } else {
-      setTimeout(() => showOverlay(CAPTAINS_LOG_HTML, startGameplayMusic), 400);
-    }
+    setTimeout(() => showOverlay(CAPTAINS_LOG_HTML, startGameplayMusic), 400);
   }, 1500);
 }
 beginBtn.addEventListener('click', (e) => {
