@@ -351,6 +351,10 @@ body.title-active #settings-panel .reread-link {
   overflow-y: auto;
   flex: 1;
   min-height: 380px;
+  /* Monospace fallback for any UI chrome that doesn't override (every
+     chrome element below DOES override). Narrative <p> copy gets the
+     serif treatment a few rules down so the Howto tab reads in the
+     same in-world voice as overlays and the Changelog. */
   font: 16px/1.7 monospace;
 }
 #settings-panel .tab-content.active { display: block; }
@@ -358,9 +362,19 @@ body.title-active #settings-panel .reread-link {
   margin: 0 0 10px; font: bold 13px monospace; color: #ffd27a;
   letter-spacing: 2px; text-transform: uppercase;
 }
+/* Narrative paragraph copy — matches overlay body voice (Georgia +
+   warm gold). Chrome elements (.setting-label, .setting-btn,
+   .audio-row, etc.) keep their own monospace declarations. */
+#settings-panel .tab-content p {
+  margin: 0 0 14px;
+  font: 16px/1.65 Georgia, serif;
+  color: #ffd27a;
+  letter-spacing: 0;
+}
 #settings-panel p { margin: 0 0 14px; }
 #settings-panel p:last-child { margin-bottom: 0; }
-#settings-panel .rule {
+#settings-panel .rule,
+#overlay .rule {
   height: 1px; margin: 28px auto;
   width: 80%;
   background: linear-gradient(90deg,
@@ -373,7 +387,8 @@ body.title-active #settings-panel .reread-link {
 #settings-panel .key {
   display: inline-block; padding: 1px 6px;
   background: rgba(255,210,122,0.12); border: 1px solid #ffd27a55;
-  border-radius: 3px; color: #ffd27a; font-size: 11px;
+  border-radius: 3px; color: #ffd27a;
+  font: 11px monospace;
 }
 .change-label {
   margin: 14px 0 6px; font: bold 11px monospace; color: #bda077;
@@ -462,6 +477,9 @@ ul.changelog li::before {
   border-bottom: 1px solid #ffd27a22;
 }
 #settings-panel .setting-row:last-child { border-bottom: none; }
+/* When the next sibling is a section rule, the row's bottom hairline
+   would stack right on top of the rule's gradient — drop it. */
+#settings-panel .setting-row:has(+ .rule) { border-bottom: none; }
 #settings-panel .setting-label {
   color: #ccc; font: 13px monospace;
   letter-spacing: 1.5px; text-transform: uppercase;
@@ -500,13 +518,85 @@ ul.changelog li::before {
 #settings-panel .setting-row input[type=range] {
   flex: 1; min-width: 120px;
 }
-#settings-panel .saved-where {
-  flex: 1;
+#settings-panel .setting-label-group {
+  display: flex; flex-direction: column;
+  gap: 4px;
+  min-width: 150px;
+  flex-shrink: 0;
+}
+#settings-panel .setting-label-group .setting-label {
   min-width: 0;
-  color: #c0a878;
-  font: 11px monospace; letter-spacing: 1.5px;
-  text-align: center;
+}
+#settings-panel .saved-where {
+  color: #bda077;
+  font: 10px monospace;
+  letter-spacing: 1px;
+  text-transform: none;
+  opacity: 0.85;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* About dialog — unlike narrative overlays (Captain's Log, inspect
+   overlays, Changelog), About is a nameplate/credits screen. Full
+   center alignment gives it title-card cohesion instead of the
+   left-aligned-prose-with-centered-credits seam. Other overlays keep
+   their default left alignment. */
+#overlay .about { text-align: center; }
+#overlay .about-meta {
+  /* Single-token build tag now (author lives in the footer) — sized
+     and dimmed so it reads as a stamp rather than a heading. */
+  font: 9px monospace;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: #8a7560;
+  margin: 4px 0 0;
+}
+#overlay .about-actions { margin: 28px 0 8px; }
+
+/* Author's signing-off line — italic Georgia, slightly warmer than
+   the inline em so it reads as a standalone beat. */
+#overlay .about-dedication {
+  font: italic 14px/1.5 Georgia, serif;
+  color: #d8c499;
+  margin: 24px 0 8px;
+}
+
+/* Copyright + license + source strip. Small mono, dim — system
+   footer, not narrative content. */
+#overlay .about-footer {
+  font: 10px monospace;
+  letter-spacing: 1px;
+  color: #8a7560;
+  margin: 18px 0 4px;
+}
+#overlay .about-source {
+  color: #bda077;
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(189,160,119,0.6);
+  transition: color 200ms, border-color 200ms;
+}
+#overlay .about-source:hover {
+  color: #ffd27a;
+  border-bottom-color: rgba(255,210,122,0.8);
+}
+
+/* In-overlay link/button used by the About dialog to jump to the
+   Changelog without closing the overlay. Mirrors .setting-btn but
+   sized for body copy context. */
+#overlay .about-link {
+  background: transparent;
+  border: 1px solid rgba(255,210,122,0.4);
+  color: #ffd9a0;
+  padding: 7px 16px;
+  font: 11px monospace; letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 200ms, border-color 200ms;
+}
+#overlay .about-link:hover {
+  background: rgba(255,210,122,0.12);
+  border-color: rgba(255,210,122,0.7);
 }
 
 /* Save toast — quiet auto-save indicator, top-left of the viewport.

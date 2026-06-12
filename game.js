@@ -232,6 +232,11 @@ const state = {
   bizarreRennNameInspected: false,
   bizarreShellInspected: false,
 };
+// Cold-start snapshot, captured before any save hydration. Used by the
+// title-screen New Game button to reset state in-place — no reload, so
+// the player doesn't bounce back through the preload card they already
+// clicked through to reach the title.
+const INITIAL_STATE = JSON.parse(JSON.stringify(state));
 
 // ---- Save / restore (localStorage) ----------------------------------
 // Persists the player's progress under a versioned key so a schema bump
@@ -3154,8 +3159,8 @@ function closeAllPanels({ silent = false } = {}) {
   settingsPanel.classList.remove('active');
   menuBtn.classList.remove('active');
   panelBackdrop.classList.remove('active');
-  if (typeof disarmReset === 'function') disarmReset();
   if (typeof disarmRestore === 'function') disarmRestore();
+  if (typeof disarmReturnToTitle === 'function') disarmReturnToTitle();
   // Play the back sound here so every caller (backdrop click, window
   // bubble click, settings-close button, menu-btn toggle, etc.) gets it
   // consistently — but only if a panel was actually open AND the caller
@@ -3319,53 +3324,120 @@ restoreBtn.addEventListener('click', (e) => {
   restoreTimer = setTimeout(disarmRestore, 4000);
 });
 
-// Reset progress — two-step inline confirm (click arms; second click clears).
-const resetBtn = document.getElementById('reset-progress');
-let resetArmed = false;
-let resetTimer = null;
-function disarmReset() {
-  resetArmed = false;
-  resetBtn.textContent = 'Clear';
-  resetBtn.classList.remove('danger');
-  if (resetTimer) { clearTimeout(resetTimer); resetTimer = null; }
-}
-const RESET_FAREWELL_HTML = `
-  <h2>The Wind Shifts</h2>
-  <p><em>And so the Age closes its page</em></p>
-  <p>Every shore you have walked, every door whose voice you came
-  to know &mdash; gone, as if you had not made landfall at all.</p>
-  <p><em>The compass spins anew. The Captain waits at a different
-  dock.</em></p>
-  <p style="text-align: right; margin-top: 24px;">&mdash; Captain Renn</p>
-  <div class="close">click to set sail</div>
-`;
-resetBtn.addEventListener('click', (e) => {
+// Save Game — explicit manual save. Bypasses the 250ms debounce so the
+// player gets immediate "Saving → Saved" feedback for the act they just
+// took, then updates the row label to "just now" without needing to
+// close and reopen the menu. Save-clearing is intentionally NOT here:
+// the only path to erase a save is title screen → New Game.
+const saveBtn = document.getElementById('save-game');
+saveBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   playSfx('menu-click');
-  if (resetArmed) {
+  if (saveDebounceTimer) {
+    clearTimeout(saveDebounceTimer);
+    saveDebounceTimer = null;
+  }
+  pendingSaveSurface = true;
+  performSave();
+  refreshSavedRow();
+});
+
+// Return to Title — graceful, non-destructive quit. Save persists; the
+// player can Continue from the title or wipe via New Game there.
+// Two-step confirm → Renn-voiced overlay → fade-to-black → restore
+// title state under the black → fade up on the title card.
+const RETURN_TO_TITLE_HTML = `
+  <h2>The Captain Marks Your Place</h2>
+  <p><em>You step back from the deck</em></p>
+  <p>What you have found is held. The dock will keep its silence
+  until you return &mdash; and the Age will be there as you left it.</p>
+  <p style="text-align: right; margin-top: 24px;">&mdash; Captain Renn</p>
+  <div class="close">click to return</div>
+`;
+const returnBtn = document.getElementById('return-to-title');
+let returnArmed = false;
+let returnTimer = null;
+function disarmReturnToTitle() {
+  returnArmed = false;
+  returnBtn.textContent = 'Exit';
+  returnBtn.classList.remove('danger');
+  if (returnTimer) { clearTimeout(returnTimer); returnTimer = null; }
+}
+function restoreTitleScreen() {
+  // Runs under a fully-opaque fadeEl curtain — all the in-place state
+  // resets happen invisibly, then the curtain lifts on the title.
+  titleScreenActive = true;
+  document.body.classList.add('title-active');
+  bizarreRealmMusicActive = false;
+  gameplayMusicStarted = false;
+  // Stop gameplay/bizarre music — fade then pause.
+  fadeAudioElement(ambientAudio, 0, 500);
+  setTimeout(() => { ambientAudio.pause(); ambientAudio.loop = false; }, 600);
+  // Fade out the per-node ambient layer (room wind, water, etc.) at
+  // the same pace so the title comes up in silence except for the
+  // title music we're about to start. Clearing currentAmbientPath
+  // ensures the next Continue/travelTo treats the new node's ambient
+  // as a fresh start, not a no-op same-path skip.
+  if (nodeAmbientAudio) {
+    const old = nodeAmbientAudio;
+    nodeAmbientAudio = null;
+    fadeAudioElement(old, 0, 500);
+    setTimeout(() => { old.pause(); old.src = ''; }, 600);
+  }
+  currentAmbientPath = null;
+  currentAmbientMix = null;
+  // Manual dock swap — avoids travelTo wrestling with the curtain we
+  // already own and avoids its end-of-travel saveProgress (which would
+  // no-op now anyway, but cleaner to not invoke it).
+  sphereMat.map = getPano('dock');
+  sphereMat.needsUpdate = true;
+  buildHotspots(WORLD.dock);
+  nodeNameEl.textContent = WORLD.dock.name;
+  currentNode = 'dock';
+  if (WORLD.dock.startDir) {
+    const dir = new THREE.Vector3(...WORLD.dock.startDir).normalize();
+    controls.target.set(0, 0, 0);
+    camera.position.copy(dir).multiplyScalar(-0.01);
+    controls.update();
+  }
+  // Title card returns; refresh the Continue / New Game UI from the
+  // current save state.
+  savedProgress = loadProgress();
+  beginBtn.textContent = savedProgress ? 'Continue' : 'Begin';
+  newGameBtn.hidden = !savedProgress;
+  titleCard.classList.remove('fading', 'gone');
+  // Restart title music — autoplay gate is already lifted from the
+  // original boot click.
+  titleMusicAudio.currentTime = 0;
+  titleMusicAudio.volume = 0;
+  titleMusicAudio.muted = audioPrefs.musicMuted;
+  titleMusicAudio.play().catch(err => console.warn('[title-music]', err));
+  if (!audioPrefs.musicMuted) {
+    fadeAudioElement(titleMusicAudio, audioPrefs.music, 1500);
+  }
+}
+returnBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  playSfx('menu-click');
+  if (returnArmed) {
     closeAllPanels({ silent: true });
-    showOverlay(RESET_FAREWELL_HTML, () => {
-      // Wait one frame so the browser registers the overlay's display:none
-      // before we trigger the fade's opacity transition — otherwise the
-      // two style changes batch together and the transition is skipped.
+    showOverlay(RETURN_TO_TITLE_HTML, () => {
+      // Two-frame delay so the overlay's removal commits before the
+      // fadeEl transition starts — same pattern as the old reset path.
       requestAnimationFrame(() => {
         requestAnimationFrame(() => fadeEl.classList.add('active'));
       });
-      // 600ms fade + ~600ms hold at black before the reload cuts in.
-      // Only the save key is cleared — audio prefs, brightness, sensitivity,
-      // and invert-drag are settings, not progress, and survive a reset.
-      // (Mirrors the title-screen New Game path, which also calls clearSave.)
-      setTimeout(() => {
-        clearSave();
-        location.reload();
-      }, 1400);
+      // 600ms fade-to-black, then restore title state under the black,
+      // then fade back up on the title. Total visible black ~1.4s.
+      setTimeout(restoreTitleScreen, 700);
+      setTimeout(() => fadeEl.classList.remove('active'), 1100);
     });
     return;
   }
-  resetArmed = true;
-  resetBtn.textContent = 'Confirm?';
-  resetBtn.classList.add('danger');
-  resetTimer = setTimeout(disarmReset, 4000);
+  returnArmed = true;
+  returnBtn.textContent = 'Confirm?';
+  returnBtn.classList.add('danger');
+  returnTimer = setTimeout(disarmReturnToTitle, 4000);
 });
 
 // ---- Changelog (Settings button + title-screen version tag) ---------
@@ -3428,11 +3500,68 @@ getChangelogHtml();
 async function showChangelog() {
   showOverlay(await getChangelogHtml());
 }
-document.getElementById('show-changelog').addEventListener('click', (e) => {
-  playSfx('menu-click');
+
+// About — game-info dialog (title, version, author, credits) with an
+// inline button to jump to the Changelog. Centralizes the "static info"
+// surface in one place instead of scattering it across menu rows.
+function buildAboutHtml() {
+  return `
+    <div class="about">
+      <h2>The Keepers' Page</h2>
+      <p><em>A Myst-inspired short. A personal tribute. Not a commercial work.</em></p>
+
+      <p class="about-meta">${VERSION}</p>
+
+      <hr class="rule">
+
+      <h3>Built with</h3>
+      <p>Three.js &middot; Skybox AI &middot; Adobe Photoshop &middot;
+        ElevenLabs &middot; Pixabay</p>
+
+      <h3>Inspired by</h3>
+      <p>Myst &mdash; Cyan Worlds, 1993.</p>
+
+      <p class="about-dedication"><em>For anyone who still loves a good Age.</em></p>
+
+      <hr class="rule">
+
+      <p class="about-actions">
+        <button type="button" class="about-link" id="about-view-changelog">View Changelog &rarr;</button>
+      </p>
+
+      <p class="about-footer">
+        &copy; 2026 Stephen Woodall &middot; MIT License &middot;
+        <a class="about-source" href="https://github.com/spwoodall/keepers-page"
+           target="_blank" rel="noopener">View Source</a>
+      </p>
+    </div>
+    <div class="close">click to close</div>
+  `;
+}
+async function showAbout() {
+  showOverlay(buildAboutHtml());
+  // Wire the inline Changelog button. stopPropagation keeps the click
+  // from bubbling to the overlay's close handler; we swap content in
+  // place so the overlay stays open with the changelog showing.
+  const link = document.getElementById('about-view-changelog');
+  if (link) {
+    link.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      playSfx('menu-click');
+      overlayPanel.innerHTML = await getChangelogHtml();
+    });
+  }
+  // Source link opens in a new tab via target="_blank"; we stop
+  // propagation so the overlay doesn't dismiss when the player just
+  // wants to click / right-click / copy the URL.
+  const source = overlayPanel.querySelector('.about-source');
+  if (source) source.addEventListener('click', (e) => e.stopPropagation());
+}
+document.getElementById('about-game').addEventListener('click', (e) => {
   e.stopPropagation();
+  playSfx('menu-click');
   closeAllPanels({ silent: true });
-  showChangelog();
+  showAbout();
 });
 document.getElementById('version-tag').addEventListener('click', (e) => {
   e.stopPropagation();
@@ -3510,7 +3639,7 @@ document.body.classList.add('title-active');
 // `beginExperience` (after the title fades and audio is unlocked),
 // so node `onEnter` hooks like bizarreRealm's music init aren't
 // silently swallowed by the browser autoplay gate.
-const savedProgress = loadProgress();
+let savedProgress = loadProgress();
 if (savedProgress) Object.assign(state, savedProgress.state);
 
 // Always show the dock behind the title card — it's the natural
@@ -3552,7 +3681,11 @@ Promise.all([dockReady, titleMusicReady]).then(() => {
 
 // First click anywhere on the preload card lifts the autoplay gate,
 // starts the title music, and fades the card away to reveal the title.
+// menu-click is the shortest, lightest tap in the palette — establishes
+// the audio identity without committing the heavier button-forward beat
+// for what is essentially a "tap to begin" gate.
 preloadCard.addEventListener('click', () => {
+  playSfx('menu-click');
   startAmbient();
   preloadCard.classList.add('fading');
   setTimeout(() => preloadCard.classList.add('gone'), 1500);
@@ -3609,9 +3742,11 @@ beginBtn.addEventListener('click', (e) => {
   beginExperience();
 });
 
-// New Game — two-step inline confirm, mirrors the in-menu reset-progress
-// flow. First click arms ("Confirm?"); second wipes the save and reloads
-// so the title comes back up in its no-save state.
+// New Game — two-step inline confirm. First click arms ("Erase save?");
+// second wipes the save and reverts the title to its no-save state
+// IN PLACE. No reload — the player is already on the title, audio is
+// unlocked, the dock pano is loaded; bouncing back through the preload
+// card would be friction with no purpose.
 let newGameArmed = false;
 let newGameTimer = null;
 function disarmNewGame() {
@@ -3625,7 +3760,15 @@ newGameBtn.addEventListener('click', (e) => {
   playSfx('menu-click');
   if (newGameArmed) {
     clearSave();
-    location.reload();
+    Object.assign(state, INITIAL_STATE);
+    savedProgress = null;
+    newGameBtn.hidden = true;
+    beginBtn.textContent = 'Begin';
+    // Re-render the dock so any state-dependent hotspots/panos reflect
+    // the cleared state. titleScreenActive is still true, so the
+    // saveProgress() inside refreshCurrentNode no-ops.
+    refreshCurrentNode();
+    disarmNewGame();
     return;
   }
   newGameArmed = true;
