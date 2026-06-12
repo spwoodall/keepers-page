@@ -168,8 +168,7 @@ body.rect-capture canvas { cursor: crosshair; }
   color: #ffd9a0;
 }
 body.title-active #menu-btn,
-body.title-active #settings-panel .tabs,
-body.title-active #settings-panel .reread-link {
+body.title-active #settings-panel .tabs {
   display: none;
 }
 
@@ -472,25 +471,6 @@ ul.changelog li::before {
   height: auto;
   margin: 18px auto 32px;
 }
-#settings-panel .panel-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: stretch;
-}
-#settings-panel .reread-link {
-  padding: 14px 32px;
-  background: none; border: none;
-  color: #888;
-  font: 11px monospace;
-  letter-spacing: 1px; text-transform: uppercase;
-  cursor: pointer;
-  transition: color 200ms, background 200ms;
-}
-#settings-panel .reread-link:hover {
-  color: #ffd27a;
-  background: rgba(255,210,122,0.05);
-}
-
 /* Audio tab rows */
 #settings-panel .audio-row {
   display: flex; align-items: center; gap: 12px;
@@ -520,6 +500,20 @@ ul.changelog li::before {
   line-height: 1;
 }
 #settings-panel .track-btn:hover { background: rgba(255,210,122,0.12); }
+/* Active state for the toggle track-btns (loop + shuffle) — brighter
+   border + filled background to read as engaged. */
+#settings-panel .track-btn.on {
+  background: rgba(255,210,122,0.22);
+  border-color: rgba(255,210,122,0.85);
+  color: #ffd9a0;
+}
+/* Inline SVG icons inside track-btns (loop + shuffle) — center the
+   glyph in the button's text baseline. The prev/next text glyphs
+   auto-baseline; SVG needs the explicit flex centering. */
+#settings-panel .track-btn svg {
+  display: block;
+  margin: 0 auto;
+}
 #settings-panel .track-name {
   flex: 1; text-align: center; color: #c0a878;
   font-size: 11px; letter-spacing: 1px;
@@ -753,18 +747,6 @@ body.title-active #now-playing { display: none; }
   to   { transform: rotate(360deg); }
 }
 
-#settings-panel .close {
-  padding: 14px 32px;
-  font: 11px monospace; color: #888;
-  letter-spacing: 1px; text-transform: uppercase;
-  cursor: pointer;
-  transition: color 200ms, background 200ms;
-  display: flex; align-items: center;
-}
-#settings-panel .close:hover {
-  color: #ffd27a;
-  background: rgba(255,210,122,0.05);
-}
 #devhud {
   position: fixed; bottom: 50px; left: 12px; right: 12px;
   color: #ffd27a; font: 12px monospace;

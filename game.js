@@ -293,6 +293,7 @@ function performSave() {
       currentNode,
       camDir,
       savedAt: Date.now(),
+      trackIndex: currentTrackIndex,
     }));
     if (surface) flashSaveToast();
   } catch (err) {
@@ -326,6 +327,10 @@ function loadProgress() {
     if (data.savedAt !== undefined
         && !(typeof data.savedAt === 'number' && Number.isFinite(data.savedAt))) {
       delete data.savedAt;
+    }
+    if (data.trackIndex !== undefined
+        && !(Number.isInteger(data.trackIndex) && data.trackIndex >= -1)) {
+      delete data.trackIndex;
     }
     return data;
   } catch (err) {
@@ -2950,6 +2955,8 @@ const audioPrefs = {
   sfx:        parseFloat(localStorage.getItem('mystVolSfx')   ?? '0.7'),
   musicMuted: localStorage.getItem('mystMuteMusic') === '1',
   sfxMuted:   localStorage.getItem('mystMuteSfx')   === '1',
+  loop:       localStorage.getItem('mystLoopMusic') === '1',
+  shuffle:    localStorage.getItem('mystShuffleMusic') === '1',
 };
 
 // ---- Music: title track + gameplay playlist ------------------------
@@ -3022,7 +3029,13 @@ let currentTrackIndex = -1;
 
 function pickNextGameplayTrack() {
   const len = GAMEPLAY_PLAYLIST.length;
-  const next = currentTrackIndex < 0 ? 0 : (currentTrackIndex + 1) % len;
+  let next;
+  if (audioPrefs.shuffle && len > 1) {
+    // Avoid repeating the current track when shuffling — pick any other.
+    do { next = Math.floor(Math.random() * len); } while (next === currentTrackIndex);
+  } else {
+    next = currentTrackIndex < 0 ? 0 : (currentTrackIndex + 1) % len;
+  }
   currentTrackIndex = next;
   return GAMEPLAY_PLAYLIST[next];
 }
@@ -3071,19 +3084,43 @@ function flashNowPlaying(label) {
   nowPlayingTimer = setTimeout(() => nowPlayingEl.classList.remove('show'), 3500);
 }
 
-function updateTrackLabel() {
+function currentTrack() {
+  if (bizarreRealmMusicActive) return BIZARRE_REALM_TRACK;
+  if (currentTrackIndex >= 0) return GAMEPLAY_PLAYLIST[currentTrackIndex];
+  return null;
+}
+
+// Render the track scroller display: "Label · 1:23 / 3:22" when the
+// track is actively playing, "Label · 3:22" when idle/paused. Driven
+// by 'timeupdate' (~250ms cadence) so the elapsed time ticks live.
+function renderTrackDisplay() {
   const el = document.getElementById('track-name');
   if (!el) return;
-  let track = null;
-  if (bizarreRealmMusicActive) track = BIZARRE_REALM_TRACK;
-  else if (currentTrackIndex >= 0) track = GAMEPLAY_PLAYLIST[currentTrackIndex];
+  const track = currentTrack();
+  if (!track) { el.innerHTML = '&mdash;'; return; }
+  const totalStr = formatDuration(track.duration);
+  const playing = !ambientAudio.paused && ambientAudio.currentTime > 0;
+  el.innerHTML = playing
+    ? `${track.label} &middot; ${formatDuration(ambientAudio.currentTime)} / ${totalStr}`
+    : `${track.label} &middot; ${totalStr}`;
+}
+
+// Called on actual track-change events (gameplay music start, auto-
+// advance, manual skip, bizarre realm activation). Fires the Now
+// Playing toast and re-renders the display. The label comparison
+// uses the STATIC trackDisplayLabel (no time) so timeupdate ticks
+// don't look like track changes.
+function updateTrackLabel() {
+  const track = currentTrack();
   const label = track ? trackDisplayLabel(track) : '&mdash;';
-  el.innerHTML = label;
   if (track && label !== lastDisplayedTrackLabel) {
     flashNowPlaying(label);
   }
   lastDisplayedTrackLabel = label;
+  renderTrackDisplay();
 }
+
+ambientAudio.addEventListener('timeupdate', renderTrackDisplay);
 
 let titleScreenActive = true;
 let gameplayMusicStarted = false;
@@ -3091,13 +3128,17 @@ const DEFAULT_GAMEPLAY_TRACK = 'Astronomy';
 function startGameplayMusic() {
   if (gameplayMusicStarted) return;
   gameplayMusicStarted = true;
-  // Fade title music out, then start the gameplay playlist on its
-  // chosen opener. From there, tracks advance in listed order.
+  // Fade title music out, then start the gameplay playlist. If
+  // currentTrackIndex has been pre-set (e.g. Continue restoring the
+  // last-played track from save), respect it. Otherwise open on the
+  // DEFAULT_GAMEPLAY_TRACK.
   fadeAudioElement(titleMusicAudio, 0, 2000);
   setTimeout(() => titleMusicAudio.pause(), 2100);
-  let idx = GAMEPLAY_PLAYLIST.findIndex(t => t.label === DEFAULT_GAMEPLAY_TRACK);
-  if (idx < 0) idx = 0;
-  currentTrackIndex = idx;
+  if (currentTrackIndex < 0) {
+    let idx = GAMEPLAY_PLAYLIST.findIndex(t => t.label === DEFAULT_GAMEPLAY_TRACK);
+    if (idx < 0) idx = 0;
+    currentTrackIndex = idx;
+  }
   const track = GAMEPLAY_PLAYLIST[currentTrackIndex];
   ambientAudio.src = assetUrl(track.url);
   ambientAudio.volume = 0;
@@ -3122,9 +3163,15 @@ function startGameplayMusicFor(nodeKey) {
   }
   startGameplayMusic();
 }
-// When a gameplay track ends, advance to the next one in order.
+// When a gameplay track ends: replay it if Loop is on, otherwise
+// advance (shuffle if enabled, sequential otherwise).
 ambientAudio.addEventListener('ended', () => {
   if (bizarreRealmMusicActive) return;
+  if (audioPrefs.loop && currentTrackIndex >= 0) {
+    ambientAudio.currentTime = 0;
+    ambientAudio.play().catch(err => console.warn('[ambient] loop', err));
+    return;
+  }
   const track = pickNextGameplayTrack();
   ambientAudio.src = assetUrl(track.url);
   ambientAudio.play().catch(err => console.warn('[ambient] next', err));
@@ -3139,6 +3186,18 @@ function playSpecificTrack(idx) {
   ambientAudio.play().catch(err => console.warn('[track]', err));
   updateTrackLabel();
 }
+// Both manual skip directions honor Shuffle (pick a random non-current
+// track) for consistency — if shuffle is on, "next" and "prev" both
+// move the player to somewhere new in the playlist. Loop intentionally
+// does NOT affect manual skip — standard music-player convention is
+// that loop governs end-of-track behavior; user navigation overrides.
+function pickRandomOtherIndex() {
+  const len = GAMEPLAY_PLAYLIST.length;
+  if (len <= 1) return 0;
+  let idx;
+  do { idx = Math.floor(Math.random() * len); } while (idx === currentTrackIndex);
+  return idx;
+}
 function skipNext() {
   if (titleScreenActive || bizarreRealmMusicActive) return;
   if (currentTrackIndex < 0) {
@@ -3147,7 +3206,8 @@ function skipNext() {
     return;
   }
   const len = GAMEPLAY_PLAYLIST.length;
-  playSpecificTrack((currentTrackIndex + 1) % len);
+  const next = audioPrefs.shuffle ? pickRandomOtherIndex() : (currentTrackIndex + 1) % len;
+  playSpecificTrack(next);
 }
 function skipPrev() {
   if (titleScreenActive || bizarreRealmMusicActive) return;
@@ -3156,7 +3216,8 @@ function skipPrev() {
     return;
   }
   const len = GAMEPLAY_PLAYLIST.length;
-  playSpecificTrack((currentTrackIndex - 1 + len) % len);
+  const prev = audioPrefs.shuffle ? pickRandomOtherIndex() : (currentTrackIndex - 1 + len) % len;
+  playSpecificTrack(prev);
 }
 
 // ---- Per-node ambient layer -----------------------------------------
@@ -3455,6 +3516,7 @@ invertToggle.addEventListener('click', (e) => {
 const SETTINGS_KEYS = [
   'mystBrightness', 'mystSensitivity', 'mystInvertDrag',
   'mystVolMusic', 'mystVolSfx', 'mystMuteMusic', 'mystMuteSfx',
+  'mystLoopMusic', 'mystShuffleMusic',
 ];
 const restoreBtn = document.getElementById('restore-settings');
 let restoreArmed = false;
@@ -3898,6 +3960,37 @@ muteSfxBtn.addEventListener('click', (e) => {
   if (!audioPrefs.sfxMuted) playSfx('menu-click');
 });
 
+// Loop + Shuffle toggles — mirror the Invert Drag pattern. Loop replays
+// the current track when it ends; Shuffle picks a random next track
+// instead of advancing sequentially. Loop wins when both are on
+// (you've explicitly said "stay on this track").
+const loopToggle = document.getElementById('loop-toggle');
+const shuffleToggle = document.getElementById('shuffle-toggle');
+function applyMusicModeUI() {
+  // Inline track-btn — glyph stays put; the .on class is the visual
+  // indicator (gold border + filled background). aria-pressed exposes
+  // toggle state to assistive tech.
+  loopToggle.classList.toggle('on', audioPrefs.loop);
+  loopToggle.setAttribute('aria-pressed', audioPrefs.loop ? 'true' : 'false');
+  shuffleToggle.classList.toggle('on', audioPrefs.shuffle);
+  shuffleToggle.setAttribute('aria-pressed', audioPrefs.shuffle ? 'true' : 'false');
+}
+applyMusicModeUI();
+loopToggle.addEventListener('click', (e) => {
+  e.stopPropagation();
+  playSfx('menu-click');
+  audioPrefs.loop = !audioPrefs.loop;
+  localStorage.setItem('mystLoopMusic', audioPrefs.loop ? '1' : '0');
+  applyMusicModeUI();
+});
+shuffleToggle.addEventListener('click', (e) => {
+  e.stopPropagation();
+  playSfx('menu-click');
+  audioPrefs.shuffle = !audioPrefs.shuffle;
+  localStorage.setItem('mystShuffleMusic', audioPrefs.shuffle ? '1' : '0');
+  applyMusicModeUI();
+});
+
 document.getElementById('replay-btn').addEventListener('click', () => {
   // Same lightest tap the preload card uses for its enter-gate click —
   // the player is hitting another "re-enter the experience" gesture, so
@@ -4016,6 +4109,14 @@ function beginExperience() {
       titleCard.classList.add('gone');
       titleScreenActive = false;
       document.body.classList.remove('title-active');
+      // Restore the last-played track index BEFORE startGameplayMusic
+      // is called — startGameplayMusic respects a pre-set currentTrackIndex
+      // (>= 0) and only falls back to DEFAULT_GAMEPLAY_TRACK when fresh.
+      if (Number.isInteger(savedProgress.trackIndex)
+          && savedProgress.trackIndex >= 0
+          && savedProgress.trackIndex < GAMEPLAY_PLAYLIST.length) {
+        currentTrackIndex = savedProgress.trackIndex;
+      }
       startGameplayMusicFor(savedProgress.currentNode);
       travelTo(savedProgress.currentNode, {
         fadeMs: 0,
