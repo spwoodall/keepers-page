@@ -3698,7 +3698,10 @@ function changelogMdToHtml(md) {
 let changelogHtmlPromise = null;
 function getChangelogHtml() {
   if (!changelogHtmlPromise) {
-    changelogHtmlPromise = fetch('CHANGELOG.md')
+    // Route through assetUrl() so the VERSION-based cache-bust applies
+     // — otherwise the browser serves a stale CHANGELOG from the previous
+     // release and the player never sees the new entry.
+    changelogHtmlPromise = fetch(assetUrl('CHANGELOG.md'))
       .then(r => r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`)))
       .then(md => changelogMdToHtml(md))
       .catch(err => {
