@@ -77,6 +77,19 @@ body.rect-capture canvas { cursor: crosshair; }
 }
 #overlay h2 { margin: 0 0 12px; font: italic 22px Georgia, serif; color: #ffe8b8; }
 #overlay em { color: #ffe8b8; }
+
+/* Internal-thought line — the silent protagonist's quiet acknowledgment
+   after a thesis-weight moment. Centered with tilde framing for a
+   "whispered / floating" quality, distinct from Renn's signed em-dash
+   attributions (right-aligned, named). Three visual zones in any
+   overlay: body (left-aligned), Renn signatures (right-aligned named),
+   player thoughts (centered with tildes). */
+#overlay .thought {
+  margin-top: 28px;
+  text-align: center;
+  font: italic 14px/1.5 Georgia, serif;
+  color: #d8c499;
+}
 #overlay .close {
   margin-top: 20px; font: 11px monospace; color: #888;
   letter-spacing: 1px; text-transform: uppercase;

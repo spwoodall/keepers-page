@@ -163,7 +163,7 @@ const CAPTAINS_LOG_HTML = `
   <p>Find the Keepers' writings. Find what awaits beyond the
   sigil and the spiral. Then come back to us — or do not.</p>
   <p style="text-align: right; margin-top: 24px;">— Captain Renn</p>
-  <div class="close">click to close</div>
+  <div class="close">click to step ashore</div>
 `;
 
 // ---- Puzzle state ---------------------------------------------------
@@ -369,7 +369,7 @@ const ACTIONS = {
       way that is not a page at all."</em></p>
       <p>As you finish the lines, you hear a faint click somewhere
       in the room — the sound of wood shifting against wood.</p>
-      <div class="close">click to close</div>
+      <div class="close">click to approach</div>
     `);
     refreshCurrentNode();
   },
@@ -492,7 +492,7 @@ const ACTIONS = {
       <p>The moss closes behind you. The forest does not protest.</p>
       <p>The green country holds you the way a cup holds rain — gently,
       briefly, without weight.</p>
-      <div class="close">click to continue</div>
+      <div class="close">click to enter</div>
     `, () => {
       travelTo('greenRootHollow', { fadeMs: 3000 });
     });
@@ -618,7 +618,7 @@ const ACTIONS = {
       other — left and right. Between them, the stone wall
       carries two names you cannot quite read in this light.</p>
       <p>The wind outside sounds different up here. Closer.</p>
-      <div class="close">click to continue</div>
+      <div class="close">click to ascend</div>
     `, () => {
       travelTo('cottageUpperHall', { fadeMs: 1500 });
     });
@@ -672,7 +672,7 @@ const ACTIONS = {
       warm. Something deep inside the door turns over with
       a quiet, weighty click.</p>
       <p><em>The door unbolts itself.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to enter</div>
     `);
     refreshCurrentNode();
   },
@@ -705,7 +705,7 @@ const ACTIONS = {
       a ring of interlocking spirals matching a pattern you have not
       yet seen. Beneath your feet, a great stone slab grinds open.</p>
       <p><em>A way down has revealed itself.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to descend</div>
     `);
     // Hum layers in now that the mechanism is alive — keep it loop'd while
     // the player lingers, and re-trigger automatically on return visits.
@@ -804,6 +804,7 @@ const ACTIONS = {
       foot of a stone monolith. The arrangement is the same.
       The angle is the same. They have not moved.</p>
       <p>You have moved.</p>
+      <p class="thought">~ I've moved. ~</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -816,6 +817,7 @@ const ACTIONS = {
       <p>You think you are on a plateau. You are on a page.</p>
       <p>Below the cloud is the margin. Below the margin is
       whatever was here before the writing.</p>
+      <p class="thought">~ A margin. ~</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -830,6 +832,7 @@ const ACTIONS = {
       to stand on and only the cloud remains.</p>
       <p>This is where the writing ran out. The Keepers stopped
       here because their world stopped here.</p>
+      <p class="thought">~ They stopped. ~</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -866,6 +869,7 @@ const ACTIONS = {
       <p>Someone has been dreaming.</p>
       <p>Someone has been dreaming you here.</p>
       <p>Or you have been dreaming yourself.</p>
+      <p class="thought">~ I'll hold this. ~</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -880,6 +884,7 @@ const ACTIONS = {
       <p>You count its rings without trying and stop counting
       somewhere around a thousand. The tree did not arrive. The
       tree was.</p>
+      <p class="thought">~ Older still. ~</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -900,6 +905,7 @@ const ACTIONS = {
       anything worth remembering.</p>
       <p>An S, finally carved. Drawn around the one mark its
       maker and another have always shared.</p>
+      <p class="thought">~ S, finally. ~</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -914,6 +920,7 @@ const ACTIONS = {
       would have made.</p>
       <p>Untouched, in this version of things.</p>
       <p>There are other endings. They begin here.</p>
+      <p class="thought">~ Untouched. ~</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -930,6 +937,7 @@ const ACTIONS = {
       used.</p>
       <p>Here it hangs above her husband's writing, as if it
       had agreed to come along.</p>
+      <p class="thought">~ It came along. ~</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -945,6 +953,7 @@ const ACTIONS = {
       <p>The captain has been here. He did not write this place —
       but he came, and he stayed long enough to leave his name
       in it.</p>
+      <p class="thought">~ He was here. ~</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -960,6 +969,7 @@ const ACTIONS = {
       followed. It sits among the roots of a tree older than
       the writing, untroubled by the moonlight.</p>
       <p>Some things were too small to leave behind.</p>
+      <p class="thought">~ All this way. ~</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -1005,7 +1015,7 @@ const ACTIONS = {
       dark water it always has. Nothing changes in the chamber
       beyond.</p>
       <p><em>Not this one.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to step back</div>
     `);
   },
   setDialSea: () => {
@@ -1017,7 +1027,7 @@ const ACTIONS = {
       water. The lighthouse has forgotten how to look at the
       surface of things.</p>
       <p><em>Not this one.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to step back</div>
     `);
   },
   setDialDepths: () => {
@@ -1030,7 +1040,7 @@ const ACTIONS = {
       and the hole fills with cold light that travels farther
       than it should. Somewhere below, something receives it.</p>
       <p><em>You have looked where the Keepers would not.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to step back</div>
     `);
     refreshCurrentNode();
   },
@@ -1147,7 +1157,7 @@ const ACTIONS = {
       is going.</p>
       <p><em>Below, in the depths, something is now visible
       that was not visible before.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to look below</div>
     `);
     refreshCurrentNode();
   },
@@ -1159,7 +1169,7 @@ const ACTIONS = {
       stays dark. The wave belongs to another shore — it has
       nothing to say here among the roots.</p>
       <p><em>Not this one.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to step back</div>
     `);
   },
   alignDiskSpiral: () => {
@@ -1170,7 +1180,7 @@ const ACTIONS = {
       flickers — almost — then settles back to dark. The spiral
       opens other doors. Not this one.</p>
       <p><em>Not this one.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to step back</div>
     `);
   },
   inspectWallDisc: () => {
@@ -1438,7 +1448,7 @@ const ACTIONS = {
       the telescope, the lens stays clouded. The Keepers were not
       watching for daylight things.</p>
       <p><em>Not this one.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to step back</div>
     `);
   },
   setOrreryArm2: () => {
@@ -1452,7 +1462,7 @@ const ACTIONS = {
       lens clarifies. Something has come into alignment that was
       waiting to be found.</p>
       <p><em>The glass will find it.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to look</div>
     `);
     refreshCurrentNode();
   },
@@ -1465,7 +1475,7 @@ const ACTIONS = {
       two moons. The orrery hums and stills. The lens remains
       clouded.</p>
       <p><em>Not this one.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to step back</div>
     `);
   },
   inspectOrrery: () => {
@@ -1527,7 +1537,7 @@ const ACTIONS = {
       The link still holds.</em></p>
       <p><em>Take the shell home, if you find one. They travel
       well.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to close the cover</div>
     `, () => {
       triggerEndscreen(
         'You close the cover. The clouds below the plateau catch the moonlight and hold it.<br>' +
@@ -1549,7 +1559,7 @@ const ACTIONS = {
       The canopy still watches the horizon. We are not the point
       of any of this.</em></p>
       <p><em>Which is, I think, exactly right.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to close the cover</div>
     `, () => {
       triggerEndscreen(
         'You close the cover. The second moon climbs toward its twin, unhurried.<br>' +
@@ -3698,7 +3708,21 @@ muteSfxBtn.addEventListener('click', (e) => {
 });
 
 document.getElementById('replay-btn').addEventListener('click', () => {
-  location.reload();
+  // Same lightest tap the preload card uses for its enter-gate click —
+  // the player is hitting another "re-enter the experience" gesture, so
+  // the audio identity should match. Brief delay so the click sound is
+  // audible before the page reload cuts the audio context.
+  playSfx('menu-click');
+  // Player has reached the endscreen and chosen "Back to Start" — they're
+  // explicitly closing the arc. Clear the save so the next session opens
+  // with Begin (cold start) rather than Continue (which would fly them
+  // back to the bizarre realm tree of an already-solved world).
+  // (Completionists who want both endings can browser-refresh BEFORE
+  // hitting Back to Start, then Continue back to the tree to touch the
+  // other keeper book. After Back to Start, both readings require a
+  // full replay.)
+  clearSave();
+  setTimeout(() => location.reload(), 200);
 });
 document.getElementById('track-next').addEventListener('click', (e) => {
   e.stopPropagation();
