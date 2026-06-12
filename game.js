@@ -2592,6 +2592,13 @@ overlayPanel.addEventListener('click', async (e) => {
     pushOverlayContent(await getChangelogHtml());
     return;
   }
+  const audioTrigger = e.target.closest('#about-view-audio');
+  if (audioTrigger) {
+    e.stopPropagation();
+    playSfx('menu-click');
+    pushOverlayContent(buildAudioCreditsHtml());
+    return;
+  }
   if (e.target.closest('.about-source')) {
     // External link — let the browser handle navigation, but don't
     // dismiss the overlay if the player wants to right-click/copy.
@@ -2952,13 +2959,14 @@ const audioPrefs = {
 // the listed order, wrapping at the end.
 const ambientAudio = document.getElementById('ambient');
 const titleMusicAudio = document.getElementById('title-music');
-titleMusicAudio.src = assetUrl('audio/title.mp3');
+titleMusicAudio.src = assetUrl('audio/gigidelaromusic-mini-zen-drone-short-450970.mp3');
 ambientAudio.volume = 0;
 titleMusicAudio.volume = 0;
 
 const BIZARRE_REALM_TRACK = {
   url: 'audio/low_atmos-space-relaxation-atmosphere-514706.mp3',
   label: 'The Fourth Age',
+  duration: 275,
 };
 let bizarreRealmMusicActive = false;
 
@@ -2983,16 +2991,33 @@ function startBizarreRealmMusic() {
 
 const GAMEPLAY_PLAYLIST = [
   { url: 'audio/atlasaudio-ambient-astronomy-511860.mp3',
-    label: 'Astronomy' },
-  { url: 'audio/juliush-relax-chill-out-music-for-landscapes-under-water-animals-forests-8105.mp3',
-    label: 'Landscapes' },
+    label: 'Astronomy', duration: 294 },
+  { url: 'audio/juliush-ambient-ethereal-chill-out-music-8509.mp3',
+    label: 'Ethereal', duration: 296 },
   { url: 'audio/zulfugarkarimov-weightless-rest-528509.mp3',
-    label: 'Weightless' },
+    label: 'Weightless', duration: 178 },
   { url: 'audio/anton_vlasov-ambient-chill-drone-15790.mp3',
-    label: 'Drone' },
+    label: 'Drone', duration: 185 },
   { url: 'audio/juraganvisi-nocturnal-piano-reflections-with-dreamlike-pads-and-lo-fi-v2-416000.mp3',
-    label: 'Nocturnal Piano' },
+    label: 'Nocturne', duration: 238 },
+  { url: 'audio/juliush-aurora-ambient-chill-music-9796.mp3',
+    label: 'Aurora', duration: 191 },
+  { url: 'audio/juliush-chilling-waves-ambient-chill-out-music-for-relaxation-13880.mp3',
+    label: 'Waves', duration: 540 },
+  { url: 'audio/atlasaudio-ambient-soundscapes-511893.mp3',
+    label: 'Drift', duration: 296 },
+  { url: 'audio/zulfugarkarimov-echoes-of-solitude-535242.mp3',
+    label: 'Solitude', duration: 181 },
+  { url: 'audio/anton_vlasov-drone-ambient-15791.mp3',
+    label: 'Hollow', duration: 202 },
 ];
+
+function formatDuration(seconds) {
+  const total = Math.round(seconds);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
 let currentTrackIndex = -1;
 
 function pickNextGameplayTrack() {
@@ -3025,18 +3050,44 @@ function startAmbient() {
 // the title music.
 addEventListener('click', startAmbient, { once: true, capture: true });
 
+function trackDisplayLabel(track) {
+  return track.duration
+    ? `${track.label} &middot; ${formatDuration(track.duration)}`
+    : track.label;
+}
+
+// Brief in-world "Now Playing" indicator — bottom-left, distinct zone
+// from the save toast (top-left) so they never compete. Fires only on
+// actual track changes; the idempotent bizarre-realm re-call is
+// filtered via lastDisplayedTrackLabel comparison.
+const nowPlayingEl = document.getElementById('now-playing');
+let nowPlayingTimer = null;
+let lastDisplayedTrackLabel = null;
+function flashNowPlaying(label) {
+  if (!nowPlayingEl) return;
+  nowPlayingEl.innerHTML = label;
+  nowPlayingEl.classList.add('show');
+  if (nowPlayingTimer) clearTimeout(nowPlayingTimer);
+  nowPlayingTimer = setTimeout(() => nowPlayingEl.classList.remove('show'), 3500);
+}
+
 function updateTrackLabel() {
   const el = document.getElementById('track-name');
   if (!el) return;
-  if (bizarreRealmMusicActive) { el.innerHTML = BIZARRE_REALM_TRACK.label; return; }
-  el.innerHTML = currentTrackIndex >= 0
-    ? GAMEPLAY_PLAYLIST[currentTrackIndex].label
-    : '&mdash;';
+  let track = null;
+  if (bizarreRealmMusicActive) track = BIZARRE_REALM_TRACK;
+  else if (currentTrackIndex >= 0) track = GAMEPLAY_PLAYLIST[currentTrackIndex];
+  const label = track ? trackDisplayLabel(track) : '&mdash;';
+  el.innerHTML = label;
+  if (track && label !== lastDisplayedTrackLabel) {
+    flashNowPlaying(label);
+  }
+  lastDisplayedTrackLabel = label;
 }
 
 let titleScreenActive = true;
 let gameplayMusicStarted = false;
-const DEFAULT_GAMEPLAY_TRACK = 'Landscapes';
+const DEFAULT_GAMEPLAY_TRACK = 'Astronomy';
 function startGameplayMusic() {
   if (gameplayMusicStarted) return;
   gameplayMusicStarted = true;
@@ -3604,6 +3655,137 @@ async function showChangelog() {
   showOverlay(await getChangelogHtml());
 }
 
+// Audio credits — every audio asset is from Pixabay (no CC-BY tier,
+// so no per-track attribution is legally required). Music files were
+// kept under their original Pixabay filenames so the credit data can
+// be auto-parsed: <uploader>-<slug>-<id>.mp3. SFX were renamed for
+// in-code clarity, so they're umbrella'd as "from Pixabay".
+function parsePixabayFilename(path) {
+  const filename = path.split('/').pop().replace(/\.mp3$/, '');
+  const match = filename.match(/^(.+?)-(.+)-(\d+)$/);
+  if (!match) return null;
+  const [, artist, slug, id] = match;
+  const title = slug
+    .split('-')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+  return { title, artist, id };
+}
+
+// Per-file augmentations. For files whose names already follow the
+// Pixabay <uploader>-<slug>-<id>.mp3 convention, this just layers on
+// the exact source URL (the filename alone gives us ID but not the
+// category-slug needed to reconstruct it). For files whose original
+// metadata is unrecoverable from the filename, this provides the
+// title/artist as overrides too.
+const AUDIO_MANUAL = {
+  'audio/gigidelaromusic-mini-zen-drone-short-450970.mp3': {
+    artist: 'GigiDeLaRoMusic',
+    url: 'https://pixabay.com/music/low-non-rhythmic-drones-mini-zen-drone-short-450970/',
+  },
+  'audio/anton_vlasov-ambient-chill-drone-15790.mp3': {
+    url: 'https://pixabay.com/music/ambient-ambient-chill-drone-15790/',
+  },
+  'audio/atlasaudio-ambient-astronomy-511860.mp3': {
+    url: 'https://pixabay.com/music/ambient-ambient-astronomy-511860/',
+  },
+  'audio/juraganvisi-nocturnal-piano-reflections-with-dreamlike-pads-and-lo-fi-v2-416000.mp3': {
+    url: 'https://pixabay.com/music/modern-classical-nocturnal-piano-reflections-with-dreamlike-pads-and-lo-fi-v2-416000/',
+  },
+  'audio/juliush-ambient-ethereal-chill-out-music-8509.mp3': {
+    url: 'https://pixabay.com/music/ambient-ambient-ethereal-chill-out-music-8509/',
+  },
+  'audio/zulfugarkarimov-weightless-rest-528509.mp3': {
+    url: 'https://pixabay.com/music/ambient-weightless-rest-528509/',
+  },
+  'audio/low_atmos-space-relaxation-atmosphere-514706.mp3': {
+    url: 'https://pixabay.com/music/synthwave-space-relaxation-atmosphere-514706/',
+  },
+  'audio/juliush-aurora-ambient-chill-music-9796.mp3': {
+    url: 'https://pixabay.com/music/ambient-aurora-ambient-chill-music-9796/',
+  },
+  'audio/juliush-chilling-waves-ambient-chill-out-music-for-relaxation-13880.mp3': {
+    url: 'https://pixabay.com/music/ambient-chilling-waves-ambient-chill-out-music-for-relaxation-13880/',
+  },
+  'audio/atlasaudio-ambient-soundscapes-511893.mp3': {
+    url: 'https://pixabay.com/music/ambient-ambient-soundscapes-511893/',
+  },
+  'audio/zulfugarkarimov-echoes-of-solitude-535242.mp3': {
+    url: 'https://pixabay.com/music/modern-classical-echoes-of-solitude-535242/',
+  },
+  'audio/anton_vlasov-drone-ambient-15791.mp3': {
+    url: 'https://pixabay.com/music/ambient-drone-ambient-15791/',
+  },
+  'audio/sfx/peaceful-ray.mp3': {
+    title: 'Peaceful Light Ray &ndash; Short',
+    artist: 'GigiDeLaRoMusic',
+    url: 'https://pixabay.com/sound-effects/musical-peaceful-light-ray-short-450966/',
+  },
+};
+
+function getCreditForPath(path) {
+  // Manual fields layer atop auto-parsed fields — e.g. a self-
+  // documenting filename auto-parses title+artist, and AUDIO_MANUAL
+  // adds the URL. For fully-renamed files, manual supplies everything.
+  const auto = parsePixabayFilename(path) || {};
+  const manual = AUDIO_MANUAL[path] || {};
+  const merged = { ...auto, ...manual };
+  return merged.title ? merged : null;
+}
+
+function getMusicCredits() {
+  // Title → gameplay playlist → bizarre realm. Order matches the
+  // player's actual listening journey through a single run.
+  const items = [];
+  const title = getCreditForPath('audio/gigidelaromusic-mini-zen-drone-short-450970.mp3');
+  if (title) items.push(title);
+  for (const track of GAMEPLAY_PLAYLIST) {
+    const credit = getCreditForPath(track.url);
+    if (credit) items.push(credit);
+  }
+  const bizarre = getCreditForPath(BIZARRE_REALM_TRACK.url);
+  if (bizarre) items.push(bizarre);
+  return items;
+}
+
+function renderCreditList(items) {
+  if (!items || !items.length) return '<p><em>To be credited.</em></p>';
+  return items.map(c => {
+    // Auto-parsed entries have no URL; user-overridden entries do.
+    const artistHtml = c.url
+      ? `<a class="about-source" href="${c.url}" target="_blank" rel="noopener">${c.artist}</a>`
+      : c.artist;
+    return `<p class="audio-credit"><em>${c.title}</em> &mdash; ${artistHtml}</p>`;
+  }).join('');
+}
+
+function buildAudioCreditsHtml() {
+  return `
+    <div class="about">
+      <h2>Audio Credits</h2>
+      <p><em>Every sound in this Age comes from the Pixabay community.</em></p>
+
+      <hr class="rule">
+
+      <h3>Music</h3>
+      ${renderCreditList(getMusicCredits())}
+
+      <h3>Sound</h3>
+      <p>Dozens of one-shot sounds &mdash; carved wood and brass clicks,
+      page turns, sigil warps, the shore and the wind &mdash; all sourced
+      from Pixabay's content library.</p>
+
+      <hr class="rule">
+
+      <p style="text-align: center;"><em>With gratitude to the Pixabay
+      community of creators.</em></p>
+      <p style="text-align: center;">
+        <a class="about-source" href="https://pixabay.com/"
+           target="_blank" rel="noopener">pixabay.com</a></p>
+    </div>
+  `;
+}
+
 // About — game-info dialog (title, version, author, credits) with an
 // inline button to jump to the Changelog. Centralizes the "static info"
 // surface in one place instead of scattering it across menu rows.
@@ -3629,6 +3811,9 @@ function buildAboutHtml() {
 
       <p class="about-actions">
         <button type="button" class="about-link" id="about-view-changelog">View Changelog &rarr;</button>
+      </p>
+      <p class="about-actions about-actions-stacked">
+        <button type="button" class="about-link" id="about-view-audio">View Audio Credits &rarr;</button>
       </p>
 
       <p class="about-footer">
@@ -3660,6 +3845,12 @@ document.getElementById('about-game').addEventListener('click', (e) => {
   playSfx('menu-click');
   closeAllPanels({ silent: true });
   showAbout();
+});
+document.getElementById('audio-view-credits').addEventListener('click', (e) => {
+  e.stopPropagation();
+  playSfx('menu-click');
+  closeAllPanels({ silent: true });
+  showOverlay(buildAudioCreditsHtml());
 });
 document.getElementById('version-tag').addEventListener('click', (e) => {
   e.stopPropagation();

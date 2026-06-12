@@ -600,6 +600,12 @@ ul.changelog li::before {
    left-aligned-prose-with-centered-credits seam. Other overlays keep
    their default left alignment. */
 #overlay .about { text-align: center; }
+/* Breathing room between sections — second + later h3s need top margin
+   because the surrounding paragraphs (.audio-credit at 6px, body p at
+   14px) don't give them enough on their own. The first h3 sits right
+   after the rule divider and doesn't need extra. */
+#overlay .about h3 { margin-top: 22px; }
+#overlay .about .rule + h3 { margin-top: 0; }
 #overlay .about-meta {
   /* Single-token build tag now (author lives in the footer) — sized
      and dimmed so it reads as a stamp rather than a heading. */
@@ -610,6 +616,16 @@ ul.changelog li::before {
   margin: 4px 0 0;
 }
 #overlay .about-actions { margin: 28px 0 8px; }
+/* Stacked drill-down action — sits below the primary action with tighter
+   top margin, since the buttons are visually grouped. */
+#overlay .about-actions-stacked { margin: 12px 0 8px; }
+
+/* Audio-credit row styling — each row is one track. Slightly tighter
+   leading than body copy and a quieter rhythm. */
+#overlay .audio-credit {
+  margin: 6px 0;
+  font: 14px/1.5 Georgia, serif;
+}
 
 /* Author's signing-off line — italic Georgia, slightly warmer than
    the inline em so it reads as a standalone beat. */
@@ -685,6 +701,31 @@ ul.changelog li::before {
 }
 #save-toast.show { opacity: 1; }
 body.title-active #save-toast { display: none; }
+/* Location chip belongs to gameplay UI — keep it hidden while the title
+   is up so it doesn't peek above the title card during boot. Same
+   reason the menu button hides until the player enters the world. */
+body.title-active #node-name { display: none; }
+
+/* Now Playing toast — mirrors the save-toast at bottom-left. Distinct
+   zone so save events (top-left) and audio events (bottom-left) never
+   compete for the same corner. Plain box, no spinner — just the track
+   label fading in when a track change happens. */
+#now-playing {
+  position: fixed;
+  bottom: 20px; left: 24px;
+  padding: 7px 13px;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,210,122,0.32);
+  border-radius: 3px;
+  color: rgba(255, 217, 160, 0.85);
+  font: 10px monospace; letter-spacing: 2px; text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 600ms ease;
+  pointer-events: none;
+  z-index: 50;
+}
+#now-playing.show { opacity: 1; }
+body.title-active #now-playing { display: none; }
 #save-toast .toast-text {
   /* Holds "SAVING" (the longer word) so "SAVED" doesn't collapse the box. */
   min-width: 56px;
