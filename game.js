@@ -101,17 +101,39 @@ function makePano({ skyTop, skyBottom, ground, accent, stars = false, sun = null
 // hard-refreshes.
 const textureLoader = new THREE.TextureLoader();
 const panoCache = new Map();
+// Track image-data readiness per pano. textureLoader.load() returns a
+// texture immediately, but its image data arrives asynchronously — a
+// not-yet-loaded texture renders black. Continue-from-save uses this to
+// hold a black curtain in place until the destination pano is decoded.
+const panoTexReady = new WeakMap(); // texture -> ready promise
 // Patched to renderer.capabilities.getMaxAnisotropy() after the renderer
 // is created. Sharpens panos at grazing viewing angles on the sphere.
 let maxAnisotropy = 1;
 function loadPano(url) {
   if (!panoCache.has(url)) {
-    const tex = textureLoader.load(assetUrl(url));
+    let resolveReady;
+    const ready = new Promise(r => { resolveReady = r; });
+    const tex = textureLoader.load(
+      assetUrl(url),
+      () => resolveReady(),
+      undefined,
+      () => resolveReady(), // resolve on error too so callers don't hang
+    );
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = maxAnisotropy;
     panoCache.set(url, tex);
+    panoTexReady.set(tex, ready);
   }
   return panoCache.get(url);
+}
+// Returns a promise that resolves once the saved node's pano texture has
+// image data. Calling pano() also kicks off the network request if it
+// hasn't started yet, so this doubles as a preload trigger.
+function panoReadyFor(nodeKey) {
+  const node = WORLD[nodeKey];
+  if (!node || typeof node.pano !== 'function') return Promise.resolve();
+  const tex = node.pano();
+  return (tex && panoTexReady.get(tex)) || Promise.resolve();
 }
 // Preload alternate state panoramas so puzzle-swaps are instant.
 // Ascension is also preloaded here — it's the only non-dock pano on the
@@ -141,7 +163,7 @@ const CAPTAINS_LOG_HTML = `
   <p>Find the Keepers' writings. Find what awaits beyond the
   sigil and the spiral. Then come back to us — or do not.</p>
   <p style="text-align: right; margin-top: 24px;">— Captain Renn</p>
-  <div class="close">click to close</div>
+  <div class="close">click to step ashore</div>
 `;
 
 // ---- Puzzle state ---------------------------------------------------
@@ -210,6 +232,116 @@ const state = {
   bizarreRennNameInspected: false,
   bizarreShellInspected: false,
 };
+// Cold-start snapshot, captured before any save hydration. Used by the
+// title-screen New Game button to reset state in-place — no reload, so
+// the player doesn't bounce back through the preload card they already
+// clicked through to reach the title.
+const INITIAL_STATE = JSON.parse(JSON.stringify(state));
+
+// ---- Save / restore (localStorage) ----------------------------------
+// Persists the player's progress under a versioned key so a schema bump
+// can be detected and discarded cleanly. Audio prefs are persisted
+// separately (mystVolMusic / mystVolSfx / mystMuteMusic / mystMuteSfx)
+// and intentionally NOT bundled here — they're settings, not progress.
+const SAVE_KEY = 'mystSave_v1';
+
+// 250ms trailing debounce — in-room state changes can fire
+// refreshCurrentNode several times in quick succession (overlay → action
+// → refresh). Coalescing them into one write keeps the toast from
+// strobing and trims unnecessary localStorage churn.
+const SAVE_DEBOUNCE_MS = 250;
+let saveDebounceTimer = null;
+// Sticky "show the toast on the next write" flag. Set by travelTo so the
+// UI surface only appears at room transitions — quiet during in-room
+// puzzle/inspect mutations where the player is already getting narrative
+// feedback (overlay text, sfx, world changes) and the toast would
+// compete for attention.
+let pendingSaveSurface = false;
+
+function saveProgress(opts = {}) {
+  // Skip saves while the title screen is up — the player hasn't
+  // really started yet, and the initial `travelTo('dock')` shouldn't
+  // overwrite an existing save before the user picks Continue / New Game.
+  if (titleScreenActive) return;
+  if (!currentNode) return;
+  if (opts.surface) pendingSaveSurface = true;
+  if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+  saveDebounceTimer = setTimeout(performSave, SAVE_DEBOUNCE_MS);
+}
+
+function performSave() {
+  saveDebounceTimer = null;
+  const surface = pendingSaveSurface;
+  pendingSaveSurface = false;
+  // Re-check the gate — titleScreenActive may have flipped during the
+  // debounce window (e.g. a New Game reload in flight).
+  if (titleScreenActive) return;
+  if (!currentNode) return;
+  try {
+    // Capture the player's current view direction so Continue lands
+    // them looking at what they were last looking at, not the node's
+    // default startDir.
+    const dir = new THREE.Vector3();
+    camera.getWorldDirection(dir);
+    const camDir = [
+      Number(dir.x.toFixed(4)),
+      Number(dir.y.toFixed(4)),
+      Number(dir.z.toFixed(4)),
+    ];
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      state,
+      currentNode,
+      camDir,
+      savedAt: Date.now(),
+      trackIndex: currentTrackIndex,
+    }));
+    if (surface) flashSaveToast();
+  } catch (err) {
+    console.warn('[save]', err);
+  }
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== 'object') return null;
+    if (!data.state || typeof data.state !== 'object') return null;
+    if (!data.currentNode || !WORLD[data.currentNode]) return null;
+    // Migration policy (single-path 15-min game):
+    //   Pure-discard at incompatible schema bumps. When the save shape
+    //   changes in a breaking way, bump SAVE_KEY (e.g. mystSave_v1 →
+    //   mystSave_v2); the v1 key lingers harmlessly and the player's
+    //   next play starts fresh.
+    //   For ADDITIVE changes (new optional field), do NOT bump — keep
+    //   the key, validate the new field as optional below, and let
+    //   pre-bump saves continue to load. camDir and savedAt were both
+    //   added this way; both are tolerated as undefined on read.
+    if (data.camDir !== undefined) {
+      const ok = Array.isArray(data.camDir)
+        && data.camDir.length === 3
+        && data.camDir.every(n => typeof n === 'number' && Number.isFinite(n));
+      if (!ok) delete data.camDir;
+    }
+    if (data.savedAt !== undefined
+        && !(typeof data.savedAt === 'number' && Number.isFinite(data.savedAt))) {
+      delete data.savedAt;
+    }
+    if (data.trackIndex !== undefined
+        && !(Number.isInteger(data.trackIndex) && data.trackIndex >= -1)) {
+      delete data.trackIndex;
+    }
+    return data;
+  } catch (err) {
+    console.warn('[save]', err);
+    return null;
+  }
+}
+
+function clearSave() {
+  try { localStorage.removeItem(SAVE_KEY); } catch (err) { /* ignore */ }
+}
 
 // ---- Action handlers (run on click for non-travel hotspots) ---------
 const ACTIONS = {
@@ -242,7 +374,7 @@ const ACTIONS = {
       way that is not a page at all."</em></p>
       <p>As you finish the lines, you hear a faint click somewhere
       in the room — the sound of wood shifting against wood.</p>
-      <div class="close">click to close</div>
+      <div class="close">click to approach</div>
     `);
     refreshCurrentNode();
   },
@@ -365,7 +497,7 @@ const ACTIONS = {
       <p>The moss closes behind you. The forest does not protest.</p>
       <p>The green country holds you the way a cup holds rain — gently,
       briefly, without weight.</p>
-      <div class="close">click to continue</div>
+      <div class="close">click to enter</div>
     `, () => {
       travelTo('greenRootHollow', { fadeMs: 3000 });
     });
@@ -491,7 +623,7 @@ const ACTIONS = {
       other — left and right. Between them, the stone wall
       carries two names you cannot quite read in this light.</p>
       <p>The wind outside sounds different up here. Closer.</p>
-      <div class="close">click to continue</div>
+      <div class="close">click to ascend</div>
     `, () => {
       travelTo('cottageUpperHall', { fadeMs: 1500 });
     });
@@ -545,7 +677,7 @@ const ACTIONS = {
       warm. Something deep inside the door turns over with
       a quiet, weighty click.</p>
       <p><em>The door unbolts itself.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to enter</div>
     `);
     refreshCurrentNode();
   },
@@ -578,7 +710,7 @@ const ACTIONS = {
       a ring of interlocking spirals matching a pattern you have not
       yet seen. Beneath your feet, a great stone slab grinds open.</p>
       <p><em>A way down has revealed itself.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to descend</div>
     `);
     // Hum layers in now that the mechanism is alive — keep it loop'd while
     // the player lingers, and re-trigger automatically on return visits.
@@ -677,6 +809,7 @@ const ACTIONS = {
       foot of a stone monolith. The arrangement is the same.
       The angle is the same. They have not moved.</p>
       <p>You have moved.</p>
+      <p class="thought">~ I've moved. ~</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -689,6 +822,7 @@ const ACTIONS = {
       <p>You think you are on a plateau. You are on a page.</p>
       <p>Below the cloud is the margin. Below the margin is
       whatever was here before the writing.</p>
+      <p class="thought">~ A margin. ~</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -703,6 +837,7 @@ const ACTIONS = {
       to stand on and only the cloud remains.</p>
       <p>This is where the writing ran out. The Keepers stopped
       here because their world stopped here.</p>
+      <p class="thought">~ They stopped. ~</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -739,6 +874,7 @@ const ACTIONS = {
       <p>Someone has been dreaming.</p>
       <p>Someone has been dreaming you here.</p>
       <p>Or you have been dreaming yourself.</p>
+      <p class="thought">~ I'll hold this. ~</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -753,6 +889,7 @@ const ACTIONS = {
       <p>You count its rings without trying and stop counting
       somewhere around a thousand. The tree did not arrive. The
       tree was.</p>
+      <p class="thought">~ Older still. ~</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -773,6 +910,7 @@ const ACTIONS = {
       anything worth remembering.</p>
       <p>An S, finally carved. Drawn around the one mark its
       maker and another have always shared.</p>
+      <p class="thought">~ S, finally. ~</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -787,6 +925,7 @@ const ACTIONS = {
       would have made.</p>
       <p>Untouched, in this version of things.</p>
       <p>There are other endings. They begin here.</p>
+      <p class="thought">~ Untouched. ~</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -803,6 +942,7 @@ const ACTIONS = {
       used.</p>
       <p>Here it hangs above her husband's writing, as if it
       had agreed to come along.</p>
+      <p class="thought">~ It came along. ~</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -818,6 +958,7 @@ const ACTIONS = {
       <p>The captain has been here. He did not write this place —
       but he came, and he stayed long enough to leave his name
       in it.</p>
+      <p class="thought">~ He was here. ~</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -833,6 +974,7 @@ const ACTIONS = {
       followed. It sits among the roots of a tree older than
       the writing, untroubled by the moonlight.</p>
       <p>Some things were too small to leave behind.</p>
+      <p class="thought">~ All this way. ~</p>
       <div class="close">click to close</div>
     `);
     refreshCurrentNode();
@@ -878,7 +1020,7 @@ const ACTIONS = {
       dark water it always has. Nothing changes in the chamber
       beyond.</p>
       <p><em>Not this one.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to step back</div>
     `);
   },
   setDialSea: () => {
@@ -890,7 +1032,7 @@ const ACTIONS = {
       water. The lighthouse has forgotten how to look at the
       surface of things.</p>
       <p><em>Not this one.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to step back</div>
     `);
   },
   setDialDepths: () => {
@@ -903,7 +1045,7 @@ const ACTIONS = {
       and the hole fills with cold light that travels farther
       than it should. Somewhere below, something receives it.</p>
       <p><em>You have looked where the Keepers would not.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to step back</div>
     `);
     refreshCurrentNode();
   },
@@ -1014,36 +1156,36 @@ const ACTIONS = {
     playSfx('brass-click');
     showOverlay(`
       <h2>The Tree</h2>
-      <p>You turn the stone until the tree symbol centers. A shaft
+      <p>You turn the wood until the tree symbol centers. A shaft
       of light descends through the hollow trunk — not sunlight,
       something older and more patient. It knows exactly where it
       is going.</p>
       <p><em>Below, in the depths, something is now visible
       that was not visible before.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to look below</div>
     `);
     refreshCurrentNode();
   },
   alignDiskWave: () => {
-    playSfx('sweep-away');
+    playSfx('wood-tap');
     showOverlay(`
       <h2>The Wave</h2>
-      <p>You turn the stone to the wave symbol. The hollow below
+      <p>You turn the wood to the wave symbol. The hollow below
       stays dark. The wave belongs to another shore — it has
       nothing to say here among the roots.</p>
       <p><em>Not this one.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to step back</div>
     `);
   },
   alignDiskSpiral: () => {
-    playSfx('sweep-away');
+    playSfx('wood-tap');
     showOverlay(`
       <h2>The Spiral</h2>
-      <p>You turn the stone to the Keepers' mark. The hollow
+      <p>You turn the wood to the Keepers' mark. The hollow
       flickers — almost — then settles back to dark. The spiral
       opens other doors. Not this one.</p>
       <p><em>Not this one.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to step back</div>
     `);
   },
   inspectWallDisc: () => {
@@ -1055,26 +1197,27 @@ const ACTIONS = {
     if (state.greenCanopyAligned) {
       showOverlay(`
         <h2>The Stone Disc</h2>
-        <p>The sphere has answered. Something inside it glows now —
-        a warm light from a place that is not this one, refracted
-        through pale stone.</p>
+        <p>The pearl has answered. Something inside it glows now — a
+        warm light from a place that is not this one, refracted
+        through the gilded roots that cradle it.</p>
         <p>It found what it was waiting for.</p>
         <div class="close">click to close</div>
       `);
     } else {
       showOverlay(`
         <h2>The Stone Disc</h2>
-        <p>A cross-section of the tree itself, or something shaped to
-        resemble one. The knotwork carved into it is old — older than
-        the platform, older than the staircase. At its center, a small
-        sphere of pale stone, suspended in a shallow socket.</p>
-        <p>It does not move. It is waiting for something.</p>
+        <p>A great stone roundel set into the trunk, bearing a gilded
+        tree carved in deep relief. Its branches reach toward the rim;
+        its roots gather around a pearl at the base, held in a shallow
+        socket.</p>
+        <p>The work is old — older than the platform, older than the
+        staircase. It does not move. It is waiting for something.</p>
         <div class="close">click to close</div>
       `);
     }
   },
   inspectAlignedDisk: () => {
-    playSfx('interact-tap');
+    playSfx('wood-tap');
     showOverlay(`
       <h2>The Aligned Disk</h2>
       <p>The tree symbol faces the center. The shaft of light you
@@ -1310,7 +1453,7 @@ const ACTIONS = {
       the telescope, the lens stays clouded. The Keepers were not
       watching for daylight things.</p>
       <p><em>Not this one.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to step back</div>
     `);
   },
   setOrreryArm2: () => {
@@ -1324,7 +1467,7 @@ const ACTIONS = {
       lens clarifies. Something has come into alignment that was
       waiting to be found.</p>
       <p><em>The glass will find it.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to look</div>
     `);
     refreshCurrentNode();
   },
@@ -1337,7 +1480,7 @@ const ACTIONS = {
       two moons. The orrery hums and stills. The lens remains
       clouded.</p>
       <p><em>Not this one.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to step back</div>
     `);
   },
   inspectOrrery: () => {
@@ -1399,7 +1542,7 @@ const ACTIONS = {
       The link still holds.</em></p>
       <p><em>Take the shell home, if you find one. They travel
       well.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to close the cover</div>
     `, () => {
       triggerEndscreen(
         'You close the cover. The clouds below the plateau catch the moonlight and hold it.<br>' +
@@ -1421,7 +1564,7 @@ const ACTIONS = {
       The canopy still watches the horizon. We are not the point
       of any of this.</em></p>
       <p><em>Which is, I think, exactly right.</em></p>
-      <div class="close">click to close</div>
+      <div class="close">click to close the cover</div>
     `, () => {
       triggerEndscreen(
         'You close the cover. The second moon climbs toward its twin, unhurried.<br>' +
@@ -1581,39 +1724,39 @@ const WORLD = {
     pano: () => loadPano('panos/ascension.jpg'),
     ambient: 'audio/sfx/ascension-ambient.mp3',
     ambientMix: 0.45,
-    startDir: [-0.95, -0.3, -0.09],
+    startDir: [0.2, -0.06, 0.98],
     hotspots: () => [
       // The shore's linking book — blue leather, wave sigil.
       { action: 'touchLinkingBook',
-        dir: [0.06, -0.34, -0.94], shape: 'quad',
-        corners: [[1.29,2.93], [1.14,-3.58], [-1.15,-2.72], [-1.28,3.36]],
+        dir: [-0.57, -0.36, -0.74], shape: 'quad',
+        corners: [[0.85,2.5], [0.76,-3.15], [-0.77,-2.29], [-0.85,2.93]],
         label: 'a glowing book — touch the page', color: 0x5a9aff,
         hidden: () => state.shoreCompleted },
       // The green country's linking book — green leather, tree sigil.
       { action: 'touchGreenBook',
-        dir: [-0.13, -0.35, -0.93], shape: 'quad',
-        corners: [[1.41,2.82], [1.22,-4.12], [-1.04,-2.39], [-1.58,3.68]],
+        dir: [-0.71, -0.36, -0.61], shape: 'quad',
+        corners: [[0.84,2.07], [0.74,-3.14], [-0.78,-1.85], [-1.15,2.85]],
         label: 'a glowing book — touch the page', color: 0x9aff7a,
         hidden: () => state.greenCompleted },
       // The Keepers' red book — third linking book, the cottage Age.
       { action: 'touchKeepersBook',
-        dir: [0.26, -0.37, -0.89], shape: 'quad',
-        corners: [[0.85,2.29], [0.76,-2.93], [-0.76,-2.5], [-0.85,3.15]],
+        dir: [-0.39, -0.37, -0.84], shape: 'quad',
+        corners: [[0.44,1.76], [0.44,-2.66], [-0.67,-2.5], [-0.74,2.39]],
         label: 'a glowing book — touch the page', color: 0xff5a4a,
         hidden: () => state.cottageCompleted },
       // The Keepers' open notebook — lore + dedication easter egg.
       { action: 'inspectOpenBook',
-        dir: [0.09, -0.65, -0.76], shape: 'quad',
-        corners: [[4.7,3.22], [6.42,-2.58], [-5.82,-3.3], [-5.29,2.66]],
+        dir: [-0.43, -0.64, -0.63], shape: 'quad',
+        corners: [[4.63,2.61], [5.99,-2.17], [-5.69,-2.99], [-4.93,2.55]],
         label: 'an open notebook, mid-thought', color: 0xffaa44,
         hidden: () => state.shoreReturned && state.greenReturned && state.cottageReturned },
       // Step onto the sigil-plate — escape valve back to library.
-      { to: 'library', dir: [-0.85, -0.45, 0.25], label: 'step onto the sigil',
+      { to: 'library', dir: [-0.48, -0.41, 0.78], label: 'step onto the sigil',
         color: 0x7affd2,
         sfx: 'sigil-warp', fadeMs: 1800,
         hidden: () => state.shoreReturned && state.greenReturned && state.cottageReturned },
       // Bizarre realm orrery — unlocks when all 3 Ages are returned from.
-      { to: 'bizarreRealm', dir: [0.71, 0.11, -0.7],
+      { to: 'bizarreRealm', dir: [0.07, 0.11, -0.99],
         label: 'the armillary sphere — it holds something new', color: 0xd4aaff,
         sfx: 'peaceful-ray', sfxVolume: 1.5, fadeMs: 4000,
         hidden: () => !(state.shoreReturned && state.greenReturned && state.cottageReturned) },
@@ -1623,51 +1766,29 @@ const WORLD = {
   bizarreRealm: {
     name: 'The Fourth Age',
     pano: () => loadPano('panos/bizarre-realm.jpg'),
-    onEnter: () => {
-      // First-time entry: start the bizarre realm track and fade UP from
-      // silence. Return entry from bizarreRealmTree (which shares this
-      // track): music is already mid-playback — don't reset src or restart
-      // playback. Just refresh the label and let the song continue.
-      // (Earlier version did `fadeAudio(0, 3000)` then jammed volume in a
-      // setTimeout — the in-flight fade kept stomping the new volume back
-      // down to 0, so the track played silently until the next travel
-      // re-fade brought it back up.)
-      if (bizarreRealmMusicActive) {
-        updateTrackLabel();
-        return;
-      }
-      bizarreRealmMusicActive = true;
-      ambientAudio.loop = true;
-      ambientAudio.src = assetUrl(BIZARRE_REALM_TRACK.url);
-      ambientAudio.volume = 0;
-      ambientAudio.play().catch(err => console.warn('[bizarre]', err));
-      if (!audioPrefs.musicMuted) {
-        fadeAudioElement(ambientAudio, audioPrefs.music, 2000);
-      }
-      updateTrackLabel();
-    },
-    startDir: [0.67, 0.49, -0.56],
+    onEnter: () => startBizarreRealmMusic(),
+    startDir: [-0.5, 0.46, 0.74],
     hotspots: () => [
-      { action: 'inspectBizarreTwinMoons', dir: [-0.31, 0.38, 0.87],
+      { action: 'inspectBizarreTwinMoons', dir: [0.06, 0.38, -0.92],
         label: 'two moons above the plateau', color: 0xc8d4e8, shape: 'circle',
         hidden: () => state.bizarreTwinMoonsInspected },
-      { action: 'inspectBizarreCloudSea', dir: [-0.97, 0.05, -0.22], shape: 'quad',
-        corners: [[7.94,2.5],[8.04,-2.28],[-8.03,-2.29],[-7.95,2.07]],
+      { action: 'inspectBizarreCloudSea', dir: [0.99, 0.06, -0.09], shape: 'quad',
+        corners: [[7.61,1.09],[7.65,-1.09],[-7.65,-1.09],[-7.61,1.09]],
         label: 'the cloud sea', color: 0x90b8d8,
         hidden: () => state.bizarreCloudSeaInspected },
-      { action: 'inspectBizarrePlateauEdge', dir: [0.53, -0.03, 0.85],
+      { action: 'inspectBizarrePlateauEdge', dir: [-0.74, 0.02, -0.67],
         label: 'the edge of the plateau', color: 0xc4a878, shape: 'circle',
         hidden: () => state.bizarrePlateauEdgeInspected },
-      { action: 'inspectFamiliarDistance', dir: [-0.34, -0.14, 0.93], shape: 'quad',
-        corners: [[2.16,0.66],[2.57,-0.66],[-2.57,-0.66],[-2.16,0.66]],
+      { action: 'inspectFamiliarDistance', dir: [0.08, -0.14, -0.99], shape: 'quad',
+        corners: [[2.38,0.66],[2.78,-0.66],[-2.78,-0.66],[-2.38,0.66]],
         label: 'something familiar in the distance', color: 0xffaa44 },
-      { action: 'inspectTheTree', dir: [0.69, 0.64, -0.33],
+      { action: 'inspectTheTree', dir: [-0.61, 0.6, 0.52],
         label: 'the tree across the cloud', color: 0xa6826a, shape: 'circle',
         hidden: () => state.bizarreTreeInspected },
-      { to: 'bizarreRealmTree', dir: [0.77, 0.47, -0.44],
+      { to: 'bizarreRealmTree', dir: [-0.59, 0.49, 0.64],
         label: 'toward the tree', sfx: 'stone-footsteps', fadeMs: 3500,
         hidden: () => !state.bizarreTreeInspected },
-      { to: 'ascension', dir: [0.6, -0.49, 0.63],
+      { to: 'ascension', dir: [-0.75, -0.47, -0.46],
         label: 'step onto the sigil', color: 0x7affd2,
         sfx: 'sigil-warp', fadeMs: 3000 },
     ],
@@ -1676,6 +1797,11 @@ const WORLD = {
   bizarreRealmTree: {
     name: 'The Fourth Age',
     pano: () => loadPano('panos/bizarre-realm-tree.jpg'),
+    // Idempotent — normal traversal from bizarreRealm already has the
+    // track playing and this no-ops. Earns its keep when the player
+    // Continues a save taken at the tree: bizarreRealm.onEnter never
+    // fires, so the music would otherwise stay silent.
+    onEnter: () => startBizarreRealmMusic(),
     startDir: [0.45, 0.64, -0.63],
     hotspots: () => [
       { action: 'touchKeeperOneBook', dir: [0.25, -0.54, -0.8],
@@ -1711,23 +1837,24 @@ const WORLD = {
     // Per-node ambient — the Reversed Shore's signature soundscape.
     ambient: 'audio/sfx/shore-ambient.mp3',
     ambientMix: 1.8,
-    startDir: [0.39, 0.15, -0.91],
+    startDir: [-0.78, 0.15, 0.61],
     hotspots: () => [
-      { action: 'inspectShoreLighthouse', dir: [0.99, 0.04, -0.15],
+      { action: 'inspectShoreLighthouse', dir: [-0.88, 0.04, -0.48], shape: 'quad',
+        corners: [[0.43,0.87],[0.44,-0.87],[-0.44,-0.87],[-0.43,0.87]],
         label: 'the black lighthouse',
-        color: 0xffc26a, shape: 'book',
+        color: 0xffc26a,
         hidden: () => state.shoreLighthouseInspected },
-      { action: 'inspectShoreMoon', dir: [-0.95, 0.26, -0.18],
+      { action: 'inspectShoreMoon', dir: [0.65, 0.26, 0.72],
         label: 'the smaller moon',
         color: 0xc0d0ff, shape: 'circle',
         hidden: () => state.shoreMoonInspected },
-      { action: 'inspectShoreShell', dir: [0.42, -0.81, 0.42],
+      { action: 'inspectShoreShell', dir: [-0.07, -0.8, -0.59],
         label: 'a purple shell on the stones',
         color: 0xc8a0ff, shape: 'circle',
         hidden: () => state.shoreShellInspected },
       // Final exit — only appears once all three have been seen.
       // Passage shape so it reads as a true travel ring (overlay before travel).
-      { action: 'wadeToMonolith', dir: [-0.94, -0.16, 0.28],
+      { action: 'wadeToMonolith', dir: [0.91, -0.21, 0.35],
         label: 'walk into the tide',
         color: 0x7affd2, shape: 'passage',
         hidden: () => !(state.shoreLighthouseInspected
@@ -1740,29 +1867,29 @@ const WORLD = {
     pano: () => loadPano('panos/green-country.jpg'),
     // Per-node ambient — woodland: distant birds, leaf-rustle, deep stillness.
     ambient: 'audio/sfx/green-ambient.mp3',
-    startDir: [-0.58, 0.37, 0.72],
+    startDir: [0.53, 0.19, -0.82],
     hotspots: () => [
       // The ancient trees — aimed up the trunks (distinct from the gap
       // between roots, which is the terminal target). Panel shape with
       // custom w/h to fit the trees' massive scale.
-      { action: 'inspectGreenTree', dir: [-0.42, 0.88, -0.21], shape: 'quad',
-        corners: [[1.2,4.65], [3.13,-4.65], [-3.29,-4.62], [-1.04,4.62]],
+      { action: 'inspectGreenTree', dir: [0.54, 0.82, 0.21], shape: 'quad',
+        corners: [[3.9,5.84], [7.79,-6.06], [-8.56,-5.64], [-3.13,5.87]],
         label: 'ancient trees, taller than mountains', color: 0x9aff7a,
         hidden: () => state.greenTreeInspected },
       // The root-woven basin holding a pool that reflects a wrong sky.
-      { action: 'inspectGreenBasin', dir: [0.43, -0.64, 0.64],
+      { action: 'inspectGreenBasin', dir: [-0.62, -0.67, -0.42],
         label: 'a basin of roots holding still water',
         color: 0xc0d0ff, shape: 'circle',
         hidden: () => state.greenBasinInspected },
       // A small purple shell resting on a root — cross-Age callback.
-      { action: 'inspectGreenShell', dir: [0.62, -0.76, -0.18],
+      { action: 'inspectGreenShell', dir: [-0.5, -0.76, 0.41],
         label: 'a small purple shell on the root',
         color: 0xc8a0ff, shape: 'circle',
         hidden: () => state.greenShellInspected },
       // Terminal exit — only appears once all three have been seen.
       // Passage shape so it reads as a true travel ring (the overlay runs
       // before the actual travel).
-      { action: 'stepIntoRoots', dir: [0.31, 0.08, -0.95],
+      { action: 'stepIntoRoots', dir: [0.09, 0.03, 1],
         label: 'step between the great roots',
         color: 0x7affd2, shape: 'passage',
         hidden: () => !(state.greenTreeInspected
@@ -2005,19 +2132,19 @@ const WORLD = {
         label: 'the endless forest below', color: 0x9aff7a, shape: 'quad',
         corners: [[9.43,1.31], [9.32,-1.31], [-9.32,-1.31], [-9.43,1.31]],
         hidden: () => state.greenCanopyViewInspected },
-      { action: 'inspectWallDisc', dir: [-0.68, -0.01, 0.74],
-        label: 'a carved stone disc — a pearl at its center', color: 0xffaa44, shape: 'circle' },
+      { action: 'inspectWallDisc', dir: [-0.62, -0.38, 0.69],
+        label: 'a gilded tree, a pearl at its root', color: 0xffaa44, shape: 'circle' },
       { action: 'alignDiskTree', dir: [-0.74, -0.65, -0.18],
-        label: 'a tree carved into the stone', color: 0x9aff7a, shape: 'circle',
+        label: 'a tree carved into the wood', color: 0x9aff7a, shape: 'circle',
         hidden: () => state.greenCanopyAligned },
       { action: 'alignDiskWave', dir: [-0.71, -0.66, 0.25],
-        label: 'a wave carved into the stone', color: 0xa078ff, shape: 'circle',
+        label: 'a wave carved into the wood', color: 0xa078ff, shape: 'circle',
         hidden: () => state.greenCanopyAligned },
       { action: 'alignDiskSpiral', dir: [-0.62, -0.78, 0.02],
-        label: 'a spiral carved into the stone', color: 0xffd27a, shape: 'circle',
+        label: 'a spiral carved into the wood', color: 0xffd27a, shape: 'circle',
         hidden: () => state.greenCanopyAligned },
       { action: 'inspectAlignedDisk', dir: [-0.74, -0.65, -0.18],
-        label: 'the disk — aligned', color: 0x7affd2,
+        label: 'the disk — aligned', color: 0x7affd2, shape: 'circle',
         hidden: () => !state.greenCanopyAligned },
       { to: 'greenRootHollow', dir: [0.66, -0.57, 0.5],
         label: 'back down the hollow trunk', sfx: 'stone-footsteps', fadeMs: 3500 },
@@ -2187,6 +2314,7 @@ function refreshCurrentNode() {
   sphereMat.map = node.pano();
   sphereMat.needsUpdate = true;
   buildHotspots(node);
+  saveProgress();
 }
 
 // ---- Hotspots -------------------------------------------------------
@@ -2311,6 +2439,7 @@ addEventListener('click', (e) => {
   if (e.target.closest('#endscreen')) return;
   if (titleScreenActive) return;
   if (rectCaptureMode) { captureRectCorner(e.clientX, e.clientY); return; }
+  if (pointPickMode) { capturePointPickHere(e.clientX, e.clientY); return; }
   pointer.x = (e.clientX / innerWidth) * 2 - 1;
   pointer.y = -(e.clientY / innerHeight) * 2 + 1;
   raycaster.setFromCamera(pointer, camera);
@@ -2368,14 +2497,72 @@ function triggerAgeReturn(epilogueHtml) {
   }, { once: true });
 }
 
-function showOverlay(html, onClose) {
+// Overlay drill-down stack — when a top-level overlay (e.g. About)
+// drills into a sub-view (e.g. Changelog), the previous panel HTML
+// and its close label get pushed here so the global close button can
+// pop back instead of closing the whole overlay. Cleared on showOverlay
+// and closeOverlay.
+const overlayStack = [];
+const overlayCloseBtn = document.getElementById('overlay-close');
+// Per-overlay narrative close label parsed from any inline
+// <div class="close">click to X</div>. When set, the close button reads
+// "X" (capitalized) so in-world overlays preserve their voice
+// (Continue / Return / Approach / Depart / Close). Utility menus
+// (About, Changelog) omit the inline div and fall back to the
+// context-aware default ("Back to Game" / "Close").
+let currentOverlayCloseLabel = null;
+
+function extractCloseLabel(closeEl) {
+  if (!closeEl) return null;
+  let text = closeEl.textContent.trim();
+  // Strip the prompt prefix variants — "click to X", "click anywhere to X".
+  text = text.replace(/^click(?:\s+anywhere)?\s+to\s+/i, '');
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : null;
+}
+
+function applyOverlayContent(html, fallbackLabel = null) {
   overlayPanel.innerHTML = html;
+  const closeEl = overlayPanel.querySelector('.close');
+  currentOverlayCloseLabel = extractCloseLabel(closeEl) ?? fallbackLabel;
+  if (closeEl) closeEl.remove();
+  overlayPanel.scrollTop = 0;
+  updateOverlayCloseLabel();
+}
+
+function showOverlay(html, onClose) {
+  overlayStack.length = 0;
+  applyOverlayContent(html);
   overlayEl.classList.add('active');
   overlayCloseCallback = onClose || null;
 }
-overlayEl.addEventListener('click', () => {
-  playSfx('menu-click');
+
+function pushOverlayContent(html) {
+  overlayStack.push({ html: overlayPanel.innerHTML, label: currentOverlayCloseLabel });
+  applyOverlayContent(html);
+}
+
+function popOverlayContent() {
+  if (overlayStack.length === 0) return false;
+  const prev = overlayStack.pop();
+  applyOverlayContent(prev.html, prev.label);
+  return true;
+}
+
+function updateOverlayCloseLabel() {
+  if (overlayStack.length > 0) {
+    overlayCloseBtn.textContent = 'Back';
+    return;
+  }
+  if (currentOverlayCloseLabel) {
+    overlayCloseBtn.textContent = currentOverlayCloseLabel;
+    return;
+  }
+  overlayCloseBtn.textContent = titleScreenActive ? 'Close' : 'Back to Game';
+}
+
+function closeOverlay() {
   overlayEl.classList.remove('active');
+  overlayStack.length = 0;
   const hadCallback = !!overlayCloseCallback;
   if (overlayCloseCallback) {
     const cb = overlayCloseCallback;
@@ -2385,6 +2572,43 @@ overlayEl.addEventListener('click', () => {
   // Rebuild hotspots for pure inspection closes so state changes are reflected.
   // Skip when there's an onClose callback — those trigger navigation.
   if (!hadCallback && currentNode) buildHotspots(WORLD[currentNode]);
+}
+
+overlayEl.addEventListener('click', () => {
+  playSfx('menu-click');
+  closeOverlay();
+});
+
+overlayCloseBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  playSfx('menu-click');
+  if (popOverlayContent()) return;
+  closeOverlay();
+});
+
+// Event delegation for interactive elements inside overlay content.
+// Lets drill-down (push/pop) work without re-attaching listeners after
+// the panel HTML is restored on pop.
+overlayPanel.addEventListener('click', async (e) => {
+  const changelogTrigger = e.target.closest('#about-view-changelog');
+  if (changelogTrigger) {
+    e.stopPropagation();
+    playSfx('menu-click');
+    pushOverlayContent(await getChangelogHtml());
+    return;
+  }
+  const audioTrigger = e.target.closest('#about-view-audio');
+  if (audioTrigger) {
+    e.stopPropagation();
+    playSfx('menu-click');
+    pushOverlayContent(buildAudioCreditsHtml());
+    return;
+  }
+  if (e.target.closest('.about-source')) {
+    // External link — let the browser handle navigation, but don't
+    // dismiss the overlay if the player wants to right-click/copy.
+    e.stopPropagation();
+  }
 });
 
 let currentNode = null;
@@ -2430,6 +2654,10 @@ async function travelTo(key, opts = {}) {
   // Per-node arrival hook — fires after fade clears so any one-shot sfx
   // lands while the player is fully in the room.
   if (typeof node.onEnter === 'function') node.onEnter();
+  // Room transition is the moment the player's brain is already
+  // context-switching, so the toast surface here doesn't compete with
+  // in-room narrative beats (overlays, transforms, sfx).
+  saveProgress({ surface: true });
 }
 
 // ---- Dev mode: aim at a spot, press H to capture hotspot direction --
@@ -2504,7 +2732,7 @@ const devTravelGrid = document.getElementById('dev-travel-grid');
 function refreshDevHud() {
   const gridLabel = devGridVisible ? '<b>G</b> grid ✓' : '<b>G</b> grid';
   devHudInfo.innerHTML = `
-    <div class="hint">DEV MODE — <b>H</b> point &nbsp;·&nbsp; <b>R</b> rect &nbsp;·&nbsp; ${gridLabel}</div>
+    <div class="hint">DEV MODE — <b>H</b> point &nbsp;·&nbsp; <b>R</b> rect &nbsp;·&nbsp; <b>P</b> pick &nbsp;·&nbsp; ${gridLabel}</div>
     <div>node: <b>${currentNode}</b> &nbsp;·&nbsp; <b>D</b> exit &nbsp;·&nbsp; <b>X</b> clear &nbsp;·&nbsp; <b>T</b> travel</div>
   `;
 }
@@ -2560,6 +2788,49 @@ function captureHotspotHere() {
 
 let rectCaptureMode = false;
 let rectCorners = [];
+let pointPickMode = false;
+
+function setPointPickMode(on) {
+  pointPickMode = on;
+  document.body.classList.toggle('rect-capture', on);
+  if (on) {
+    devHudInfo.innerHTML = `
+      <div class="hint">POINT PICK — click anywhere to capture &nbsp;·&nbsp; <b>P</b> exit &nbsp;·&nbsp; <b>X</b> clear</div>
+      <div>node: <b>${currentNode}</b></div>
+    `;
+  } else {
+    refreshDevHud();
+  }
+}
+
+function capturePointPickHere(clientX, clientY) {
+  const px = (clientX / innerWidth) * 2 - 1;
+  const py = -(clientY / innerHeight) * 2 + 1;
+  const rc = new THREE.Raycaster();
+  rc.setFromCamera(new THREE.Vector2(px, py), camera);
+  const hit = rc.intersectObject(sphere)[0];
+  if (!hit) return;
+
+  const r = (n) => Math.round(n * 100) / 100;
+  const dir = hit.point.clone().normalize();
+  const dirArr = [r(dir.x), r(dir.y), r(dir.z)];
+
+  const dot = new THREE.Mesh(
+    new THREE.CircleGeometry(0.25, 16),
+    new THREE.MeshBasicMaterial({ color: 0x7affd2, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false })
+  );
+  dot.position.copy(dir.clone().multiplyScalar(20));
+  dot.lookAt(0, 0, 0);
+  previewRingGroup.add(dot);
+
+  const snippet = `dir: [${dirArr.join(', ')}]`;
+  devHudInfo.innerHTML = `
+    <div class="hint">POINT PICK — click anywhere to capture &nbsp;·&nbsp; <b>P</b> exit &nbsp;·&nbsp; <b>X</b> clear</div>
+    <div>node: <b>${currentNode}</b></div>
+    <div class="snippet">${snippet}</div>
+  `;
+  console.log('[point-pick]', snippet);
+}
 
 const RECT_CORNER_LABELS = ['top-right', 'bottom-right', 'bottom-left', 'top-left'];
 
@@ -2672,6 +2943,7 @@ addEventListener('keydown', (e) => {
   else if (devMode && (e.key === 'x' || e.key === 'X')) previewRingGroup.clear();
   else if (devMode && (e.key === 't' || e.key === 'T')) devTravelPanel.classList.toggle('active');
   else if (devMode && (e.key === 'r' || e.key === 'R')) setRectCaptureMode(!rectCaptureMode);
+  else if (devMode && (e.key === 'p' || e.key === 'P')) setPointPickMode(!pointPickMode);
   else if (devMode && (e.key === 'g' || e.key === 'G')) toggleDevGrid();
   else if (e.key === 'f' || e.key === 'F') toggleFullscreen();
 });
@@ -2683,6 +2955,8 @@ const audioPrefs = {
   sfx:        parseFloat(localStorage.getItem('mystVolSfx')   ?? '0.7'),
   musicMuted: localStorage.getItem('mystMuteMusic') === '1',
   sfxMuted:   localStorage.getItem('mystMuteSfx')   === '1',
+  loop:       localStorage.getItem('mystLoopMusic') === '1',
+  shuffle:    localStorage.getItem('mystShuffleMusic') === '1',
 };
 
 // ---- Music: title track + gameplay playlist ------------------------
@@ -2692,33 +2966,76 @@ const audioPrefs = {
 // the listed order, wrapping at the end.
 const ambientAudio = document.getElementById('ambient');
 const titleMusicAudio = document.getElementById('title-music');
-titleMusicAudio.src = assetUrl('audio/title.mp3');
+titleMusicAudio.src = assetUrl('audio/gigidelaromusic-mini-zen-drone-short-450970.mp3');
 ambientAudio.volume = 0;
 titleMusicAudio.volume = 0;
 
 const BIZARRE_REALM_TRACK = {
   url: 'audio/low_atmos-space-relaxation-atmosphere-514706.mp3',
   label: 'The Fourth Age',
+  duration: 275,
 };
 let bizarreRealmMusicActive = false;
 
+// Idempotent — both bizarreRealm.onEnter (first arrival) and
+// bizarreRealmTree.onEnter (covers the Continue-into-tree case)
+// call this. If the track is already playing, just refresh the label.
+function startBizarreRealmMusic() {
+  if (bizarreRealmMusicActive) {
+    updateTrackLabel();
+    return;
+  }
+  bizarreRealmMusicActive = true;
+  ambientAudio.loop = true;
+  ambientAudio.src = assetUrl(BIZARRE_REALM_TRACK.url);
+  ambientAudio.volume = 0;
+  ambientAudio.play().catch(err => console.warn('[bizarre]', err));
+  if (!audioPrefs.musicMuted) {
+    fadeAudioElement(ambientAudio, audioPrefs.music, 2000);
+  }
+  updateTrackLabel();
+}
+
 const GAMEPLAY_PLAYLIST = [
   { url: 'audio/atlasaudio-ambient-astronomy-511860.mp3',
-    label: 'Astronomy' },
-  { url: 'audio/juliush-relax-chill-out-music-for-landscapes-under-water-animals-forests-8105.mp3',
-    label: 'Landscapes' },
+    label: 'Astronomy', duration: 294 },
+  { url: 'audio/juliush-ambient-ethereal-chill-out-music-8509.mp3',
+    label: 'Ethereal', duration: 296 },
   { url: 'audio/zulfugarkarimov-weightless-rest-528509.mp3',
-    label: 'Weightless' },
+    label: 'Weightless', duration: 178 },
   { url: 'audio/anton_vlasov-ambient-chill-drone-15790.mp3',
-    label: 'Drone' },
+    label: 'Drone', duration: 185 },
   { url: 'audio/juraganvisi-nocturnal-piano-reflections-with-dreamlike-pads-and-lo-fi-v2-416000.mp3',
-    label: 'Nocturnal Piano' },
+    label: 'Nocturne', duration: 238 },
+  { url: 'audio/juliush-aurora-ambient-chill-music-9796.mp3',
+    label: 'Aurora', duration: 191 },
+  { url: 'audio/juliush-chilling-waves-ambient-chill-out-music-for-relaxation-13880.mp3',
+    label: 'Waves', duration: 540 },
+  { url: 'audio/atlasaudio-ambient-soundscapes-511893.mp3',
+    label: 'Drift', duration: 296 },
+  { url: 'audio/zulfugarkarimov-echoes-of-solitude-535242.mp3',
+    label: 'Solitude', duration: 181 },
+  { url: 'audio/anton_vlasov-drone-ambient-15791.mp3',
+    label: 'Hollow', duration: 202 },
 ];
+
+function formatDuration(seconds) {
+  const total = Math.round(seconds);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
 let currentTrackIndex = -1;
 
 function pickNextGameplayTrack() {
   const len = GAMEPLAY_PLAYLIST.length;
-  const next = currentTrackIndex < 0 ? 0 : (currentTrackIndex + 1) % len;
+  let next;
+  if (audioPrefs.shuffle && len > 1) {
+    // Avoid repeating the current track when shuffling — pick any other.
+    do { next = Math.floor(Math.random() * len); } while (next === currentTrackIndex);
+  } else {
+    next = currentTrackIndex < 0 ? 0 : (currentTrackIndex + 1) % len;
+  }
   currentTrackIndex = next;
   return GAMEPLAY_PLAYLIST[next];
 }
@@ -2746,28 +3063,82 @@ function startAmbient() {
 // the title music.
 addEventListener('click', startAmbient, { once: true, capture: true });
 
-function updateTrackLabel() {
+function trackDisplayLabel(track) {
+  return track.duration
+    ? `${track.label} &middot; ${formatDuration(track.duration)}`
+    : track.label;
+}
+
+// Brief in-world "Now Playing" indicator — bottom-left, distinct zone
+// from the save toast (top-left) so they never compete. Fires only on
+// actual track changes; the idempotent bizarre-realm re-call is
+// filtered via lastDisplayedTrackLabel comparison.
+const nowPlayingEl = document.getElementById('now-playing');
+let nowPlayingTimer = null;
+let lastDisplayedTrackLabel = null;
+function flashNowPlaying(label) {
+  if (!nowPlayingEl) return;
+  nowPlayingEl.innerHTML = label;
+  nowPlayingEl.classList.add('show');
+  if (nowPlayingTimer) clearTimeout(nowPlayingTimer);
+  nowPlayingTimer = setTimeout(() => nowPlayingEl.classList.remove('show'), 3500);
+}
+
+function currentTrack() {
+  if (bizarreRealmMusicActive) return BIZARRE_REALM_TRACK;
+  if (currentTrackIndex >= 0) return GAMEPLAY_PLAYLIST[currentTrackIndex];
+  return null;
+}
+
+// Render the track scroller display: "Label · 1:23 / 3:22" when the
+// track is actively playing, "Label · 3:22" when idle/paused. Driven
+// by 'timeupdate' (~250ms cadence) so the elapsed time ticks live.
+function renderTrackDisplay() {
   const el = document.getElementById('track-name');
   if (!el) return;
-  if (bizarreRealmMusicActive) { el.innerHTML = BIZARRE_REALM_TRACK.label; return; }
-  el.innerHTML = currentTrackIndex >= 0
-    ? GAMEPLAY_PLAYLIST[currentTrackIndex].label
-    : '&mdash;';
+  const track = currentTrack();
+  if (!track) { el.innerHTML = '&mdash;'; return; }
+  const totalStr = formatDuration(track.duration);
+  const playing = !ambientAudio.paused && ambientAudio.currentTime > 0;
+  el.innerHTML = playing
+    ? `${track.label} &middot; ${formatDuration(ambientAudio.currentTime)} / ${totalStr}`
+    : `${track.label} &middot; ${totalStr}`;
 }
+
+// Called on actual track-change events (gameplay music start, auto-
+// advance, manual skip, bizarre realm activation). Fires the Now
+// Playing toast and re-renders the display. The label comparison
+// uses the STATIC trackDisplayLabel (no time) so timeupdate ticks
+// don't look like track changes.
+function updateTrackLabel() {
+  const track = currentTrack();
+  const label = track ? trackDisplayLabel(track) : '&mdash;';
+  if (track && label !== lastDisplayedTrackLabel) {
+    flashNowPlaying(label);
+  }
+  lastDisplayedTrackLabel = label;
+  renderTrackDisplay();
+}
+
+ambientAudio.addEventListener('timeupdate', renderTrackDisplay);
 
 let titleScreenActive = true;
 let gameplayMusicStarted = false;
-const DEFAULT_GAMEPLAY_TRACK = 'Landscapes';
+const DEFAULT_GAMEPLAY_TRACK = 'Astronomy';
 function startGameplayMusic() {
   if (gameplayMusicStarted) return;
   gameplayMusicStarted = true;
-  // Fade title music out, then start the gameplay playlist on its
-  // chosen opener. From there, tracks advance in listed order.
+  // Fade title music out, then start the gameplay playlist. If
+  // currentTrackIndex has been pre-set (e.g. Continue restoring the
+  // last-played track from save), respect it. Otherwise open on the
+  // DEFAULT_GAMEPLAY_TRACK.
   fadeAudioElement(titleMusicAudio, 0, 2000);
   setTimeout(() => titleMusicAudio.pause(), 2100);
-  let idx = GAMEPLAY_PLAYLIST.findIndex(t => t.label === DEFAULT_GAMEPLAY_TRACK);
-  if (idx < 0) idx = 0;
-  currentTrackIndex = idx;
+  if (currentTrackIndex < 0) {
+    let idx = GAMEPLAY_PLAYLIST.findIndex(t => t.label === DEFAULT_GAMEPLAY_TRACK);
+    if (idx < 0) idx = 0;
+    currentTrackIndex = idx;
+  }
   const track = GAMEPLAY_PLAYLIST[currentTrackIndex];
   ambientAudio.src = assetUrl(track.url);
   ambientAudio.volume = 0;
@@ -2776,9 +3147,31 @@ function startGameplayMusic() {
     .catch(err => console.warn('[ambient] play failed', err));
   updateTrackLabel();
 }
-// When a gameplay track ends, advance to the next one in order.
+// Continue-path entry point. For a normal saved node, equivalent to
+// startGameplayMusic. For a save inside the Fourth Age, we skip the
+// Landscapes init — the destination's onEnter calls startBizarreRealmMusic,
+// and we don't want to briefly hear the wrong track during the fade-to-black.
+// We still fade out the title music and mark gameplayMusicStarted so the
+// post-age-transition fade-up logic in travelTo behaves correctly.
+function startGameplayMusicFor(nodeKey) {
+  if (gameplayMusicStarted) return;
+  if (nodeKey === 'bizarreRealm' || nodeKey === 'bizarreRealmTree') {
+    gameplayMusicStarted = true;
+    fadeAudioElement(titleMusicAudio, 0, 2000);
+    setTimeout(() => titleMusicAudio.pause(), 2100);
+    return;
+  }
+  startGameplayMusic();
+}
+// When a gameplay track ends: replay it if Loop is on, otherwise
+// advance (shuffle if enabled, sequential otherwise).
 ambientAudio.addEventListener('ended', () => {
   if (bizarreRealmMusicActive) return;
+  if (audioPrefs.loop && currentTrackIndex >= 0) {
+    ambientAudio.currentTime = 0;
+    ambientAudio.play().catch(err => console.warn('[ambient] loop', err));
+    return;
+  }
   const track = pickNextGameplayTrack();
   ambientAudio.src = assetUrl(track.url);
   ambientAudio.play().catch(err => console.warn('[ambient] next', err));
@@ -2793,6 +3186,18 @@ function playSpecificTrack(idx) {
   ambientAudio.play().catch(err => console.warn('[track]', err));
   updateTrackLabel();
 }
+// Both manual skip directions honor Shuffle (pick a random non-current
+// track) for consistency — if shuffle is on, "next" and "prev" both
+// move the player to somewhere new in the playlist. Loop intentionally
+// does NOT affect manual skip — standard music-player convention is
+// that loop governs end-of-track behavior; user navigation overrides.
+function pickRandomOtherIndex() {
+  const len = GAMEPLAY_PLAYLIST.length;
+  if (len <= 1) return 0;
+  let idx;
+  do { idx = Math.floor(Math.random() * len); } while (idx === currentTrackIndex);
+  return idx;
+}
 function skipNext() {
   if (titleScreenActive || bizarreRealmMusicActive) return;
   if (currentTrackIndex < 0) {
@@ -2801,7 +3206,8 @@ function skipNext() {
     return;
   }
   const len = GAMEPLAY_PLAYLIST.length;
-  playSpecificTrack((currentTrackIndex + 1) % len);
+  const next = audioPrefs.shuffle ? pickRandomOtherIndex() : (currentTrackIndex + 1) % len;
+  playSpecificTrack(next);
 }
 function skipPrev() {
   if (titleScreenActive || bizarreRealmMusicActive) return;
@@ -2810,7 +3216,8 @@ function skipPrev() {
     return;
   }
   const len = GAMEPLAY_PLAYLIST.length;
-  playSpecificTrack((currentTrackIndex - 1 + len) % len);
+  const prev = audioPrefs.shuffle ? pickRandomOtherIndex() : (currentTrackIndex - 1 + len) % len;
+  playSpecificTrack(prev);
 }
 
 // ---- Per-node ambient layer -----------------------------------------
@@ -2939,7 +3346,9 @@ applyMuteUI();
 
 // ---- Settings panel (tabbed: Audio / Settings / How to Play) -------
 const menuBtn = document.getElementById('menu-btn');
+const settingsShell = document.getElementById('settings-shell');
 const settingsPanel = document.getElementById('settings-panel');
+const settingsCloseBtn = document.getElementById('settings-close');
 const panelBackdrop = document.getElementById('panel-backdrop');
 const DEFAULT_TAB = 'settings';
 
@@ -2958,11 +3367,12 @@ function closeAllPanels({ silent = false } = {}) {
   // overlay (e.g. clicking an interactive hotspot) also fire this handler
   // by bubbling. openSettings() explicitly dismisses the overlay when
   // needed so the two don't stack visually.
-  const wasOpen = settingsPanel.classList.contains('active');
-  settingsPanel.classList.remove('active');
+  const wasOpen = settingsShell.classList.contains('active');
+  settingsShell.classList.remove('active');
   menuBtn.classList.remove('active');
   panelBackdrop.classList.remove('active');
-  if (typeof disarmReset === 'function') disarmReset();
+  if (typeof disarmRestore === 'function') disarmRestore();
+  if (typeof disarmReturnToTitle === 'function') disarmReturnToTitle();
   // Play the back sound here so every caller (backdrop click, window
   // bubble click, settings-close button, menu-btn toggle, etc.) gets it
   // consistently — but only if a panel was actually open AND the caller
@@ -2978,14 +3388,72 @@ function openSettings(tab) {
   // (unless an explicit tab is passed, e.g. from the title's "How to play" button).
   if (document.body.classList.contains('title-active')) tab = 'howto';
   switchTab(tab || DEFAULT_TAB);
-  settingsPanel.classList.add('active');
+  // Context-aware close label: from title screen the player isn't
+  // returning "to game" yet, so just "Close" reads honest. Same logic
+  // as the overlay close button.
+  settingsCloseBtn.textContent = titleScreenActive ? 'Close' : 'Back to Game';
+  settingsShell.classList.add('active');
   menuBtn.classList.add('active');
   panelBackdrop.classList.add('active');
+  refreshSavedRow();
+}
+
+// Save toast — quiet auto-save indicator. Two-stage: spinner while
+// "Saving" for a moment, then a filled dot for "Saved", then fades.
+// Pure cosmetic — localStorage.setItem is synchronous and instant —
+// but the brief motion gives the save a felt sense of weight.
+const saveToast = document.getElementById('save-toast');
+const saveToastText = saveToast ? saveToast.querySelector('.toast-text') : null;
+const saveToastTimers = { settled: null, hidden: null };
+function flashSaveToast() {
+  if (!saveToast || !saveToastText) return;
+  if (saveToastTimers.settled) clearTimeout(saveToastTimers.settled);
+  if (saveToastTimers.hidden) clearTimeout(saveToastTimers.hidden);
+  saveToast.classList.remove('saved');
+  saveToast.classList.add('show', 'saving');
+  saveToastText.textContent = 'Saving';
+  // Saving phase is long enough to outlast the 600ms fade-in transition
+  // AND show at least one full 650ms rotation at full opacity — anything
+  // shorter and the spin reads as "did it even animate?"
+  saveToastTimers.settled = setTimeout(() => {
+    saveToast.classList.remove('saving');
+    saveToast.classList.add('saved');
+    saveToastText.textContent = 'Saved';
+  }, 900);
+  saveToastTimers.hidden = setTimeout(() => {
+    saveToast.classList.remove('show');
+  }, 2100);
+}
+
+// Saved-progress row — reflects the current localStorage state, refreshed
+// every time the menu opens (no in-menu auto-save needs to push to it).
+const savedWhereEl = document.getElementById('saved-where');
+function formatSavedAt(ts) {
+  const sec = Math.floor((Date.now() - ts) / 1000);
+  if (sec < 45) return 'just now';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  return `${Math.floor(hr / 24)}d ago`;
+}
+function refreshSavedRow() {
+  if (!savedWhereEl) return;
+  const data = loadProgress();
+  if (!data) {
+    savedWhereEl.textContent = '—';
+    return;
+  }
+  const node = WORLD[data.currentNode];
+  const where = node ? node.name : '—';
+  savedWhereEl.textContent = data.savedAt
+    ? `${where} · ${formatSavedAt(data.savedAt)}`
+    : where;
 }
 
 menuBtn.addEventListener('click', (e) => {
   e.stopPropagation();
-  if (settingsPanel.classList.contains('active')) {
+  if (settingsShell.classList.contains('active')) {
     closeAllPanels();  // plays button-back internally
   } else {
     playSfx('button-forward');
@@ -3039,50 +3507,154 @@ invertToggle.addEventListener('click', (e) => {
   applyRotateSpeed();
 });
 
-// Reset progress — two-step inline confirm (click arms; second click clears).
-const resetBtn = document.getElementById('reset-progress');
-let resetArmed = false;
-let resetTimer = null;
-function disarmReset() {
-  resetArmed = false;
-  resetBtn.textContent = 'Clear';
-  resetBtn.classList.remove('danger');
-  if (resetTimer) { clearTimeout(resetTimer); resetTimer = null; }
+// Restore Default Settings — wipes only the preference keys (brightness,
+// sensitivity, invert-drag, audio volumes + mutes). Saved progress is
+// untouched. Two-step confirm mirrors the Clear button's UX vocabulary.
+// On confirm, reload so all `localStorage.getItem(...) ?? <default>` reads
+// at boot pick up the cleared values without scattering reset code across
+// every setting handler.
+const SETTINGS_KEYS = [
+  'mystBrightness', 'mystSensitivity', 'mystInvertDrag',
+  'mystVolMusic', 'mystVolSfx', 'mystMuteMusic', 'mystMuteSfx',
+  'mystLoopMusic', 'mystShuffleMusic',
+];
+const restoreBtn = document.getElementById('restore-settings');
+let restoreArmed = false;
+let restoreTimer = null;
+function disarmRestore() {
+  restoreArmed = false;
+  restoreBtn.textContent = 'Restore';
+  restoreBtn.classList.remove('danger');
+  if (restoreTimer) { clearTimeout(restoreTimer); restoreTimer = null; }
 }
-const RESET_FAREWELL_HTML = `
-  <h2>The Wind Shifts</h2>
-  <p><em>And so the Age closes its page</em></p>
-  <p>Every shore you have walked, every door whose voice you came
-  to know &mdash; gone, as if you had not made landfall at all.</p>
-  <p><em>The compass spins anew. The Captain waits at a different
-  dock.</em></p>
-  <p style="text-align: right; margin-top: 24px;">&mdash; Captain Renn</p>
-  <div class="close">click to set sail</div>
-`;
-resetBtn.addEventListener('click', (e) => {
+restoreBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   playSfx('menu-click');
-  if (resetArmed) {
+  if (restoreArmed) {
+    for (const key of SETTINGS_KEYS) localStorage.removeItem(key);
+    location.reload();
+    return;
+  }
+  restoreArmed = true;
+  restoreBtn.textContent = 'Confirm?';
+  restoreBtn.classList.add('danger');
+  restoreTimer = setTimeout(disarmRestore, 4000);
+});
+
+// Save Game — explicit manual save. Bypasses the 250ms debounce so the
+// player gets immediate "Saving → Saved" feedback for the act they just
+// took, then updates the row label to "just now" without needing to
+// close and reopen the menu. Save-clearing is intentionally NOT here:
+// the only path to erase a save is title screen → New Game.
+const saveBtn = document.getElementById('save-game');
+saveBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  playSfx('menu-click');
+  if (saveDebounceTimer) {
+    clearTimeout(saveDebounceTimer);
+    saveDebounceTimer = null;
+  }
+  pendingSaveSurface = true;
+  performSave();
+  refreshSavedRow();
+});
+
+// Return to Title — graceful, non-destructive quit. Save persists; the
+// player can Continue from the title or wipe via New Game there.
+// Two-step confirm → Renn-voiced overlay → fade-to-black → restore
+// title state under the black → fade up on the title card.
+const RETURN_TO_TITLE_HTML = `
+  <h2>The Captain Marks Your Place</h2>
+  <p><em>You step back from the deck</em></p>
+  <p>What you have found is held. The dock will keep its silence
+  until you return &mdash; and the Age will be there as you left it.</p>
+  <p style="text-align: right; margin-top: 24px;">&mdash; Captain Renn</p>
+  <div class="close">click to return</div>
+`;
+const returnBtn = document.getElementById('return-to-title');
+let returnArmed = false;
+let returnTimer = null;
+function disarmReturnToTitle() {
+  returnArmed = false;
+  returnBtn.textContent = 'Exit';
+  returnBtn.classList.remove('danger');
+  if (returnTimer) { clearTimeout(returnTimer); returnTimer = null; }
+}
+function restoreTitleScreen() {
+  // Runs under a fully-opaque fadeEl curtain — all the in-place state
+  // resets happen invisibly, then the curtain lifts on the title.
+  titleScreenActive = true;
+  document.body.classList.add('title-active');
+  bizarreRealmMusicActive = false;
+  gameplayMusicStarted = false;
+  // Stop gameplay/bizarre music — fade then pause.
+  fadeAudioElement(ambientAudio, 0, 500);
+  setTimeout(() => { ambientAudio.pause(); ambientAudio.loop = false; }, 600);
+  // Fade out the per-node ambient layer (room wind, water, etc.) at
+  // the same pace so the title comes up in silence except for the
+  // title music we're about to start. Clearing currentAmbientPath
+  // ensures the next Continue/travelTo treats the new node's ambient
+  // as a fresh start, not a no-op same-path skip.
+  if (nodeAmbientAudio) {
+    const old = nodeAmbientAudio;
+    nodeAmbientAudio = null;
+    fadeAudioElement(old, 0, 500);
+    setTimeout(() => { old.pause(); old.src = ''; }, 600);
+  }
+  currentAmbientPath = null;
+  currentAmbientMix = null;
+  // Manual dock swap — avoids travelTo wrestling with the curtain we
+  // already own and avoids its end-of-travel saveProgress (which would
+  // no-op now anyway, but cleaner to not invoke it).
+  sphereMat.map = getPano('dock');
+  sphereMat.needsUpdate = true;
+  buildHotspots(WORLD.dock);
+  nodeNameEl.textContent = WORLD.dock.name;
+  currentNode = 'dock';
+  if (WORLD.dock.startDir) {
+    const dir = new THREE.Vector3(...WORLD.dock.startDir).normalize();
+    controls.target.set(0, 0, 0);
+    camera.position.copy(dir).multiplyScalar(-0.01);
+    controls.update();
+  }
+  // Title card returns; refresh the Continue / New Game UI from the
+  // current save state.
+  savedProgress = loadProgress();
+  beginBtn.textContent = savedProgress ? 'Continue' : 'Begin';
+  newGameBtn.hidden = !savedProgress;
+  titleCard.classList.remove('fading', 'gone');
+  // Restart title music — autoplay gate is already lifted from the
+  // original boot click.
+  titleMusicAudio.currentTime = 0;
+  titleMusicAudio.volume = 0;
+  titleMusicAudio.muted = audioPrefs.musicMuted;
+  titleMusicAudio.play().catch(err => console.warn('[title-music]', err));
+  if (!audioPrefs.musicMuted) {
+    fadeAudioElement(titleMusicAudio, audioPrefs.music, 1500);
+  }
+}
+returnBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  playSfx('menu-click');
+  if (returnArmed) {
     closeAllPanels({ silent: true });
-    showOverlay(RESET_FAREWELL_HTML, () => {
-      // Wait one frame so the browser registers the overlay's display:none
-      // before we trigger the fade's opacity transition — otherwise the
-      // two style changes batch together and the transition is skipped.
+    showOverlay(RETURN_TO_TITLE_HTML, () => {
+      // Two-frame delay so the overlay's removal commits before the
+      // fadeEl transition starts — same pattern as the old reset path.
       requestAnimationFrame(() => {
         requestAnimationFrame(() => fadeEl.classList.add('active'));
       });
-      // 600ms fade + ~600ms hold at black before the reload cuts in.
-      setTimeout(() => {
-        localStorage.clear();
-        location.reload();
-      }, 1400);
+      // 600ms fade-to-black, then restore title state under the black,
+      // then fade back up on the title. Total visible black ~1.4s.
+      setTimeout(restoreTitleScreen, 700);
+      setTimeout(() => fadeEl.classList.remove('active'), 1100);
     });
     return;
   }
-  resetArmed = true;
-  resetBtn.textContent = 'Confirm?';
-  resetBtn.classList.add('danger');
-  resetTimer = setTimeout(disarmReset, 4000);
+  returnArmed = true;
+  returnBtn.textContent = 'Confirm?';
+  returnBtn.classList.add('danger');
+  returnTimer = setTimeout(disarmReturnToTitle, 4000);
 });
 
 // ---- Changelog (Settings button + title-screen version tag) ---------
@@ -3128,13 +3700,12 @@ function getChangelogHtml() {
   if (!changelogHtmlPromise) {
     changelogHtmlPromise = fetch('CHANGELOG.md')
       .then(r => r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`)))
-      .then(md => changelogMdToHtml(md) + '\n<div class="close">click to close</div>')
+      .then(md => changelogMdToHtml(md))
       .catch(err => {
         // Clear the promise so a later open re-attempts the fetch.
         changelogHtmlPromise = null;
         console.warn('[changelog] load failed', err);
-        return '<h2>Changelog</h2><p>Could not load changelog.</p>'
-             + '<div class="close">click to close</div>';
+        return '<h2>Changelog</h2><p>Could not load changelog.</p>';
       });
   }
   return changelogHtmlPromise;
@@ -3145,11 +3716,203 @@ getChangelogHtml();
 async function showChangelog() {
   showOverlay(await getChangelogHtml());
 }
-document.getElementById('show-changelog').addEventListener('click', (e) => {
-  playSfx('menu-click');
+
+// Audio credits — every audio asset is from Pixabay (no CC-BY tier,
+// so no per-track attribution is legally required). Music files were
+// kept under their original Pixabay filenames so the credit data can
+// be auto-parsed: <uploader>-<slug>-<id>.mp3. SFX were renamed for
+// in-code clarity, so they're umbrella'd as "from Pixabay".
+function parsePixabayFilename(path) {
+  const filename = path.split('/').pop().replace(/\.mp3$/, '');
+  const match = filename.match(/^(.+?)-(.+)-(\d+)$/);
+  if (!match) return null;
+  const [, artist, slug, id] = match;
+  const title = slug
+    .split('-')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+  return { title, artist, id };
+}
+
+// Per-file augmentations. For files whose names already follow the
+// Pixabay <uploader>-<slug>-<id>.mp3 convention, this just layers on
+// the exact source URL (the filename alone gives us ID but not the
+// category-slug needed to reconstruct it). For files whose original
+// metadata is unrecoverable from the filename, this provides the
+// title/artist as overrides too.
+const AUDIO_MANUAL = {
+  'audio/gigidelaromusic-mini-zen-drone-short-450970.mp3': {
+    artist: 'GigiDeLaRoMusic',
+    url: 'https://pixabay.com/music/low-non-rhythmic-drones-mini-zen-drone-short-450970/',
+  },
+  'audio/anton_vlasov-ambient-chill-drone-15790.mp3': {
+    url: 'https://pixabay.com/music/ambient-ambient-chill-drone-15790/',
+  },
+  'audio/atlasaudio-ambient-astronomy-511860.mp3': {
+    url: 'https://pixabay.com/music/ambient-ambient-astronomy-511860/',
+  },
+  'audio/juraganvisi-nocturnal-piano-reflections-with-dreamlike-pads-and-lo-fi-v2-416000.mp3': {
+    url: 'https://pixabay.com/music/modern-classical-nocturnal-piano-reflections-with-dreamlike-pads-and-lo-fi-v2-416000/',
+  },
+  'audio/juliush-ambient-ethereal-chill-out-music-8509.mp3': {
+    url: 'https://pixabay.com/music/ambient-ambient-ethereal-chill-out-music-8509/',
+  },
+  'audio/zulfugarkarimov-weightless-rest-528509.mp3': {
+    url: 'https://pixabay.com/music/ambient-weightless-rest-528509/',
+  },
+  'audio/low_atmos-space-relaxation-atmosphere-514706.mp3': {
+    url: 'https://pixabay.com/music/synthwave-space-relaxation-atmosphere-514706/',
+  },
+  'audio/juliush-aurora-ambient-chill-music-9796.mp3': {
+    url: 'https://pixabay.com/music/ambient-aurora-ambient-chill-music-9796/',
+  },
+  'audio/juliush-chilling-waves-ambient-chill-out-music-for-relaxation-13880.mp3': {
+    url: 'https://pixabay.com/music/ambient-chilling-waves-ambient-chill-out-music-for-relaxation-13880/',
+  },
+  'audio/atlasaudio-ambient-soundscapes-511893.mp3': {
+    url: 'https://pixabay.com/music/ambient-ambient-soundscapes-511893/',
+  },
+  'audio/zulfugarkarimov-echoes-of-solitude-535242.mp3': {
+    url: 'https://pixabay.com/music/modern-classical-echoes-of-solitude-535242/',
+  },
+  'audio/anton_vlasov-drone-ambient-15791.mp3': {
+    url: 'https://pixabay.com/music/ambient-drone-ambient-15791/',
+  },
+  'audio/sfx/peaceful-ray.mp3': {
+    title: 'Peaceful Light Ray &ndash; Short',
+    artist: 'GigiDeLaRoMusic',
+    url: 'https://pixabay.com/sound-effects/musical-peaceful-light-ray-short-450966/',
+  },
+};
+
+function getCreditForPath(path) {
+  // Manual fields layer atop auto-parsed fields — e.g. a self-
+  // documenting filename auto-parses title+artist, and AUDIO_MANUAL
+  // adds the URL. For fully-renamed files, manual supplies everything.
+  const auto = parsePixabayFilename(path) || {};
+  const manual = AUDIO_MANUAL[path] || {};
+  const merged = { ...auto, ...manual };
+  return merged.title ? merged : null;
+}
+
+function getMusicCredits() {
+  // Title → gameplay playlist → bizarre realm. Order matches the
+  // player's actual listening journey through a single run.
+  const items = [];
+  const title = getCreditForPath('audio/gigidelaromusic-mini-zen-drone-short-450970.mp3');
+  if (title) items.push(title);
+  for (const track of GAMEPLAY_PLAYLIST) {
+    const credit = getCreditForPath(track.url);
+    if (credit) items.push(credit);
+  }
+  const bizarre = getCreditForPath(BIZARRE_REALM_TRACK.url);
+  if (bizarre) items.push(bizarre);
+  return items;
+}
+
+function renderCreditList(items) {
+  if (!items || !items.length) return '<p><em>To be credited.</em></p>';
+  return items.map(c => {
+    // Auto-parsed entries have no URL; user-overridden entries do.
+    const artistHtml = c.url
+      ? `<a class="about-source" href="${c.url}" target="_blank" rel="noopener">${c.artist}</a>`
+      : c.artist;
+    return `<p class="audio-credit"><em>${c.title}</em> &mdash; ${artistHtml}</p>`;
+  }).join('');
+}
+
+function buildAudioCreditsHtml() {
+  return `
+    <div class="about">
+      <h2>Audio Credits</h2>
+      <p><em>Every sound in this Age comes from the Pixabay community.</em></p>
+
+      <hr class="rule">
+
+      <h3>Music</h3>
+      ${renderCreditList(getMusicCredits())}
+
+      <h3>Sound</h3>
+      <p>Dozens of one-shot sounds &mdash; carved wood and brass clicks,
+      page turns, sigil warps, the shore and the wind &mdash; all sourced
+      from Pixabay's content library.</p>
+
+      <hr class="rule">
+
+      <p style="text-align: center;"><em>With gratitude to the Pixabay
+      community of creators.</em></p>
+      <p style="text-align: center;">
+        <a class="about-source" href="https://pixabay.com/"
+           target="_blank" rel="noopener">pixabay.com</a></p>
+    </div>
+  `;
+}
+
+// About — game-info dialog (title, version, author, credits) with an
+// inline button to jump to the Changelog. Centralizes the "static info"
+// surface in one place instead of scattering it across menu rows.
+function buildAboutHtml() {
+  return `
+    <div class="about">
+      <h2>The Keepers' Page</h2>
+      <p><em>A Myst-inspired short. For anyone who still loves a good Age.</em></p>
+
+      <p class="about-meta">${VERSION}</p>
+
+      <hr class="rule">
+
+      <h3>Built with</h3>
+      <p>Three.js &middot; Skybox AI &middot; Adobe Photoshop &middot; Pixabay</p>
+
+      <h3>Inspired by</h3>
+      <p>Myst &mdash; Cyan Worlds, 1993.</p>
+
+      <p class="about-dedication"><em>A personal tribute. Not a commercial work.</em></p>
+
+      <hr class="rule">
+
+      <p class="about-actions">
+        <button type="button" class="about-link" id="about-view-changelog">View Changelog &rarr;</button>
+      </p>
+      <p class="about-actions about-actions-stacked">
+        <button type="button" class="about-link" id="about-view-audio">View Audio Credits &rarr;</button>
+      </p>
+
+      <p class="about-footer">
+        &copy; 2026 Stephen Woodall &middot; MIT License &middot;
+        <a class="about-source"
+           href="https://github.com/spwoodall/keepers-page"
+           target="_blank" rel="noopener"><svg class="about-source-icon"
+           viewBox="0 0 16 16" width="12" height="12" fill="currentColor"
+           aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53
+           5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01
+           1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95
+           0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18
+           1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16
+           1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54
+           1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016
+           8c0-4.42-3.58-8-8-8z"/></svg>View Source</a>
+      </p>
+    </div>
+  `;
+}
+function showAbout() {
+  // Interactive elements (View Changelog button, View Source link) are
+  // handled by the panel-level event delegation in showOverlay's setup,
+  // so push/pop drill-down works without re-attaching listeners on pop.
+  showOverlay(buildAboutHtml());
+}
+document.getElementById('about-game').addEventListener('click', (e) => {
   e.stopPropagation();
+  playSfx('menu-click');
   closeAllPanels({ silent: true });
-  showChangelog();
+  showAbout();
+});
+document.getElementById('audio-view-credits').addEventListener('click', (e) => {
+  e.stopPropagation();
+  playSfx('menu-click');
+  closeAllPanels({ silent: true });
+  showOverlay(buildAudioCreditsHtml());
 });
 document.getElementById('version-tag').addEventListener('click', (e) => {
   e.stopPropagation();
@@ -3197,8 +3960,53 @@ muteSfxBtn.addEventListener('click', (e) => {
   if (!audioPrefs.sfxMuted) playSfx('menu-click');
 });
 
+// Loop + Shuffle toggles — mirror the Invert Drag pattern. Loop replays
+// the current track when it ends; Shuffle picks a random next track
+// instead of advancing sequentially. Loop wins when both are on
+// (you've explicitly said "stay on this track").
+const loopToggle = document.getElementById('loop-toggle');
+const shuffleToggle = document.getElementById('shuffle-toggle');
+function applyMusicModeUI() {
+  // Inline track-btn — glyph stays put; the .on class is the visual
+  // indicator (gold border + filled background). aria-pressed exposes
+  // toggle state to assistive tech.
+  loopToggle.classList.toggle('on', audioPrefs.loop);
+  loopToggle.setAttribute('aria-pressed', audioPrefs.loop ? 'true' : 'false');
+  shuffleToggle.classList.toggle('on', audioPrefs.shuffle);
+  shuffleToggle.setAttribute('aria-pressed', audioPrefs.shuffle ? 'true' : 'false');
+}
+applyMusicModeUI();
+loopToggle.addEventListener('click', (e) => {
+  e.stopPropagation();
+  playSfx('menu-click');
+  audioPrefs.loop = !audioPrefs.loop;
+  localStorage.setItem('mystLoopMusic', audioPrefs.loop ? '1' : '0');
+  applyMusicModeUI();
+});
+shuffleToggle.addEventListener('click', (e) => {
+  e.stopPropagation();
+  playSfx('menu-click');
+  audioPrefs.shuffle = !audioPrefs.shuffle;
+  localStorage.setItem('mystShuffleMusic', audioPrefs.shuffle ? '1' : '0');
+  applyMusicModeUI();
+});
+
 document.getElementById('replay-btn').addEventListener('click', () => {
-  location.reload();
+  // Same lightest tap the preload card uses for its enter-gate click —
+  // the player is hitting another "re-enter the experience" gesture, so
+  // the audio identity should match. Brief delay so the click sound is
+  // audible before the page reload cuts the audio context.
+  playSfx('menu-click');
+  // Player has reached the endscreen and chosen "Back to Start" — they're
+  // explicitly closing the arc. Clear the save so the next session opens
+  // with Begin (cold start) rather than Continue (which would fly them
+  // back to the bizarre realm tree of an already-solved world).
+  // (Completionists who want both endings can browser-refresh BEFORE
+  // hitting Back to Start, then Continue back to the tree to touch the
+  // other keeper book. After Back to Start, both readings require a
+  // full replay.)
+  clearSave();
+  setTimeout(() => location.reload(), 200);
 });
 document.getElementById('track-next').addEventListener('click', (e) => {
   e.stopPropagation();
@@ -3221,15 +4029,31 @@ document.getElementById('track-prev').addEventListener('click', (e) => {
 // to gameplay. Class is removed when the title fades out.
 document.body.classList.add('title-active');
 
-// Start loading the dock behind the title card so it's ready when the
-// player dismisses the title.
+// If a save exists, hydrate `state` from it now so the world's
+// state-aware hotspots/panos are correct as soon as the saved node
+// loads. The actual `travelTo` to the saved node is deferred until
+// `beginExperience` (after the title fades and audio is unlocked),
+// so node `onEnter` hooks like bizarreRealm's music init aren't
+// silently swallowed by the browser autoplay gate.
+let savedProgress = loadProgress();
+if (savedProgress) Object.assign(state, savedProgress.state);
+
+// Always show the dock behind the title card — it's the natural
+// loading-screen pano and avoids the saved-node onEnter firing
+// before audio is unlocked.
 travelTo('dock');
+
+// If there's a save, eagerly kick off the saved-node pano load so the
+// Continue path's black curtain can lift the moment the image is ready
+// (often instantly, since the network request started here at boot).
+if (savedProgress) panoReadyFor(savedProgress.currentNode);
 
 const titleCard = document.getElementById('titlecard');
 const beginBtn = document.getElementById('begin-btn');
+const newGameBtn = document.getElementById('new-game-btn');
 const preloadCard = document.getElementById('preload-card');
 
-// Begin button starts in loading state — gated on dock pano + title music ready.
+// Begin button starts in loading state — gated on pano + title music ready.
 beginBtn.classList.add('loading');
 beginBtn.textContent = 'Loading…';
 beginBtn.disabled = true;
@@ -3246,13 +4070,18 @@ const titleMusicReady = new Promise(resolve => {
 });
 Promise.all([dockReady, titleMusicReady]).then(() => {
   beginBtn.classList.remove('loading');
-  beginBtn.textContent = 'Begin';
+  beginBtn.textContent = savedProgress ? 'Continue' : 'Begin';
   beginBtn.disabled = false;
+  if (savedProgress) newGameBtn.hidden = false;
 });
 
 // First click anywhere on the preload card lifts the autoplay gate,
 // starts the title music, and fades the card away to reveal the title.
+// menu-click is the shortest, lightest tap in the palette — establishes
+// the audio identity without committing the heavier button-forward beat
+// for what is essentially a "tap to begin" gate.
 preloadCard.addEventListener('click', () => {
+  playSfx('menu-click');
   startAmbient();
   preloadCard.classList.add('fading');
   setTimeout(() => preloadCard.classList.add('gone'), 1500);
@@ -3263,6 +4092,41 @@ function beginExperience() {
   // Explicit play call here too — guarantees audio attempt even if
   // a parent's stopPropagation swallowed the capture-phase listener.
   startAmbient();
+
+  if (savedProgress) {
+    // Continue path — drop a black curtain BEFORE the title fades.
+    // fadeEl sits at z-index 35, titlecard at z-index 30, so the curtain
+    // covers both the title art and the dock pano behind it. The player
+    // never sees the dock on a Continue. We hold the curtain until the
+    // saved-node pano image data is decoded, then hand off to travelTo
+    // with fadeMs:0 — the curtain is already in place, all that's left
+    // is travelTo's fade-back-from-black to reveal the new pano.
+    fadeEl.classList.add('active');
+    Promise.all([
+      new Promise(r => setTimeout(r, 650)), // curtain fully opaque
+      panoReadyFor(savedProgress.currentNode), // image actually decoded
+    ]).then(() => {
+      titleCard.classList.add('gone');
+      titleScreenActive = false;
+      document.body.classList.remove('title-active');
+      // Restore the last-played track index BEFORE startGameplayMusic
+      // is called — startGameplayMusic respects a pre-set currentTrackIndex
+      // (>= 0) and only falls back to DEFAULT_GAMEPLAY_TRACK when fresh.
+      if (Number.isInteger(savedProgress.trackIndex)
+          && savedProgress.trackIndex >= 0
+          && savedProgress.trackIndex < GAMEPLAY_PLAYLIST.length) {
+        currentTrackIndex = savedProgress.trackIndex;
+      }
+      startGameplayMusicFor(savedProgress.currentNode);
+      travelTo(savedProgress.currentNode, {
+        fadeMs: 0,
+        startDir: savedProgress.camDir,
+      });
+    });
+    return;
+  }
+
+  // Begin path — title card fades to reveal the dock, then captain's log.
   titleCard.classList.add('fading');
   setTimeout(() => {
     titleCard.classList.add('gone');
@@ -3280,6 +4144,41 @@ beginBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   playSfx('key-lock-insert', 2.0);
   beginExperience();
+});
+
+// New Game — two-step inline confirm. First click arms ("Erase save?");
+// second wipes the save and reverts the title to its no-save state
+// IN PLACE. No reload — the player is already on the title, audio is
+// unlocked, the dock pano is loaded; bouncing back through the preload
+// card would be friction with no purpose.
+let newGameArmed = false;
+let newGameTimer = null;
+function disarmNewGame() {
+  newGameArmed = false;
+  newGameBtn.textContent = 'New Game';
+  newGameBtn.classList.remove('danger');
+  if (newGameTimer) { clearTimeout(newGameTimer); newGameTimer = null; }
+}
+newGameBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  playSfx('menu-click');
+  if (newGameArmed) {
+    clearSave();
+    Object.assign(state, INITIAL_STATE);
+    savedProgress = null;
+    newGameBtn.hidden = true;
+    beginBtn.textContent = 'Begin';
+    // Re-render the dock so any state-dependent hotspots/panos reflect
+    // the cleared state. titleScreenActive is still true, so the
+    // saveProgress() inside refreshCurrentNode no-ops.
+    refreshCurrentNode();
+    disarmNewGame();
+    return;
+  }
+  newGameArmed = true;
+  newGameBtn.textContent = 'Erase save?';
+  newGameBtn.classList.add('danger');
+  newGameTimer = setTimeout(disarmNewGame, 4000);
 });
 
 addEventListener('resize', () => {

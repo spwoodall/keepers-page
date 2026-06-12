@@ -1,5 +1,38 @@
 # Changelog
 
+## v0.8.0 — 2026-06-12
+
+**New**
+
+- The world remembers you. Auto-save persists where you are, what you have found, even which way you were last looking — return any time and pick up where the wind found you. The last piece of music you were hearing comes back too
+- The Fourth Age now answers in your own voice. After the moments that matter, a quiet acknowledgment of what's been seen, what's been carried, what's worth remembering
+- An About page — the name of this place, the version that found you, the names of those who made the sounds and the worlds that inspired it
+- Audio Credits — every track of the music with its source and its maker, gathered in one quiet page, reachable from About or from the Audio tab directly
+- A current-track indicator fades in at the bottom-left whenever the music changes. The Audio tab now shows each track with its length, ticking as it plays
+- Loop and Shuffle controls — for those who want to stay with one piece, or let the playlist arrive in unfamiliar order
+- A way to leave gracefully. The Captain marks your place; the Age waits for your return
+- Five new pieces of music in the rotation — Aurora, Waves, Drift, Solitude, and Hollow — joining Astronomy, Weightless, Drone, Nocturne, and Ethereal
+
+**Enhanced**
+
+- The menus speak more clearly. Each section has its place; each button reads as what it does. Saved progress lives where you'd expect it, settings live separately, leaving lives at the bottom
+- The close prompt no longer hides in the bottom-left corner of every dialog. Each overlay now offers its own honest verb — Approach, Descend, Depart, Enter — at the moment its world has changed; quieter ones (Close, Back) for the dialogs that don't
+- The Howto reads in the same voice as the rest. No longer a terminal manual; now a quiet primer
+- The dock no longer flashes between the title and the world you were last in. Continue holds a quiet darkness while the saved place is ready
+- The About dialog now reads as a title card — a single centered axis from name to credits to a small line of thanks
+- Pano seam fixes — the Green Country, the Ascension chamber, the Bizarre Realm, the Reversed Shore. Cleaner edges where the panorama wraps itself
+- Headphones recommendation added to the Howto's Hark section — the world has a voice; lean in
+
+**Fixed**
+
+- The location of "The Dock" no longer peeks above the title card during boot
+- Returning to the Bizarre Realm tree mid-Continue now hears its music as it should — no more silence at the wrong moment
+- Restoring default settings only restores settings, not the save. Clearing the save only clears the save. Each respects its own scope
+- The Audio Credits, README, and endscreen credits now all match the actual sources — Pixabay throughout
+- Back to Start at the endscreen now properly closes the arc — next session opens with Begin, not Continue into an already-solved world
+
+---
+
 ## v0.7.0 — 2026-06-10
 
 **New**

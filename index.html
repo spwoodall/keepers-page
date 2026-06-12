@@ -28,7 +28,10 @@
     <div class="dev-travel-title">Quick Travel</div>
     <div id="dev-travel-grid"></div>
   </div>
-  <div id="overlay"><div class="panel" id="overlay-panel"></div></div>
+  <div id="overlay">
+    <div class="panel" id="overlay-panel"></div>
+    <button type="button" id="overlay-close">Back to Game</button>
+  </div>
   <div id="age-transition">
     <div class="age-epilogue"></div>
     <div class="age-continue">click anywhere to continue</div>
@@ -46,7 +49,7 @@
     <div class="credits">
       <div><span class="role">Created by</span> Stephen Woodall</div>
       <div><span class="role">Panoramas</span> Skybox AI &middot; Adobe Photoshop</div>
-      <div><span class="role">Sound</span> ElevenLabs &middot; freesound.org &middot; pixabay</div>
+      <div><span class="role">Sound</span> Pixabay</div>
       <div><span class="role">Engine</span> Three.js</div>
       <div><span class="role">Inspired by</span> Myst (Cyan Worlds)</div>
     </div>
@@ -68,12 +71,20 @@
     <div class="byline">by Stephen Woodall</div>
     <div class="inspired-by">a tribute to Myst</div>
     <button type="button" class="begin-btn" id="begin-btn">Begin</button>
+    <button type="button" class="howto-btn" id="new-game-btn" hidden>New Game</button>
     <button type="button" class="howto-btn" id="howto-btn">How to play</button>
   </div>
 
   <div id="version-tag"></div>
 
   <div id="panel-backdrop"></div>
+
+  <div id="save-toast" aria-live="polite">
+    <span class="toast-glyph" aria-hidden="true"></span>
+    <span class="toast-text">Saving</span>
+  </div>
+
+  <div id="now-playing" aria-live="polite"></div>
 
   <button id="menu-btn" aria-label="Menu" title="Menu">
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none"
@@ -84,6 +95,7 @@
     </svg>
   </button>
 
+  <div id="settings-shell">
   <div id="settings-panel">
     <nav class="tabs">
       <button type="button" class="tab" data-tab="settings">Settings</button>
@@ -104,9 +116,32 @@
       </div>
       <div id="row-track" class="audio-row">
         <span>Track</span>
+        <button type="button" class="track-btn" id="loop-toggle" aria-label="Loop current track" title="Loop">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="17 1 21 5 17 9"/>
+            <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+            <polyline points="7 23 3 19 7 15"/>
+            <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+          </svg>
+        </button>
         <button type="button" class="track-btn" id="track-prev" aria-label="Previous track">&#9198;</button>
         <span class="track-name" id="track-name">&mdash;</span>
         <button type="button" class="track-btn" id="track-next" aria-label="Next track">&#9197;</button>
+        <button type="button" class="track-btn" id="shuffle-toggle" aria-label="Shuffle playlist" title="Shuffle">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="16 3 21 3 21 8"/>
+            <line x1="4" y1="20" x2="21" y2="3"/>
+            <polyline points="21 16 21 21 16 21"/>
+            <line x1="15" y1="15" x2="21" y2="21"/>
+            <line x1="4" y1="4" x2="9" y2="9"/>
+          </svg>
+        </button>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Credits</span>
+        <button type="button" class="setting-btn" id="audio-view-credits">View</button>
       </div>
     </div>
 
@@ -128,12 +163,27 @@
         <button type="button" class="setting-btn" id="invert-toggle">Off</button>
       </div>
       <div class="setting-row">
-        <span class="setting-label">Changelog</span>
-        <button type="button" class="setting-btn" id="show-changelog">View</button>
+        <span class="setting-label">Default Settings</span>
+        <button type="button" class="setting-btn" id="restore-settings">Restore</button>
+      </div>
+
+      <hr class="rule">
+      <h3>Game</h3>
+
+      <div class="setting-row">
+        <div class="setting-label-group">
+          <span class="setting-label">Saved Game</span>
+          <span class="saved-where" id="saved-where">&mdash;</span>
+        </div>
+        <button type="button" class="setting-btn" id="save-game">Save</button>
       </div>
       <div class="setting-row">
-        <span class="setting-label">Reset Progress</span>
-        <button type="button" class="setting-btn" id="reset-progress">Clear</button>
+        <span class="setting-label">About</span>
+        <button type="button" class="setting-btn" id="about-game">View</button>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Exit to Main Menu</span>
+        <button type="button" class="setting-btn" id="return-to-title">Exit</button>
       </div>
     </div>
 
@@ -144,6 +194,7 @@
         and unseen passages all have a voice. Pay attention to
         what you hear.
       </p>
+      <p><em>If you can, listen with headphones.</em></p>
       <hr class="rule">
       <h3>Controls</h3>
       <p>
@@ -203,9 +254,8 @@
       </p>
     </div>
 
-    <div class="panel-footer">
-      <div class="close" id="settings-close">click to close</div>
-    </div>
+  </div>
+    <button type="button" id="settings-close">Back to Game</button>
   </div>
 
   <script type="importmap">
