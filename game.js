@@ -2482,14 +2482,72 @@ function triggerAgeReturn(epilogueHtml) {
   }, { once: true });
 }
 
-function showOverlay(html, onClose) {
+// Overlay drill-down stack — when a top-level overlay (e.g. About)
+// drills into a sub-view (e.g. Changelog), the previous panel HTML
+// and its close label get pushed here so the global close button can
+// pop back instead of closing the whole overlay. Cleared on showOverlay
+// and closeOverlay.
+const overlayStack = [];
+const overlayCloseBtn = document.getElementById('overlay-close');
+// Per-overlay narrative close label parsed from any inline
+// <div class="close">click to X</div>. When set, the close button reads
+// "X" (capitalized) so in-world overlays preserve their voice
+// (Continue / Return / Approach / Depart / Close). Utility menus
+// (About, Changelog) omit the inline div and fall back to the
+// context-aware default ("Back to Game" / "Close").
+let currentOverlayCloseLabel = null;
+
+function extractCloseLabel(closeEl) {
+  if (!closeEl) return null;
+  let text = closeEl.textContent.trim();
+  // Strip the prompt prefix variants — "click to X", "click anywhere to X".
+  text = text.replace(/^click(?:\s+anywhere)?\s+to\s+/i, '');
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : null;
+}
+
+function applyOverlayContent(html, fallbackLabel = null) {
   overlayPanel.innerHTML = html;
+  const closeEl = overlayPanel.querySelector('.close');
+  currentOverlayCloseLabel = extractCloseLabel(closeEl) ?? fallbackLabel;
+  if (closeEl) closeEl.remove();
+  overlayPanel.scrollTop = 0;
+  updateOverlayCloseLabel();
+}
+
+function showOverlay(html, onClose) {
+  overlayStack.length = 0;
+  applyOverlayContent(html);
   overlayEl.classList.add('active');
   overlayCloseCallback = onClose || null;
 }
-overlayEl.addEventListener('click', () => {
-  playSfx('menu-click');
+
+function pushOverlayContent(html) {
+  overlayStack.push({ html: overlayPanel.innerHTML, label: currentOverlayCloseLabel });
+  applyOverlayContent(html);
+}
+
+function popOverlayContent() {
+  if (overlayStack.length === 0) return false;
+  const prev = overlayStack.pop();
+  applyOverlayContent(prev.html, prev.label);
+  return true;
+}
+
+function updateOverlayCloseLabel() {
+  if (overlayStack.length > 0) {
+    overlayCloseBtn.textContent = 'Back';
+    return;
+  }
+  if (currentOverlayCloseLabel) {
+    overlayCloseBtn.textContent = currentOverlayCloseLabel;
+    return;
+  }
+  overlayCloseBtn.textContent = titleScreenActive ? 'Close' : 'Back to Game';
+}
+
+function closeOverlay() {
   overlayEl.classList.remove('active');
+  overlayStack.length = 0;
   const hadCallback = !!overlayCloseCallback;
   if (overlayCloseCallback) {
     const cb = overlayCloseCallback;
@@ -2499,6 +2557,36 @@ overlayEl.addEventListener('click', () => {
   // Rebuild hotspots for pure inspection closes so state changes are reflected.
   // Skip when there's an onClose callback — those trigger navigation.
   if (!hadCallback && currentNode) buildHotspots(WORLD[currentNode]);
+}
+
+overlayEl.addEventListener('click', () => {
+  playSfx('menu-click');
+  closeOverlay();
+});
+
+overlayCloseBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  playSfx('menu-click');
+  if (popOverlayContent()) return;
+  closeOverlay();
+});
+
+// Event delegation for interactive elements inside overlay content.
+// Lets drill-down (push/pop) work without re-attaching listeners after
+// the panel HTML is restored on pop.
+overlayPanel.addEventListener('click', async (e) => {
+  const changelogTrigger = e.target.closest('#about-view-changelog');
+  if (changelogTrigger) {
+    e.stopPropagation();
+    playSfx('menu-click');
+    pushOverlayContent(await getChangelogHtml());
+    return;
+  }
+  if (e.target.closest('.about-source')) {
+    // External link — let the browser handle navigation, but don't
+    // dismiss the overlay if the player wants to right-click/copy.
+    e.stopPropagation();
+  }
 });
 
 let currentNode = null;
@@ -3136,7 +3224,9 @@ applyMuteUI();
 
 // ---- Settings panel (tabbed: Audio / Settings / How to Play) -------
 const menuBtn = document.getElementById('menu-btn');
+const settingsShell = document.getElementById('settings-shell');
 const settingsPanel = document.getElementById('settings-panel');
+const settingsCloseBtn = document.getElementById('settings-close');
 const panelBackdrop = document.getElementById('panel-backdrop');
 const DEFAULT_TAB = 'settings';
 
@@ -3155,8 +3245,8 @@ function closeAllPanels({ silent = false } = {}) {
   // overlay (e.g. clicking an interactive hotspot) also fire this handler
   // by bubbling. openSettings() explicitly dismisses the overlay when
   // needed so the two don't stack visually.
-  const wasOpen = settingsPanel.classList.contains('active');
-  settingsPanel.classList.remove('active');
+  const wasOpen = settingsShell.classList.contains('active');
+  settingsShell.classList.remove('active');
   menuBtn.classList.remove('active');
   panelBackdrop.classList.remove('active');
   if (typeof disarmRestore === 'function') disarmRestore();
@@ -3176,7 +3266,11 @@ function openSettings(tab) {
   // (unless an explicit tab is passed, e.g. from the title's "How to play" button).
   if (document.body.classList.contains('title-active')) tab = 'howto';
   switchTab(tab || DEFAULT_TAB);
-  settingsPanel.classList.add('active');
+  // Context-aware close label: from title screen the player isn't
+  // returning "to game" yet, so just "Close" reads honest. Same logic
+  // as the overlay close button.
+  settingsCloseBtn.textContent = titleScreenActive ? 'Close' : 'Back to Game';
+  settingsShell.classList.add('active');
   menuBtn.classList.add('active');
   panelBackdrop.classList.add('active');
   refreshSavedRow();
@@ -3237,7 +3331,7 @@ function refreshSavedRow() {
 
 menuBtn.addEventListener('click', (e) => {
   e.stopPropagation();
-  if (settingsPanel.classList.contains('active')) {
+  if (settingsShell.classList.contains('active')) {
     closeAllPanels();  // plays button-back internally
   } else {
     playSfx('button-forward');
@@ -3483,13 +3577,12 @@ function getChangelogHtml() {
   if (!changelogHtmlPromise) {
     changelogHtmlPromise = fetch('CHANGELOG.md')
       .then(r => r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`)))
-      .then(md => changelogMdToHtml(md) + '\n<div class="close">click to close</div>')
+      .then(md => changelogMdToHtml(md))
       .catch(err => {
         // Clear the promise so a later open re-attempts the fetch.
         changelogHtmlPromise = null;
         console.warn('[changelog] load failed', err);
-        return '<h2>Changelog</h2><p>Could not load changelog.</p>'
-             + '<div class="close">click to close</div>';
+        return '<h2>Changelog</h2><p>Could not load changelog.</p>';
       });
   }
   return changelogHtmlPromise;
@@ -3508,20 +3601,19 @@ function buildAboutHtml() {
   return `
     <div class="about">
       <h2>The Keepers' Page</h2>
-      <p><em>A Myst-inspired short. A personal tribute. Not a commercial work.</em></p>
+      <p><em>A Myst-inspired short. For anyone who still loves a good Age.</em></p>
 
       <p class="about-meta">${VERSION}</p>
 
       <hr class="rule">
 
       <h3>Built with</h3>
-      <p>Three.js &middot; Skybox AI &middot; Adobe Photoshop &middot;
-        ElevenLabs &middot; Pixabay</p>
+      <p>Three.js &middot; Skybox AI &middot; Adobe Photoshop &middot; Pixabay</p>
 
       <h3>Inspired by</h3>
       <p>Myst &mdash; Cyan Worlds, 1993.</p>
 
-      <p class="about-dedication"><em>For anyone who still loves a good Age.</em></p>
+      <p class="about-dedication"><em>A personal tribute. Not a commercial work.</em></p>
 
       <hr class="rule">
 
@@ -3531,31 +3623,27 @@ function buildAboutHtml() {
 
       <p class="about-footer">
         &copy; 2026 Stephen Woodall &middot; MIT License &middot;
-        <a class="about-source" href="https://github.com/spwoodall/keepers-page"
-           target="_blank" rel="noopener">View Source</a>
+        <a class="about-source"
+           href="https://github.com/spwoodall/keepers-page"
+           target="_blank" rel="noopener"><svg class="about-source-icon"
+           viewBox="0 0 16 16" width="12" height="12" fill="currentColor"
+           aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53
+           5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01
+           1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95
+           0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18
+           1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16
+           1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54
+           1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016
+           8c0-4.42-3.58-8-8-8z"/></svg>View Source</a>
       </p>
     </div>
-    <div class="close">click to close</div>
   `;
 }
-async function showAbout() {
+function showAbout() {
+  // Interactive elements (View Changelog button, View Source link) are
+  // handled by the panel-level event delegation in showOverlay's setup,
+  // so push/pop drill-down works without re-attaching listeners on pop.
   showOverlay(buildAboutHtml());
-  // Wire the inline Changelog button. stopPropagation keeps the click
-  // from bubbling to the overlay's close handler; we swap content in
-  // place so the overlay stays open with the changelog showing.
-  const link = document.getElementById('about-view-changelog');
-  if (link) {
-    link.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      playSfx('menu-click');
-      overlayPanel.innerHTML = await getChangelogHtml();
-    });
-  }
-  // Source link opens in a new tab via target="_blank"; we stop
-  // propagation so the overlay doesn't dismiss when the player just
-  // wants to click / right-click / copy the URL.
-  const source = overlayPanel.querySelector('.about-source');
-  if (source) source.addEventListener('click', (e) => e.stopPropagation());
 }
 document.getElementById('about-game').addEventListener('click', (e) => {
   e.stopPropagation();

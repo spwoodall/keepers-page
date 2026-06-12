@@ -41,9 +41,27 @@ body.rect-capture canvas { cursor: crosshair; }
 #overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.85);
   display: none; align-items: center; justify-content: center;
+  flex-direction: column; gap: 16px;
   z-index: 33; opacity: 0; transition: opacity 300ms;
 }
 #overlay.active { display: flex; opacity: 1; }
+
+/* Universal close affordance — sits outside the panel so it doesn't
+   compete with the panel's content alignment (centered About vs.
+   left-aligned narrative overlays). Min-height keeps the click target
+   generous and the layout stable as the panel content changes. */
+#overlay-close {
+  min-height: 44px;
+  min-width: 160px;
+  padding: 12px 28px;
+  background: transparent;
+  border: 0;
+  color: #888;
+  font: 11px monospace; letter-spacing: 2px; text-transform: uppercase;
+  cursor: pointer;
+  transition: color 200ms;
+}
+#overlay-close:hover { color: #ffd27a; }
 #overlay .panel {
   max-width: 540px; max-height: 80vh;
   padding: 32px 40px;
@@ -310,21 +328,48 @@ body.title-active #settings-panel .reread-link {
 #panel-backdrop.active { display: block; }
 
 /* ---- Unified tabbed settings panel ---- */
-#settings-panel {
+/* Outer shell — fixed-centered flex column. Stacks the tabbed panel
+   above the external close button below, same pattern as #overlay.
+   Visibility toggled by JS via .active. Panel itself is a flex child,
+   no longer fixed-positioned. */
+#settings-shell {
   position: fixed; left: 50%; top: 50%;
   transform: translate(-50%, -50%);
+  z-index: 32;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+#settings-shell.active { display: flex; }
+
+#settings-panel {
   background: linear-gradient(135deg, #2a1a0e, #1a0e08);
   border-radius: 6px;
-  border: 1px solid #ffd27a55; z-index: 32;
+  border: 1px solid #ffd27a55;
   max-width: 640px; width: calc(100vw - 48px);
-  max-height: calc(100vh - 80px);
+  max-height: calc(100vh - 140px);
   color: #ccc;
   letter-spacing: 0.5px;
   box-shadow: 0 0 60px rgba(255,210,122,0.15);
   overflow: hidden;
-  display: none; flex-direction: column;
+  display: flex; flex-direction: column;
 }
-#settings-panel.active { display: flex; }
+
+/* External close button — mirrors #overlay-close. Min-height keeps the
+   click target generous; min-width keeps the layout stable. */
+#settings-close {
+  min-height: 44px;
+  min-width: 160px;
+  padding: 12px 28px;
+  background: transparent;
+  border: 0;
+  color: #888;
+  font: 11px monospace; letter-spacing: 2px; text-transform: uppercase;
+  cursor: pointer;
+  transition: color 200ms;
+}
+#settings-close:hover { color: #ffd27a; }
 #settings-panel .tabs {
   display: flex;
   border-bottom: 1px solid #ffd27a33;
@@ -578,6 +623,12 @@ ul.changelog li::before {
 #overlay .about-source:hover {
   color: #ffd27a;
   border-bottom-color: rgba(255,210,122,0.8);
+}
+#overlay .about-source-icon {
+  vertical-align: -2px;
+  margin-right: 5px;
+  /* Stops the dotted underline from sliding under the icon. */
+  border-bottom: 0;
 }
 
 /* In-overlay link/button used by the About dialog to jump to the

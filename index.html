@@ -28,7 +28,10 @@
     <div class="dev-travel-title">Quick Travel</div>
     <div id="dev-travel-grid"></div>
   </div>
-  <div id="overlay"><div class="panel" id="overlay-panel"></div></div>
+  <div id="overlay">
+    <div class="panel" id="overlay-panel"></div>
+    <button type="button" id="overlay-close">Back to Game</button>
+  </div>
   <div id="age-transition">
     <div class="age-epilogue"></div>
     <div class="age-continue">click anywhere to continue</div>
@@ -90,6 +93,7 @@
     </svg>
   </button>
 
+  <div id="settings-shell">
   <div id="settings-panel">
     <nav class="tabs">
       <button type="button" class="tab" data-tab="settings">Settings</button>
@@ -225,9 +229,8 @@
       </p>
     </div>
 
-    <div class="panel-footer">
-      <div class="close" id="settings-close">click to close</div>
-    </div>
+  </div>
+    <button type="button" id="settings-close">Back to Game</button>
   </div>
 
   <script type="importmap">
