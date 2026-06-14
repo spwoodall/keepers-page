@@ -646,7 +646,7 @@ const ACTIONS = {
   },
   // ---- Dock door symbol puzzle ----
   inspectDoorTree: () => {
-    playSfx('interact-tap');
+    playSfx('wrong-tap-iron', 0.6);
     showOverlay(`
       <h2>A Carved Panel</h2>
       <p>A tangle of intertwined branches and leaves, deep
@@ -657,7 +657,7 @@ const ACTIONS = {
     `);
   },
   inspectDoorWave: () => {
-    playSfx('interact-tap');
+    playSfx('wrong-tap-iron', 0.6);
     showOverlay(`
       <h2>A Carved Panel</h2>
       <p>Concentric arcs roll outward, like waves on a calm sea.
@@ -668,14 +668,12 @@ const ACTIONS = {
   },
   unlockDoor: () => {
     state.dockDoorUnlocked = true;
-    playSfx('brass-click');
+    playSfx('iron-activate');
     showOverlay(`
       <h2>The Keepers' Spiral</h2>
-      <p>A single coiling line, spiraling inward to a small
-      inset pearl. The mark of the Keepers.</p>
-      <p>You press your palm flat against it. The brass is
-      warm. Something deep inside the door turns over with
-      a quiet, weighty click.</p>
+      <p>The Keepers' mark. You press your palm against it —
+      and deep inside the door, old iron turns over with a
+      long, weighty groan, and settles.</p>
       <p><em>The door unbolts itself.</em></p>
       <div class="close">click to enter</div>
     `);
@@ -687,7 +685,8 @@ const ACTIONS = {
       <h2>The Door</h2>
       <p>Brass and worn wood, set into the stone of the cliff.
       Three carved panels run along its frame. Beneath the
-      arch, the keyhole catches the dying light.</p>
+      arch, the keyhole catches the dying light — and beneath
+      that, iron, deep and old, holding everything in place.</p>
       <p><em>It is locked. The panels watch.</em></p>
       <div class="close">click to close</div>
     `);
@@ -1012,7 +1011,7 @@ const ACTIONS = {
     `);
   },
   setDialSky: () => {
-    playSfx('interact-tap');
+    playSfx('wrong-tap-brass', 0.6);
     showOverlay(`
       <h2>Sky</h2>
       <p>You move the dial to the topmost position. The beam
@@ -1024,7 +1023,7 @@ const ACTIONS = {
     `);
   },
   setDialSea: () => {
-    playSfx('interact-tap');
+    playSfx('wrong-tap-brass', 0.6);
     showOverlay(`
       <h2>Sea</h2>
       <p>You move the dial outward. The mechanism turns — but
@@ -1037,7 +1036,7 @@ const ACTIONS = {
   },
   setDialDepths: () => {
     state.lighthouseBeamRedirected = true;
-    playSfx('brass-click');
+    playSfx('brass-activate');
     showOverlay(`
       <h2>Depths</h2>
       <p>You move the dial to the lowest position. The beam
@@ -1153,7 +1152,7 @@ const ACTIONS = {
   },
   alignDiskTree: () => {
     state.greenCanopyAligned = true;
-    playSfx('brass-click');
+    playSfx('wood-activate');
     showOverlay(`
       <h2>The Tree</h2>
       <p>You turn the wood until the tree symbol centers. A shaft
@@ -1167,7 +1166,7 @@ const ACTIONS = {
     refreshCurrentNode();
   },
   alignDiskWave: () => {
-    playSfx('wood-tap');
+    playSfx('wrong-tap-wood');
     showOverlay(`
       <h2>The Wave</h2>
       <p>You turn the wood to the wave symbol. The hollow below
@@ -1178,7 +1177,7 @@ const ACTIONS = {
     `);
   },
   alignDiskSpiral: () => {
-    playSfx('wood-tap');
+    playSfx('wrong-tap-wood');
     showOverlay(`
       <h2>The Spiral</h2>
       <p>You turn the wood to the Keepers' mark. The hollow
@@ -1215,16 +1214,6 @@ const ACTIONS = {
         <div class="close">click to close</div>
       `);
     }
-  },
-  inspectAlignedDisk: () => {
-    playSfx('wood-tap');
-    showOverlay(`
-      <h2>The Aligned Disk</h2>
-      <p>The tree symbol faces the center. The shaft of light you
-      sent downward is still traveling — you can feel the platform
-      humming faintly with it. Something below has received it.</p>
-      <div class="close">click to close</div>
-    `);
   },
   inspectCanopyView: () => {
     state.greenCanopyViewInspected = true;
@@ -1309,7 +1298,7 @@ const ACTIONS = {
   // ---- Cottage multi-room ---------------------------------------------
   inspectNamePlaques: () => {
     state.cottageNamePlaquesInspected = true;
-    playSfx('wood-tap');
+    playSfx('plaques-tap');
     showOverlay(`
       <h2>Two Names</h2>
       <p>One plaque is measured and level — each letter the same
@@ -1351,7 +1340,7 @@ const ACTIONS = {
   },
   inspectHallAntikythera: () => {
     state.cottageHallAntikytheraInspected = true;
-    playSfx('brass-click');
+    playSfx('interact-tap');
     showOverlay(`
       <h2>The Mechanism</h2>
       <p>An ancient device of brass and bronze, gears within
@@ -1445,7 +1434,7 @@ const ACTIONS = {
     `);
   },
   setOrreryArm1: () => {
-    playSfx('interact-tap');
+    playSfx('wrong-tap-glass', 0.6);
     showOverlay(`
       <h2>The First Arm</h2>
       <p>You move the first arm to its stop — a small carved disc
@@ -1458,7 +1447,7 @@ const ACTIONS = {
   },
   setOrreryArm2: () => {
     state.cottageTowerOrrerySet = true;
-    playSfx('brass-click');
+    playSfx('glass-activate');
     showOverlay(`
       <h2>The Second Arm</h2>
       <p>You move the second arm until it rests against the pale
@@ -1472,7 +1461,7 @@ const ACTIONS = {
     refreshCurrentNode();
   },
   setOrreryArm3: () => {
-    playSfx('interact-tap');
+    playSfx('wrong-tap-glass', 0.6);
     showOverlay(`
       <h2>The Third Arm</h2>
       <p>You move the third arm — its disc is silver, larger,
@@ -2143,9 +2132,6 @@ const WORLD = {
       { action: 'alignDiskSpiral', dir: [-0.62, -0.78, 0.02],
         label: 'a spiral carved into the wood', color: 0xffd27a, shape: 'circle',
         hidden: () => state.greenCanopyAligned },
-      { action: 'inspectAlignedDisk', dir: [-0.74, -0.65, -0.18],
-        label: 'the disk — aligned', color: 0x7affd2, shape: 'circle',
-        hidden: () => !state.greenCanopyAligned },
       { to: 'greenRootHollow', dir: [0.66, -0.57, 0.5],
         label: 'back down the hollow trunk', sfx: 'stone-footsteps', fadeMs: 3500 },
     ],
@@ -3278,8 +3264,8 @@ const sfxCache = new Map();
 // sound has a noticeable lag while the browser decodes the file.
 const PRELOAD_SFX = [
   'page-turn', 'book-pages', 'book-open', 'book-pull-open-and-close', 'key-lock-insert',
-  'door-open', 'heavy-door-open', 'metallic-thud',
-  'passage-open', 'interact-tap', 'brass-click', 'mechanical-gadget',
+  'door-open', 'heavy-door-open', 'metallic-thud', 'wrong-tap-brass', 'wrong-tap-wood', 'wood-activate', 'glass-activate', 'wrong-tap-glass', 'iron-activate', 'wrong-tap-iron', 'plaques-tap',
+  'passage-open', 'interact-tap', 'brass-activate', 'mechanical-gadget',
   'climbing-stairs', 'sigil-warp', 'linking-warp',
   'mechanism-whir', 'wave-crash', 'lighthouse', 'mystical-chime',
   'shell-fade', 'beam-sound', 'knock-on-window', 'peaceful-ray', 'fx-light',

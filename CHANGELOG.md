@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.8.1 — 2026-06-14
+
+**Enhanced**
+
+- The gates of this world each speak in their own voice now. Iron groans at the dock door; brass seats in the lighthouse dial; glass clarifies in the orrery's lens; wood settles in the canopy disk. Four puzzles, four materials, one grammar
+- The dock door's iron has always been there — beneath the brass, beneath the wood, deep and old, holding everything in place. The description finally says so; the unlock finally sounds like what it is
+- Every wrong choice now answers in its puzzle's own material. A misplaced touch on iron sounds different from a misplaced touch on glass, or wood, or brass — the wrong panel is no longer indistinguishable from a found book
+- The name plaques in the cottage upper hall — *S.* and *R.* — now have their own quiet voice, carved into wood rather than echoing from the same shelf as every other inspect
+
+**Quieted**
+
+- The aligned disk in the canopy no longer offers a second confirmation. The pearl at the tree's root has begun to glow; that is the only voice this moment needs
+
+**Fixed**
+
+- The Antikythera in the cottage hall no longer wakes when touched. It does not move; now it sounds like a thing that does not move
+
+---
+
 ## v0.8.0 — 2026-06-12
 
 **New**
