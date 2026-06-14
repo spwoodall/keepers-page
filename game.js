@@ -1626,7 +1626,7 @@ const WORLD = {
     // Per-node ambient — water, gulls, wind. Loops while the player
     // is at the dock; crossfades out when they travel away.
     ambient: 'audio/sfx/dock-ambient.mp3',
-    ambientMix: 0.45,
+    ambientMix: 0.15,
     // Open framing — the player's first sight is the ship that brought them.
     startDir: [0.73, -0.15, 0.67],
     hotspots: () => [
@@ -1825,7 +1825,7 @@ const WORLD = {
     pano: () => loadPano('panos/reversed-shore.jpg'),
     // Per-node ambient — the Reversed Shore's signature soundscape.
     ambient: 'audio/sfx/shore-ambient.mp3',
-    ambientMix: 1.8,
+    ambientMix: 0.6,
     startDir: [-0.78, 0.15, 0.61],
     hotspots: () => [
       { action: 'inspectShoreLighthouse', dir: [-0.88, 0.04, -0.48], shape: 'quad',
@@ -1891,9 +1891,7 @@ const WORLD = {
     pano: () => loadPano('panos/keepers-cottage.jpg'),
     // Per-node ambient — wind outside the stone, room-tone of long emptiness.
     ambient: 'audio/sfx/wind-outside-room.mp3',
-    // wind-outside-room.mp3 is mastered quietly — push it above the default
-    // 0.6 environmental mix so the room actually breathes.
-    ambientMix: 1.5,
+    ambientMix: 0.8,
     startDir: [-0.98, 0.16, -0.13],
     hotspots: () => [
       // Left desk journal — the careful chronicler's hand. Pristine
@@ -1986,7 +1984,7 @@ const WORLD = {
     name: 'The Monolith',
     pano: () => loadPano(state.lighthouseBeamRedirected ? 'panos/shore-monolith-activated.jpg' : 'panos/shore-monolith.jpg'),
     ambient: 'audio/sfx/shore-ambient.mp3',
-    ambientMix: 1.8,
+    ambientMix: 0.6,
     startDir: [-0.8, 0.19, 0.58],
     hotspots: () => [
       { action: 'inspectMonolithCarvings', dir: [-0.73, 0.03, -0.68], shape: 'quad',
@@ -2114,7 +2112,7 @@ const WORLD = {
     name: 'The Canopy',
     pano: () => loadPano(state.greenCanopyAligned ? 'panos/green-country-canopy-activated.jpg' : 'panos/green-country-canopy.jpg'),
     ambient: 'audio/sfx/green-canopy-ambient.mp3',
-    ambientMix: 2.5,
+    ambientMix: 1.0,
     startDir: [-0.84, 0.14, -0.52],
     hotspots: () => [
       { action: 'inspectCanopyView', dir: [0.93, -0.1, -0.35],
@@ -2142,7 +2140,7 @@ const WORLD = {
     name: 'The Upper Hall',
     pano: () => loadPano('panos/cottage-upper-hall.jpg'),
     ambient: 'audio/sfx/wind-outside-room.mp3',
-    ambientMix: 1.0,
+    ambientMix: 0.5,
     startDir: [-0.83, -0.32, -0.46],
     hotspots: () => [
       { action: 'inspectNamePlaques', dir: [-0.83, -0.31, -0.46], shape: 'quad',
@@ -2174,7 +2172,7 @@ const WORLD = {
     name: 'The Loft',
     pano: () => loadPano('panos/cottage-loft.jpg'),
     ambient: 'audio/sfx/wind-outside-room.mp3',
-    ambientMix: 0.8,
+    ambientMix: 0.4,
     onEnter: () => { state.cottageLoftSeen = true; },
     startDir: [0.27, 0.04, 0.96],
     hotspots: () => [
@@ -2205,7 +2203,7 @@ const WORLD = {
       ? 'panos/cottage-tower-activated.jpg'
       : 'panos/cottage-tower.jpg'),
     ambient: 'audio/sfx/wind-outside-room.mp3',
-    ambientMix: 2.0,
+    ambientMix: 1.0,
     onEnter: () => { state.cottageTowerSeen = true; },
     startDir: [-0.69, -0.52, -0.5],
     hotspots: () => [
@@ -2937,12 +2935,14 @@ addEventListener('keydown', (e) => {
 // ---- Audio preferences ----------------------------------------------
 // Persisted to localStorage so the player's volumes survive refresh.
 const audioPrefs = {
-  music:      parseFloat(localStorage.getItem('mystVolMusic') ?? '0.45'),
-  sfx:        parseFloat(localStorage.getItem('mystVolSfx')   ?? '0.7'),
-  musicMuted: localStorage.getItem('mystMuteMusic') === '1',
-  sfxMuted:   localStorage.getItem('mystMuteSfx')   === '1',
-  loop:       localStorage.getItem('mystLoopMusic') === '1',
-  shuffle:    localStorage.getItem('mystShuffleMusic') === '1',
+  music:        parseFloat(localStorage.getItem('mystVolMusic')   ?? '0.25'),
+  sfx:          parseFloat(localStorage.getItem('mystVolSfx')     ?? '0.75'),
+  ambient:      parseFloat(localStorage.getItem('mystVolAmbient') ?? '0.5'),
+  musicMuted:   localStorage.getItem('mystMuteMusic')   === '1',
+  sfxMuted:     localStorage.getItem('mystMuteSfx')     === '1',
+  ambientMuted: localStorage.getItem('mystMuteAmbient') === '1',
+  loop:         localStorage.getItem('mystLoopMusic') === '1',
+  shuffle:      localStorage.getItem('mystShuffleMusic') === '1',
 };
 
 // ---- Music: title track + gameplay playlist ------------------------
@@ -2983,12 +2983,12 @@ function startBizarreRealmMusic() {
 }
 
 const GAMEPLAY_PLAYLIST = [
+  { url: 'audio/zulfugarkarimov-weightless-rest-528509.mp3',
+    label: 'Weightless', duration: 178 },
   { url: 'audio/atlasaudio-ambient-astronomy-511860.mp3',
     label: 'Astronomy', duration: 294 },
   { url: 'audio/juliush-ambient-ethereal-chill-out-music-8509.mp3',
     label: 'Ethereal', duration: 296 },
-  { url: 'audio/zulfugarkarimov-weightless-rest-528509.mp3',
-    label: 'Weightless', duration: 178 },
   { url: 'audio/anton_vlasov-ambient-chill-drone-15790.mp3',
     label: 'Drone', duration: 185 },
   { url: 'audio/juraganvisi-nocturnal-piano-reflections-with-dreamlike-pads-and-lo-fi-v2-416000.mp3',
@@ -2999,10 +2999,12 @@ const GAMEPLAY_PLAYLIST = [
     label: 'Waves', duration: 540 },
   { url: 'audio/atlasaudio-ambient-soundscapes-511893.mp3',
     label: 'Drift', duration: 296 },
-  { url: 'audio/zulfugarkarimov-echoes-of-solitude-535242.mp3',
-    label: 'Solitude', duration: 181 },
+  { url: 'audio/universebellayu-zhou-bei-la-morning-solitude-meditation-888hz-peaceful-231907.mp3',
+    label: 'Solitude', duration: 143 },
   { url: 'audio/anton_vlasov-drone-ambient-15791.mp3',
     label: 'Hollow', duration: 202 },
+  { url: 'audio/universebellayu-zhou-bei-la-888hz-gentle-solfeggio-for-fortune-451212.mp3',
+    label: 'Fortune', duration: 210 },
 ];
 
 function formatDuration(seconds) {
@@ -3248,10 +3250,9 @@ function setNodeAmbient(path, mix = NODE_AMBIENT_MIX) {
   const audio = new Audio(assetUrl(path));
   audio.loop = true;
   audio.volume = 0;
-  // Environmental ambience belongs to the SFX channel, not music.
-  audio.muted = audioPrefs.sfxMuted;
+  audio.muted = audioPrefs.ambientMuted;
   audio.play()
-    .then(() => fadeAudioElement(audio, mix * audioPrefs.sfx, 1500))
+    .then(() => fadeAudioElement(audio, mix * audioPrefs.ambient, 1500))
     .catch(err => console.warn('[node-ambient] play blocked', err));
   nodeAmbientAudio = audio;
 }
@@ -3292,10 +3293,13 @@ function playSfx(name, volume = 1.0) {
 // ---- Volume menu UI -------------------------------------------------
 const volMusic = document.getElementById('vol-music');
 const volSfx = document.getElementById('vol-sfx');
+const volAmbient = document.getElementById('vol-ambient');
 const muteMusicBtn = document.getElementById('mute-music');
 const muteSfxBtn = document.getElementById('mute-sfx');
+const muteAmbientBtn = document.getElementById('mute-ambient');
 const rowMusic = document.getElementById('row-music');
 const rowSfx = document.getElementById('row-sfx');
+const rowAmbient = document.getElementById('row-ambient');
 const SPEAKER_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
   <path d="M6 9 H9 L13 6 V18 L9 15 H6 Z" fill="currentColor"
     stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
@@ -3315,18 +3319,21 @@ const MUTED_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="
 
 volMusic.value = audioPrefs.music;
 volSfx.value = audioPrefs.sfx;
+volAmbient.value = audioPrefs.ambient;
 
 function applyMuteUI() {
   ambientAudio.muted = audioPrefs.musicMuted;
   titleMusicAudio.muted = audioPrefs.musicMuted;
-  // Node ambient is treated as SFX, not music.
-  if (nodeAmbientAudio) nodeAmbientAudio.muted = audioPrefs.sfxMuted;
-  muteMusicBtn.innerHTML = audioPrefs.musicMuted ? MUTED_SVG : SPEAKER_SVG;
-  muteSfxBtn.innerHTML   = audioPrefs.sfxMuted   ? MUTED_SVG : SPEAKER_SVG;
+  if (nodeAmbientAudio) nodeAmbientAudio.muted = audioPrefs.ambientMuted;
+  muteMusicBtn.innerHTML   = audioPrefs.musicMuted   ? MUTED_SVG : SPEAKER_SVG;
+  muteSfxBtn.innerHTML     = audioPrefs.sfxMuted     ? MUTED_SVG : SPEAKER_SVG;
+  muteAmbientBtn.innerHTML = audioPrefs.ambientMuted ? MUTED_SVG : SPEAKER_SVG;
   muteMusicBtn.classList.toggle('muted', audioPrefs.musicMuted);
   muteSfxBtn.classList.toggle('muted', audioPrefs.sfxMuted);
+  muteAmbientBtn.classList.toggle('muted', audioPrefs.ambientMuted);
   rowMusic.classList.toggle('muted', audioPrefs.musicMuted);
   rowSfx.classList.toggle('muted', audioPrefs.sfxMuted);
+  rowAmbient.classList.toggle('muted', audioPrefs.ambientMuted);
 }
 applyMuteUI();
 
@@ -3501,7 +3508,8 @@ invertToggle.addEventListener('click', (e) => {
 // every setting handler.
 const SETTINGS_KEYS = [
   'mystBrightness', 'mystSensitivity', 'mystInvertDrag',
-  'mystVolMusic', 'mystVolSfx', 'mystMuteMusic', 'mystMuteSfx',
+  'mystVolMusic', 'mystVolSfx', 'mystVolAmbient',
+  'mystMuteMusic', 'mystMuteSfx', 'mystMuteAmbient',
   'mystLoopMusic', 'mystShuffleMusic',
 ];
 const restoreBtn = document.getElementById('restore-settings');
@@ -3761,8 +3769,15 @@ const AUDIO_MANUAL = {
   'audio/atlasaudio-ambient-soundscapes-511893.mp3': {
     url: 'https://pixabay.com/music/ambient-ambient-soundscapes-511893/',
   },
-  'audio/zulfugarkarimov-echoes-of-solitude-535242.mp3': {
-    url: 'https://pixabay.com/music/modern-classical-echoes-of-solitude-535242/',
+  'audio/universebellayu-zhou-bei-la-morning-solitude-meditation-888hz-peaceful-231907.mp3': {
+    title: 'Morning Solitude',
+    artist: 'Universebellayu Zhou Bei La',
+    url: 'https://pixabay.com/music/meditationspiritual-morning-solitude-meditation-888hz-peaceful-231907/',
+  },
+  'audio/universebellayu-zhou-bei-la-888hz-gentle-solfeggio-for-fortune-451212.mp3': {
+    title: 'Gentle Solfeggio',
+    artist: 'Universebellayu Zhou Bei La',
+    url: 'https://pixabay.com/music/meditationspiritual-888hz-gentle-solfeggio-for-fortune-451212/',
   },
   'audio/anton_vlasov-drone-ambient-15791.mp3': {
     url: 'https://pixabay.com/music/ambient-drone-ambient-15791/',
@@ -3930,9 +3945,12 @@ volMusic.addEventListener('input', () => {
 volSfx.addEventListener('input', () => {
   audioPrefs.sfx = parseFloat(volSfx.value);
   localStorage.setItem('mystVolSfx', audioPrefs.sfx);
-  // Node ambient (environmental) lives on the SFX channel.
-  if (nodeAmbientAudio) nodeAmbientAudio.volume = audioPrefs.sfx * currentAmbientMix;
   playSfx('interact-tap');
+});
+volAmbient.addEventListener('input', () => {
+  audioPrefs.ambient = parseFloat(volAmbient.value);
+  localStorage.setItem('mystVolAmbient', audioPrefs.ambient);
+  if (nodeAmbientAudio) nodeAmbientAudio.volume = audioPrefs.ambient * currentAmbientMix;
 });
 muteMusicBtn.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -3947,6 +3965,13 @@ muteSfxBtn.addEventListener('click', (e) => {
   localStorage.setItem('mystMuteSfx', audioPrefs.sfxMuted ? '1' : '0');
   applyMuteUI();
   if (!audioPrefs.sfxMuted) playSfx('menu-click');
+});
+muteAmbientBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  playSfx('menu-click');
+  audioPrefs.ambientMuted = !audioPrefs.ambientMuted;
+  localStorage.setItem('mystMuteAmbient', audioPrefs.ambientMuted ? '1' : '0');
+  applyMuteUI();
 });
 
 // Loop + Shuffle toggles — mirror the Invert Drag pattern. Loop replays
