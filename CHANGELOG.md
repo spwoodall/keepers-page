@@ -7,6 +7,8 @@
 - Finishing an Age no longer feels like finishing the game. The music settles to a low bed instead of falling to silence — that stillness belongs to the ending alone — and you return to the chamber already facing a book that still glows
 - A quiet word follows each Age's farewell: the next Age awaits. And when the last of the three is answered, the chamber tells you it is not as you left it
 - The two books beneath the tree in the Fourth Age must be taken up deliberately now. The choice is framed before it is offered, so the end can no longer arrive on an idle touch
+- The whole world's air has been re-mixed — each Age's ambient set to its proper weight, lighter to carry and truer in balance — and the music now travels on its own channel apart from the room-tone, so neither pulls the other down
+- A new stillness enters the rotation: where *Echoes of Solitude* once played, two quiet 888hz pieces now drift through the long moments between worlds
 
 **Fixed**
 
