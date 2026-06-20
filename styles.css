@@ -110,8 +110,14 @@ body.rect-capture canvas { cursor: crosshair; }
   color: #aaa; font: italic 18px/1.7 Georgia, serif;
   max-width: 520px; text-align: center; padding: 0 24px;
 }
+#age-transition .age-next {
+  margin-top: 34px; color: #b89668;
+  font: italic 15px/1.7 Georgia, serif; letter-spacing: 0.5px;
+  text-align: center; padding: 0 24px;
+}
+#age-transition .age-next:empty { display: none; }
 #age-transition .age-continue {
-  margin-top: 48px; color: #555;
+  margin-top: 40px; color: #555;
   font: 11px monospace; letter-spacing: 3px; text-transform: uppercase;
 }
 

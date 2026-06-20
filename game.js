@@ -231,6 +231,7 @@ const state = {
   bizarreSmallerPaleMoonInspected: false,
   bizarreRennNameInspected: false,
   bizarreShellInspected: false,
+  keeperChoiceArmed: false, // the two-book ending choice has been deliberately engaged
 };
 // Cold-start snapshot, captured before any save hydration. Used by the
 // title-screen New Game button to reset state in-place — no reload, so
@@ -1517,6 +1518,23 @@ const ACTIONS = {
   },
 
   // ---- Bizarre realm — climactic two-book choice ----------------------
+  // Guard: arms the ending choice. Until this is engaged, the two books are
+  // not clickable — so a stray click can never end the game by accident.
+  approachKeeperBooks: () => {
+    state.keeperChoiceArmed = true;
+    playSfx('book-pages');
+    refreshCurrentNode();
+    showOverlay(`
+      <h2>Two Books</h2>
+      <p>Two books rest beneath the tree, side by side. The one on the left
+      lies open — a looping, unhurried hand. The one on the right is sealed
+      shut, its cover lettered in a careful, measured one.</p>
+      <p>You understand, without being told, that you may read only one —
+      and that to close a cover here is to choose how this ends.</p>
+      <p><em>The looping hand to the left. The careful hand to the right.</em></p>
+      <div class="close">click to consider</div>
+    `);
+  },
   touchKeeperOneBook: () => {
     playSfx('page-turn');
     showOverlay(`
@@ -1529,8 +1547,9 @@ const ACTIONS = {
       when we cannot reach them.</em></p>
       <p><em>If you are reading this, then the page still works.
       The link still holds.</em></p>
-      <p><em>Take the shell home, if you find one. They travel
-      well.</em></p>
+      <p><em>${state.bizarreShellInspected
+        ? 'Take the shell home. They travel well.'
+        : 'Take the shell home, if you find one. They travel well.'}</em></p>
       <div class="close">click to close the cover</div>
     `, () => {
       triggerEndscreen(
@@ -1793,12 +1812,20 @@ const WORLD = {
     onEnter: () => startBizarreRealmMusic(),
     startDir: [0.45, 0.64, -0.63],
     hotspots: () => [
+      // Guard — the only hotspot live on arrival. Engaging it arms the
+      // choice and reveals the two books, so the game can never end on a
+      // stray click.
+      { action: 'approachKeeperBooks', dir: [0.38, -0.61, -0.66],
+        label: 'two books rest open beneath the tree', color: 0xffd27a, shape: 'passage',
+        hidden: () => state.keeperChoiceArmed },
       { action: 'touchKeeperOneBook', dir: [0.25, -0.54, -0.8],
-        label: 'an open book — looping hand', color: 0xffd27a, shape: 'quad',
-        corners: [[4.56,1.07],[4,-1.7],[-4.84,-1.43],[-3.72,2.06]] },
+        label: 'the open book — read the looping hand', color: 0xffd27a, shape: 'quad',
+        corners: [[4.56,1.07],[4,-1.7],[-4.84,-1.43],[-3.72,2.06]],
+        hidden: () => !state.keeperChoiceArmed },
       { action: 'touchKeeperTwoBook', dir: [0.51, -0.68, -0.52],
-        label: 'a sealed book — careful hand', color: 0xd4aaff, shape: 'quad',
-        corners: [[3.54,1.07],[0.27,-2.22],[-3.42,-0.67],[-0.4,1.82]] },
+        label: 'the sealed book — open the careful hand', color: 0xd4aaff, shape: 'quad',
+        corners: [[3.54,1.07],[0.27,-2.22],[-3.42,-0.67],[-0.4,1.82]],
+        hidden: () => !state.keeperChoiceArmed },
       { action: 'inspectBizarreSpiralTrunk', dir: [0.52, -0.06, -0.85], shape: 'quad',
         corners: [[1.04,1.77],[1,-1.75],[-1.15,-1.87],[-0.9,1.85]],
         label: 'an S, cut into the bark', color: 0xffd27a,
@@ -2112,7 +2139,7 @@ const WORLD = {
     name: 'The Canopy',
     pano: () => loadPano(state.greenCanopyAligned ? 'panos/green-country-canopy-activated.jpg' : 'panos/green-country-canopy.jpg'),
     ambient: 'audio/sfx/green-canopy-ambient.mp3',
-    ambientMix: 1.0,
+    ambientMix: 0.2,
     startDir: [-0.84, 0.14, -0.52],
     hotspots: () => [
       { action: 'inspectCanopyView', dir: [0.93, -0.1, -0.35],
@@ -2470,14 +2497,38 @@ function triggerEndscreen(epilogueHtml) {
 }
 
 const ageTransitionEl = document.getElementById('age-transition');
+
+// When returning to the Ascension Chamber after completing an Age, orient
+// the player toward a linking book that still glows — the room itself says
+// "more remains," Myst-style, with no counter. Dirs mirror the chamber's
+// book hotspots. Once all three Ages are answered, face the armillary
+// sphere — the way onward to the Fourth Age.
+function ascensionReturnDir() {
+  if (!state.shoreCompleted)   return [-0.57, -0.36, -0.74];
+  if (!state.greenCompleted)   return [-0.71, -0.36, -0.61];
+  if (!state.cottageCompleted) return [-0.39, -0.37, -0.84];
+  return [0.07, 0.11, -0.99];
+}
+
 function triggerAgeReturn(epilogueHtml) {
   ageTransitionEl.querySelector('.age-epilogue').innerHTML = epilogueHtml;
+  // A forward-looking beat under the epilogue — turns the chapter break
+  // from a full stop into a comma. Once all three Ages are answered, point
+  // (without spoiling) at the armillary now waiting in the chamber.
+  const allReturned = state.shoreReturned && state.greenReturned && state.cottageReturned;
+  ageTransitionEl.querySelector('.age-next').textContent = allReturned
+    ? 'The chamber is not as you left it…'
+    : 'The next Age awaits you…';
   ageTransitionEl.classList.add('active');
-  fadeAudio(0, 3000);
+  // A chapter break must NOT reach true silence — that cue belongs to the
+  // finale alone. The Age's own ambient fades out (you ARE leaving that
+  // place), but the music only ducks to a low held bed so the world keeps
+  // breathing under the card. travelTo() swells it back up on click.
+  fadeAudio(audioPrefs.music * 0.4, 2500);
   if (nodeAmbientAudio) fadeAudioElement(nodeAmbientAudio, 0, 3000);
   ageTransitionEl.addEventListener('click', () => {
     ageTransitionEl.classList.remove('active');
-    travelTo('ascension', { fadeMs: 2000, startDir: [0.38, -0.33, -0.86] });
+    travelTo('ascension', { fadeMs: 2000, startDir: ascensionReturnDir() });
   }, { once: true });
 }
 
