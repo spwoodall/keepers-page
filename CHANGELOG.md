@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.8.2 — 2026-06-20
+
+**Enhanced**
+
+- Finishing an Age no longer feels like finishing the game. The music settles to a low bed instead of falling to silence — that stillness belongs to the ending alone — and you return to the chamber already facing a book that still glows
+- A quiet word follows each Age's farewell: the next Age awaits. And when the last of the three is answered, the chamber tells you it is not as you left it
+- The two books beneath the tree in the Fourth Age must be taken up deliberately now. The choice is framed before it is offered, so the end can no longer arrive on an idle touch
+
+**Fixed**
+
+- The sealed book is no longer asked to be closed, and the open one no longer claims its companion lies open beside it. Each book is named as it rests — one open to the looping hand, one sealed over the careful one
+- The Keeper's letter notices the shell at its side. Once you have held one, it no longer wonders whether you will
+
+**Quieted**
+
+- The wind through the canopy has come down to a whisper — it had been sounding far louder than any other air in the world
+
+---
+
 ## v0.8.1 — 2026-06-14
 
 **Enhanced**
